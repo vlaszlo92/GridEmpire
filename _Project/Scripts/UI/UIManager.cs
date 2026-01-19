@@ -1,6 +1,5 @@
 using GridEmpire.Core;
 using GridEmpire.Gameplay;
-using GridEmpire.Input;
 using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
@@ -10,9 +9,6 @@ namespace GridEmpire.UI
 {
     public class UIManager : MonoBehaviour
     {
-        [Header("Global References")]
-        [SerializeField] private UnitSpawner spawner;
-
         [Header("Resources & Info")]
         [SerializeField] private TextMeshProUGUI goldText;
         [SerializeField] private TextMeshProUGUI turnText;
@@ -21,169 +17,235 @@ namespace GridEmpire.UI
         [SerializeField] private Button axemanBtn;
         [SerializeField] private Button spearmanBtn;
         [SerializeField] private Button cavalryBtn;
+        [SerializeField] private Button scoutBtn;
 
         [Header("Queue UI References")]
         [SerializeField] private Transform queueContainer;
         [SerializeField] private GameObject queueIconPrefab;
+        [SerializeField] private Button clearQueueBtn;
+
+        [Header("Unit Info Panel")]
+        [SerializeField] private GameObject infoPanelRoot;
+        [SerializeField] private TextMeshProUGUI unitNameText;
+        [SerializeField] private TextMeshProUGUI unitOwnerText;
+        [SerializeField] private TextMeshProUGUI unitHpText;
+        [SerializeField] private TextMeshProUGUI unitDamageText;
+        [SerializeField] private TextMeshProUGUI unitStaminaText;
+
+        private PlayerProfile _localPlayer;
+        private UnitSpawner _localSpawner;
+        private UnitController _selectedUnit;
+        private List<QueueIconRefs> _iconRefs = new List<QueueIconRefs>();
+        private float _tickTimer = 0f;
 
         private class QueueIconRefs
         {
             public GameObject root;
             public Image fillImage;
+            public Image iconImage;
             public TextMeshProUGUI tickText;
-        }
-
-        private List<QueueIconRefs> _iconRefs = new List<QueueIconRefs>();
-        private float _currentTickRate = 1f;
-        private float _visualFillAmount = 0f;
-        private float _tickTimer = 0f;
-
-        private void Awake()
-        {
-            if (TurnManager.Instance != null)
-                _currentTickRate = TurnManager.Instance.TickDuration;
+            public TextMeshProUGUI nameText;
+            public Button iconButton;
         }
 
         private void Start()
         {
-            // A gombok most már a UnitSpawner új metódusát hívják (RequestUnit)
-            // Itt feltételezzük, hogy az UI mindig a LocalPlayer (ID 0) adatait kezeli
-            axemanBtn.onClick.AddListener(() => RequestSpawn(0)); // 0 = Axeman slot vagy típus
-            spearmanBtn.onClick.AddListener(() => RequestSpawn(1)); // 1 = Spearman
-            cavalryBtn.onClick.AddListener(() => RequestSpawn(2)); // 2 = Cavalry
+            axemanBtn.onClick.AddListener(() => RequestSpawn(0));
+            spearmanBtn.onClick.AddListener(() => RequestSpawn(1));
+            cavalryBtn.onClick.AddListener(() => RequestSpawn(2));
+            scoutBtn.onClick.AddListener(() => RequestSpawn(3));
+
+            if (clearQueueBtn != null)
+                clearQueueBtn.onClick.AddListener(HandleClearQueue);
         }
 
         private void OnEnable()
         {
-            TurnManager.OnTickDurationChanged += HandleTickRateChange;
-            TurnManager.OnTick += ResetVisualTimer;
+            TurnManager.OnTurnCompleted += ResetVisualTimer;
+            GameController.OnUnitSelected += HandleUnitSelectionChanged;
         }
 
         private void OnDisable()
         {
-            TurnManager.OnTickDurationChanged -= HandleTickRateChange;
-            TurnManager.OnTick -= ResetVisualTimer;
+            TurnManager.OnTurnCompleted -= ResetVisualTimer;
+            GameController.OnUnitSelected -= HandleUnitSelectionChanged;
         }
 
-        private void HandleTickRateChange(float rate) => _currentTickRate = rate;
-
-        private void ResetVisualTimer()
+        private void HandleUnitSelectionChanged(IUnit unit)
         {
-            // Minden kör elején nullázzuk a belsõ UI idõzítõt
-            _tickTimer = 0f;
+            if (unit == null)
+            {
+                HideUnitInfo();
+            }
+            else
+            {
+                ShowUnitInfo(unit as UnitController);
+            }
         }
+        private void ResetVisualTimer() => _tickTimer = 0f;
 
         private void Update()
         {
-            _tickTimer += Time.deltaTime;
-            _tickTimer = Mathf.Min(_tickTimer, _currentTickRate);
-
-            // 1. Adatok lekérése a GameControllerbõl (GridManager helyett)
-            var localPlayer = GameController.Instance?.GetLocalPlayer();
-            if (localPlayer != null)
+            if (_localPlayer == null || _localSpawner == null)
             {
-                goldText.text = $"Gold: {(int)localPlayer.Gold}";
+                SetupLocalReferences();
+                return;
             }
+
+            // --- UNIT INFO PANEL FRISSÍTÉSE ---
+            if (_selectedUnit != null)
+            {
+                if (_selectedUnit.IsDead)
+                {
+                    HideUnitInfo();
+                }
+                else
+                {
+                    unitHpText.text = $"HP: {Mathf.CeilToInt(_selectedUnit.GetCurrentHP())} / {_selectedUnit.Data.maxHp}";
+                    unitStaminaText.text = $"Stamina: {_selectedUnit.GetCurrentStamina():F1} / {_selectedUnit.Data.maxStamina}";
+                }
+            }
+
+            // --- IDÕZÍTÕ ÉS TURN INFO ---
+            _tickTimer += Time.deltaTime;
+            float currentDuration = (TurnManager.Instance != null) ? TurnManager.Instance.TickDuration : 1f;
+            _tickTimer = Mathf.Min(_tickTimer, currentDuration);
 
             if (TurnManager.Instance != null)
                 turnText.text = $"Turn: {TurnManager.Instance.TurnCount}";
 
-            // 2. Ikonok szinkronizálása a megfelelõ játékos sorával
-            if (localPlayer != null)
+            // --- DEBUG GAZDASÁGI PANEL (MINDEN JÁTÉKOS) ---
+            System.Text.StringBuilder debugBuilder = new System.Text.StringBuilder();
+            var allPlayers = GameController.Instance.GetPlayers();
+
+            foreach (var p in allPlayers)
             {
-                SyncQueueIcons(localPlayer.Id);
-                HandleSmoothFill(localPlayer.Id);
+                string incomeSign = p.GoldIncome >= 0 ? "+" : "";
+                debugBuilder.AppendLine($"<color=#{ColorUtility.ToHtmlStringRGB(p.Color)}><b>Player {p.Id}</b></color>");
+                debugBuilder.AppendLine($"Gold: {(int)p.Gold} ({incomeSign}{p.GoldIncome:F1})");
+                debugBuilder.AppendLine($"Units: {p.ActiveUnits.Count}");
+                debugBuilder.AppendLine($"Cells: {p.OwnedCellCount}");
+                debugBuilder.AppendLine("------------------");
+            }
+
+            goldText.text = debugBuilder.ToString();
+
+            // --- SPAWN QUEUE KEZELÉSE ---
+            var queue = _localSpawner.GetQueue();
+            SyncQueueIcons(queue);
+            HandleSmoothFill(queue, currentDuration);
+
+            if (clearQueueBtn != null)
+                clearQueueBtn.gameObject.SetActive(queue.Count >= 2);
+        }
+
+        private void SetupLocalReferences()
+        {
+            _localPlayer = GameController.Instance?.GetLocalPlayer();
+            if (_localPlayer == null) return;
+
+            var spawners = Object.FindObjectsByType<UnitSpawner>(FindObjectsSortMode.None);
+            foreach (var s in spawners)
+            {
+                if (s.OwnerId == _localPlayer.Id)
+                {
+                    _localSpawner = s;
+                    break;
+                }
             }
         }
 
         private void RequestSpawn(int unitSlot)
-        {            
-            // Megkérdezzük a GameControllert, ki az aktuális emberi játékos
-            var localPlayer = GameController.Instance.GetLocalPlayer();
-
-            if (localPlayer != null)
-            {
-                // Most már két paramétert küldünk: (playerId, unitSlot)
-                UnitSpawner.OnRequestUnitSpawn?.Invoke(localPlayer.Id, unitSlot, localPlayer.SelectedCell);
-            }
-            else
-            {
-                Debug.LogError("UIManager: Nem található LocalPlayer!");
-            }
-        }
-        private void SyncQueueIcons(int playerId)
         {
-            // A spawner-tõl lekérjük az adott játékos sorát
-            var queue = spawner.GetQueueForPlayer(playerId);
-            int displayCount = Mathf.Min(queue.Count, 7);
+            if (_localPlayer != null)
+                UnitSpawner.OnRequestUnitSpawn?.Invoke(_localPlayer.Id, unitSlot, _localPlayer.SelectedCell);
+        }
 
-            // Törlés, ha rövidült a sor
+        private void HandleClearQueue()
+        {
+            if (_localSpawner == null) return;
+            var queue = _localSpawner.GetQueue();
+            while (queue.Count > 1) _localSpawner.RemoveUnitFromQueue(1);
+        }
+
+        private void SyncQueueIcons(List<QueuedUnit> queue)
+        {
+            int displayCount = Mathf.Min(queue.Count, 6);
+
+            // Törlés
             while (_iconRefs.Count > displayCount)
             {
                 Destroy(_iconRefs[_iconRefs.Count - 1].root);
                 _iconRefs.RemoveAt(_iconRefs.Count - 1);
-                if (_iconRefs.Count == 0) _visualFillAmount = 0f;
             }
 
-            // Létrehozás, ha nõtt a sor
+            // Létrehozás (Segédszkript alapú)
             while (_iconRefs.Count < displayCount)
             {
+                int index = _iconRefs.Count;
                 GameObject newIcon = Instantiate(queueIconPrefab, queueContainer);
-                _iconRefs.Add(new QueueIconRefs
+
+                // Kikeressük a komponenseket az új logikád szerint:
+                var refs = new QueueIconRefs
                 {
                     root = newIcon,
+                    // A Buttonon lévõ Image lesz az ikon (háttér)
+                    iconImage = newIcon.GetComponent<Image>(),
+                    // A legelsõ gyerek (Index 0) lesz a sötétítõ Fill réteg
                     fillImage = newIcon.transform.GetChild(0).GetComponent<Image>(),
-                    tickText = newIcon.GetComponentInChildren<TextMeshProUGUI>()
-                });
+                    tickText = newIcon.transform.GetChild(1).GetComponent<TextMeshProUGUI>(),
+                    nameText = newIcon.transform.GetChild(2).GetComponent<TextMeshProUGUI>(),
+                    iconButton = newIcon.GetComponent<Button>()
+                };
+
+                refs.iconButton.onClick.AddListener(() => _localSpawner.RemoveUnitFromQueue(index));
+                _iconRefs.Add(refs);
             }
 
-            // Adatok frissítése
+            // Frissítés
             for (int i = 0; i < _iconRefs.Count; i++)
             {
-                _iconRefs[i].fillImage.color = GetUnitColor(queue[i].data.unitName);
-                _iconRefs[i].tickText.text = queue[i].remainingTicks.ToString();
+                var data = queue[i].data;
+                if (_iconRefs[i].iconImage != null) _iconRefs[i].iconImage.sprite = data.icon;
+                if (_iconRefs[i].tickText != null) _iconRefs[i].tickText.text = Mathf.Max(0, queue[i].remainingTicks).ToString();
+                if (_iconRefs[i].nameText != null) _iconRefs[i].nameText.text = data.unitName;
+
+                _iconRefs[i].iconButton.interactable = (i > 0);
             }
         }
 
-        private void HandleSmoothFill(int playerId)
+        private void HandleSmoothFill(List<QueuedUnit> queue, float duration)
         {
-            var queue = spawner.GetQueueForPlayer(playerId);
-            if (queue.Count == 0 || _iconRefs.Count == 0)
-            {
-                _visualFillAmount = 0f;
-                return;
-            }
+            if (queue.Count == 0 || _iconRefs.Count == 0 || _iconRefs[0].fillImage == null) return;
 
             float totalTicks = (float)queue[0].data.recruitmentTime;
-            float remainingTicks = (float)queue[0].remainingTicks;
+            float remainingTicks = (float)queue[0].remainingTicks + 1;
+            float baseFill = (totalTicks - remainingTicks) / totalTicks;
+            float currentTickProgress = _tickTimer / duration;
 
-            // Kiszámoljuk a már lezárt körök arányát
-            // Ha 2 kör a max és 2 van hátra, akkor 0 kör kész.
-            // Ha 2 kör a max és 1 van hátra, akkor 1 kör kész.
-            float completedTicks = totalTicks - remainingTicks;
-            float baseFill = completedTicks / totalTicks;
-
-            // Kiszámoljuk az aktuális körön belüli haladást (0.0 és 1.0 között)
-            float currentTickProgress = _tickTimer / _currentTickRate;
-
-            // A teljes kitöltöttség: az eddigi körök + az aktuális körbõl arányosan ennyi
-            // (1f / totalTicks) az egy körhöz tartozó szelet a teljes csíkon
-            _visualFillAmount = baseFill + (currentTickProgress * (1f / totalTicks));
-
-            _visualFillAmount = Mathf.Clamp01(_visualFillAmount);
-            _iconRefs[0].fillImage.fillAmount = _visualFillAmount;
+            float fillAmount = baseFill + (currentTickProgress * (1f / totalTicks));
+            _iconRefs[0].fillImage.fillAmount = 1f - Mathf.Clamp01(fillAmount);
 
             for (int i = 1; i < _iconRefs.Count; i++)
-                _iconRefs[i].fillImage.fillAmount = 0f;
+                if (_iconRefs[i].fillImage != null) _iconRefs[i].fillImage.fillAmount = 0.0f;
         }
 
-        private Color GetUnitColor(string unitName)
+        public void ShowUnitInfo(UnitController unit)
         {
-            if (string.IsNullOrEmpty(unitName)) return Color.white;
-            if (unitName.Contains("Axeman")) return new Color(0.8f, 0.2f, 0.2f); // Pirosas
-            if (unitName.Contains("Spearman")) return new Color(0.8f, 0.8f, 0.2f); // Sárgás
-            if (unitName.Contains("Cavalry")) return new Color(0.2f, 0.2f, 0.8f); // Kékes
-            return Color.white;
+            _selectedUnit = unit;
+
+            if (infoPanelRoot != null) infoPanelRoot.SetActive(true);
+
+            unitNameText.text = unit.Data.unitName;
+            unitOwnerText.text = $"Player {unit.OwnerId}";
+            unitDamageText.text = $"Damage: {_selectedUnit.Data.baseDamage} (+{_selectedUnit.Data.bonusDamage} vs {_selectedUnit.Data.strongAgainst})";
         }
+
+        public void HideUnitInfo()
+        {
+            _selectedUnit = null;
+            if (infoPanelRoot != null) infoPanelRoot.SetActive(false);
+        }
+
     }
 }
