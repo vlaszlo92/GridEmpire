@@ -1,7 +1,9 @@
-using UnityEngine;
+using GridEmpire.Core;
 using System.Collections;
 using System.Collections.Generic;
-using GridEmpire.Core;
+using System.Linq;
+using TMPro;
+using UnityEngine;
 
 namespace GridEmpire.Gameplay
 {
@@ -9,26 +11,35 @@ namespace GridEmpire.Gameplay
     {
         [Header("Unit State")]
         public UnitData _data;
-        public int _ownerId; 
+        public int _ownerId;
         public bool _isDead = false;
         public bool isInCombat = false;
         public CellData _currentCell;
         public UnitController _combatTarget;
 
+        private CellData _currentTargetCell;
         private GridManager _gridManager;
-        private TurnResolver _resolver;
+        private ITurnResolver _resolver;
         private List<CellData> _initialPath;
         private float _currentHP;
         private float _pendingDamage;
-        private int _currentDirection = 0;
+        private UnitAction _nextAction;
+        private CellData _previousCell;
+        [SerializeField] private float _currentStamina;
 
-        // --- IUnit Interfész implementáció ---
         public int OwnerId => _ownerId;
         public UnitData Data => _data;
         public CellData CurrentCell => _currentCell;
         public bool IsDead => _isDead;
         public void DestroyUnit() => ExecuteDeath();
-        // --------------------------------------
+
+        private void Update()
+        {
+            if (_previousCell != null)
+            {
+                Debug.DrawLine(transform.position, _gridManager.GetWorldPosition(_previousCell.Q, _previousCell.R), Color.red);
+            }
+        }
 
         public void Initialize(UnitData data, List<CellData> path, GridManager gm, int ownerId)
         {
@@ -36,127 +47,218 @@ namespace GridEmpire.Gameplay
             _gridManager = gm;
             _ownerId = ownerId;
             _currentHP = data.maxHp;
-            _resolver = Object.FindFirstObjectByType<TurnResolver>();
+            _currentStamina = data.maxStamina;
+            _resolver = FindFirstObjectByType<TurnResolver>();
             _initialPath = path != null ? new List<CellData>(path) : new List<CellData>();
 
-            // Regisztráció a játékos profiljába
             var player = GameController.Instance?.GetPlayerById(ownerId);
             player?.ActiveUnits.Add(this);
 
-            if (_initialPath.Count > 0) _currentCell = _initialPath[0];
-            else _currentCell = _gridManager.GetCellAtPosition(transform.position);
+            if (player != null && player.BaseCell != null)
+                _currentCell = player.BaseCell;
+            else
+                _currentCell = _gridManager.GetCellAtPosition(transform.position);
 
             if (_currentCell != null) _currentCell.RegisterOccupier(this);
 
-            TurnManager.OnTick += HandleTick;
+            UpdateInitialFacing();
         }
 
-        public void SetStartingDirection(int dir)
+        private void UpdateInitialFacing()
         {
-            _currentDirection = dir;
-            // Azonnali vizuális fordítás a kezdõ irányba
-            Vector3 targetPos = _gridManager.GetWorldPosition(_currentCell.Q, _currentCell.R) + GetDirectionVector(dir);
-            FaceTarget(targetPos);
+            CellData target = null;
+            if (_initialPath.Count > 0) target = _initialPath[0];
+            else target = FindExpansionCell();
+
+            if (target != null)
+            {
+                Vector3 targetPos = _gridManager.GetWorldPosition(target.Q, target.R);
+                FaceTarget(targetPos);
+            }
         }
 
-        private Vector3 GetDirectionVector(int dir)
+        public void PlanAction()
         {
-            // Segédmetódus a kezdõ irányba nézéshez
-            float angle = dir * 60f * Mathf.Deg2Rad;
-            return new Vector3(Mathf.Sin(angle), 0, Mathf.Cos(angle));
-        }
+            if (_isDead) return;
+            _nextAction = new UnitAction { Performer = this, PlayerId = _ownerId, Type = ActionType.Idle };
+            _currentStamina = Mathf.Min(_currentStamina + _data.staminaPerTurn, _data.maxStamina);
 
-        private void HandleTick()
-        {
-            if (_isDead || _resolver == null) return;
-
-            UnitAction decision = new UnitAction { Performer = this };
             UnitController nearbyEnemy = ScanForEnemies();
-
             if (nearbyEnemy != null)
             {
-                decision.Type = ActionType.Attack;
-                decision.TargetUnit = nearbyEnemy;
+                _nextAction.Type = ActionType.Attack;
+                _nextAction.TargetUnit = nearbyEnemy;
                 _combatTarget = nearbyEnemy;
+                isInCombat = true;
+                _previousCell = _currentCell;
+                ApplyFacingAndEnqueue();
+                return;
             }
-            else if (_initialPath.Count > 1)
+
+            isInCombat = false;
+
+            if (_currentTargetCell != null)
             {
-                CellData next = _initialPath[1];
-                decision.Type = (next.OwnerId == _ownerId) ? ActionType.Move : ActionType.Capture;
-                decision.TargetCell = next;
+                if (_currentTargetCell.OwnerId != _ownerId)
+                {
+                    _nextAction.Type = ActionType.Capture;
+                    _nextAction.TargetCell = _currentTargetCell;
+                    _previousCell = _currentCell;
+                    ApplyFacingAndEnqueue();
+                    return;
+                }
+                else if (_currentCell != _currentTargetCell)
+                {
+                    if (!_currentTargetCell.IsOccupied && _currentStamina >= 1.0f)
+                    {
+                        _nextAction.Type = ActionType.Move;
+                        _nextAction.TargetCell = _currentTargetCell;
+                        ApplyFacingAndEnqueue();
+                        return;
+                    }
+                    else { _currentTargetCell = null; }
+                }
+            }
+
+            CellData next = GetValidNeighbor();
+            if (next != null)
+            {
+                _currentTargetCell = next;
+                _nextAction.Type = (next.OwnerId == _ownerId) ? ActionType.Move : ActionType.Capture;
+                _nextAction.TargetCell = next;
+                if (_nextAction.Type == ActionType.Capture) _previousCell = _currentCell;
             }
             else
             {
-                // Automata terjeszkedés (ha elfogyott az út)
-                CellData nextInDir = _gridManager.GetNeighborInDirection(_currentCell, _currentDirection);
-
-                // Ha falba ütközik vagy foglalt mezõre érne, fordul
-                if (nextInDir == null || (nextInDir.OwnerId == _ownerId && nextInDir.IsOccupied))
-                {
-                    _currentDirection = (_currentDirection + 1) % 6;
-                    nextInDir = _gridManager.GetNeighborInDirection(_currentCell, _currentDirection);
-                }
-
-                if (nextInDir != null)
-                {
-                    decision.Type = (nextInDir.OwnerId == _ownerId) ? ActionType.Move : ActionType.Capture;
-                    decision.TargetCell = nextInDir;
-                }
+                _nextAction.Type = ActionType.Idle;
+                _previousCell = _currentCell;
             }
-            _resolver.EnqueueAction(decision);
+            ApplyFacingAndEnqueue();
+        }
+
+        private CellData GetValidNeighbor()
+        {
+            if (_initialPath != null && _initialPath.Count > 0)
+            {
+                CellData p = _initialPath[0];
+                if (_gridManager.GetDistance(_currentCell, p) == 1 && !p.IsOccupied) return p;
+            }
+            return FindExpansionCell();
+        }
+
+        private void ApplyFacingAndEnqueue()
+        {
+            if (_nextAction.TargetCell != null || _nextAction.TargetUnit != null)
+            {
+                if (_nextAction.Type == ActionType.Move && _currentStamina < 1.0f)
+                    _nextAction.Type = ActionType.Idle;
+                if (_resolver != null) _resolver.EnqueueAction(_nextAction);
+                else Debug.LogError("[UnitController] Resolver not found!");
+            }
+        }
+
+        private CellData FindExpansionCell()
+        {
+            var player = GameController.Instance?.GetPlayerById(_ownerId);
+            if (player == null || player.BaseCell == null) return null;
+
+            var neighbors = _gridManager.GetNeighbors(_currentCell);
+            int currentDist = _gridManager.GetDistance(_currentCell, player.BaseCell);
+
+            var preferredCells = neighbors.Where(n =>
+                _gridManager.GetDistance(n, player.BaseCell) > currentDist && !n.IsOccupied && n != _previousCell
+            ).ToList();
+
+            if (preferredCells.Count > 0) return preferredCells[Random.Range(0, preferredCells.Count)];
+
+            var fallbackCells = neighbors.Where(n =>
+                !n.IsOccupied && !n.IsBase && n != _previousCell
+            ).ToList();
+
+            if (fallbackCells.Count > 0) return fallbackCells[Random.Range(0, fallbackCells.Count)];
+
+            return null;
+        }
+
+        public void CalculateCombatLogic()
+        {
+            if (_isDead || _nextAction == null || _nextAction.Type != ActionType.Attack) return;
+
+            if (_nextAction.TargetUnit is UnitController target && !target._isDead)
+            {
+                FaceTarget(target.transform.position);
+
+                // Alapsebzés kiszámítása
+                float totalDamage = _data.baseDamage;
+
+                // Bónusz sebzés ellenõrzése (Típus elõny)
+                if (_data.strongAgainst == target.Data.type)
+                {
+                    totalDamage += _data.bonusDamage;
+                    Debug.Log($"{_data.unitName} bónusz sebzést oszt ki neki: {target.Data.unitName}!");
+                }
+
+                target.RegisterPendingDamage(totalDamage);
+            }
+        }
+
+        public void ApplyPendingDamage()
+        {
+            if (_isDead) return;
+            _currentHP -= _pendingDamage;
+            _pendingDamage = 0;
+            if (_currentHP <= 0) _isDead = true;
         }
 
         public void ExecuteFinalMove(CellData next)
         {
+            if (next == null || next == _currentCell) return;
+            _currentStamina -= 1.0f;
+            _previousCell = _currentCell;
             if (_currentCell != null) _currentCell.UnregisterOccupier(this);
+            Vector3 targetPos = _gridManager.GetWorldPosition(next.Q, next.R);
+            FaceTarget(targetPos);
             _currentCell = next;
             _currentCell.RegisterOccupier(this);
-            if (_initialPath.Count > 0) _initialPath.RemoveAt(0);
-
+            if (_currentTargetCell == next) _currentTargetCell = null;
+            if (_initialPath.Count > 0 && _initialPath[0] == next) _initialPath.RemoveAt(0);
             StopAllCoroutines();
             StartCoroutine(Animate(next));
+        }
+
+        public void ExecuteFinalCapture(CellData target)
+        {
+            if (target == null) return;
+            Vector3 targetPos = _gridManager.GetWorldPosition(target.Q, target.R);
+            FaceTarget(targetPos);
+
+            // LOGIKA: Megnézzük, semleges-e a mezõ
+            bool isNeutral = target.OwnerId == -1;
+
+            // Érték kiválasztása a UnitData-ból
+            float speed = isNeutral ? _data.exploreSpeed : _data.conquerSpeed;
+
+            target.UpdateCapture(_ownerId, speed);
+
+            if (target.OwnerId == _ownerId)
+                _gridManager.FinalizeCapture(target, _ownerId);
         }
 
         private IEnumerator Animate(CellData c)
         {
             Vector3 startPos = transform.position;
             Vector3 targetPos = _gridManager.GetWorldPosition(c.Q, c.R);
-            Quaternion startRot = transform.rotation;
-
-            Vector3 direction = (targetPos - startPos).normalized;
-            Quaternion targetRot = direction != Vector3.zero ? Quaternion.LookRotation(direction) : startRot;
-
             float tickTime = TurnManager.Instance != null ? TurnManager.Instance.TickDuration : 1.0f;
-
-            // Ha azt akarod, hogy ne legyen szünet a mezõk közt, hagyd 1.0f-en.
-            // Ha 0.9f, akkor a maradék 10%-ban állni fog.
-            float travelDuration = tickTime * 1.0f;
             float elapsed = 0f;
 
-            while (elapsed < travelDuration)
+            while (elapsed < tickTime)
             {
                 elapsed += Time.deltaTime;
-                float t = Mathf.Clamp01(elapsed / travelDuration);
-
-                // --- LINEÁRIS MOZGÁS ---
-                // Nincs smoothT, közvetlenül a t-t használjuk a Lerp-nél
+                float t = Mathf.Clamp01(elapsed / tickTime);
                 transform.position = Vector3.Lerp(startPos, targetPos, t);
-
-                // A forgatás maradjon gyors az elején, hogy irányba álljon
-                float rotationT = Mathf.Clamp01(t * 5f);
-                transform.rotation = Quaternion.Slerp(startRot, targetRot, rotationT);
-
                 yield return null;
             }
-
             transform.position = targetPos;
-        }
-
-        public void ExecuteFinalCapture(CellData target)
-        {
-            // A foglalás mértéke jöhetne akár az UnitData-ból is
-            target.UpdateCapture(_ownerId, 0.2f);
-            if (target.OwnerId == _ownerId) _gridManager.FinalizeCapture(target, _ownerId);
         }
 
         public void FaceTarget(Vector3 targetPos)
@@ -171,39 +273,22 @@ namespace GridEmpire.Gameplay
             var neighbors = _gridManager.GetNeighbors(_currentCell);
             foreach (var n in neighbors)
             {
-                if (n.IsOccupied)
-                {
-                    // Itt is használhatnánk IUnit-ot, de mivel ez a Gameplay réteg, 
-                    // a UnitController ismerheti önmagát.
-                    UnitController uc = n.GetFirstOccupier() as UnitController;
-                    if (uc != null && uc._ownerId != _ownerId && !uc._isDead) return uc;
-                }
+                if (n.IsOccupied && n.GetFirstOccupier() is UnitController uc && uc._ownerId != _ownerId && !uc._isDead)
+                    return uc;
             }
             return null;
         }
 
         public void RegisterPendingDamage(float amount) => _pendingDamage += amount;
 
-        public void ApplyPendingDamage()
-        {
-            if (_isDead) return;
-            _currentHP -= _pendingDamage;
-            _pendingDamage = 0;
-            if (_currentHP <= 0) _isDead = true;
-        }
-
         public void ExecuteDeath()
         {
-            TurnManager.OnTick -= HandleTick;
-
-            // Eltávolítás a mezõrõl
             if (_currentCell != null) _currentCell.UnregisterOccupier(this);
 
-            // Eltávolítás a játékos listájából
-            var player = GameController.Instance?.GetPlayerById(_ownerId);
-            player?.ActiveUnits.Remove(this);
-
+            GameController.Instance.RemoveUnit(this);
             Destroy(gameObject);
         }
+        public float GetCurrentHP() => _currentHP; 
+        public float GetCurrentStamina() => _currentStamina;
     }
 }
