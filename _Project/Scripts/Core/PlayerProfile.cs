@@ -13,6 +13,8 @@ namespace GridEmpire.Core
         public bool IsAI;
         public bool IsLocalPlayer;
         public bool IsAlive = true;
+        public int OwnedCellCount;
+        public float GoldIncome;
 
         public CellData BaseCell;
         public CellData SelectedCell;

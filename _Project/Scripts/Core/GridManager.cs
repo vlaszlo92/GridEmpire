@@ -30,6 +30,7 @@ namespace GridEmpire.Core
             _grid.Clear();
             _presenterMap.Clear();
             foreach (Transform child in transform) Destroy(child.gameObject);
+            var hexYOffset = new Vector3(0, -0.099f, 0);
 
             for (int q = -radius; q <= radius; q++)
             {
@@ -41,7 +42,7 @@ namespace GridEmpire.Core
                     CellData cell = new CellData(q, r);
                     _grid.Add(new Vector2Int(q, r), cell);
 
-                    Vector3 worldPos = GetWorldPosition(q, r);
+                    Vector3 worldPos = GetWorldPosition(q, r) + hexYOffset;
                     GameObject obj = Instantiate(hexPrefab, worldPos, hexPrefab.transform.rotation, transform);
                     obj.name = $"Hex_{q}_{r}";
 
@@ -106,7 +107,12 @@ namespace GridEmpire.Core
 
         public void UpdateFogOfWar(int forPlayerId)
         {
-            
+            foreach (var c in _grid.Values)
+                c.CurrentVisibility = VisibilityState.Visible;
+
+            foreach (var p in _presenterMap.Values) p.UpdateVisual();
+            return;
+
             // 1. Minden mezõ, ami eddig látható volt, most "felfedezett" (szürke) lesz
             foreach (var c in _grid.Values)
                 if (c.CurrentVisibility == VisibilityState.Visible) c.CurrentVisibility = VisibilityState.Explored;
@@ -138,7 +144,10 @@ namespace GridEmpire.Core
         // --- Segédfüggvények ---
 
         public CellData GetCell(int q, int r) => _grid.GetValueOrDefault(new Vector2Int(q, r));
-
+        public int GetDistance(CellData a, CellData b)
+        {
+            return (Mathf.Abs(a.Q - b.Q) + Mathf.Abs(a.Q + a.R - (b.Q + b.R)) + Mathf.Abs(a.R - b.R)) / 2;
+        }
         public IEnumerable<CellData> GetAllCells() => _grid.Values;
 
         public List<CellData> GetNeighbors(CellData c)
@@ -236,6 +245,8 @@ namespace GridEmpire.Core
         public List<CellData> FindPath(CellData start, CellData target)
         {
             if (start == null || target == null) return null;
+            if (start == target) return new List<CellData>(); // Ha már ott vagyunk
+
             var frontier = new Queue<CellData>();
             frontier.Enqueue(start);
             var cameFrom = new Dictionary<CellData, CellData> { { start, null } };
@@ -244,12 +255,25 @@ namespace GridEmpire.Core
             {
                 var current = frontier.Dequeue();
                 if (current == target) break;
+
                 foreach (var next in GetNeighbors(current))
-                    if (!cameFrom.ContainsKey(next)) { frontier.Enqueue(next); cameFrom[next] = current; }
+                {
+                    if (!cameFrom.ContainsKey(next))
+                    {
+                        frontier.Enqueue(next);
+                        cameFrom[next] = current;
+                    }
+                }
             }
+
             if (!cameFrom.ContainsKey(target)) return null;
+
             var path = new List<CellData>();
-            for (var curr = target; curr != null; curr = cameFrom[curr]) path.Add(curr);
+            for (var curr = target; curr != start && curr != null; curr = cameFrom[curr])
+            {
+                path.Add(curr);
+            }
+
             path.Reverse();
             return path;
         }

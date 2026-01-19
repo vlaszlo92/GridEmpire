@@ -14,8 +14,12 @@ namespace GridEmpire.Core
 
         [Header("Stats")]
         public int cost;
+        public int costPerTurn;
         public int maxHp;
-        public float speed; // Mezõ / másodperc (Tick)
+        public float staminaPerTurn;
+        public float maxStamina;
+        public float conquerSpeed;
+        public float exploreSpeed;
 
         [Header("Combat")]
         public int baseDamage = 40;
@@ -23,7 +27,8 @@ namespace GridEmpire.Core
 
         [Header("Visuals")]
         public GameObject unitPrefab; // Maga a 3D modell, amit majd le akarunk rakni
+        public Sprite icon;
     }
 
-    public enum UnitType { Axeman, Spearman, Cavalry }
+    public enum UnitType { Axeman, Spearman, Cavalry, Scout }
 }

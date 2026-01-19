@@ -25,14 +25,13 @@ namespace GridEmpire.Core
         public bool IsOccupied;
         public VisibilityState CurrentVisibility = VisibilityState.Hidden;
 
-        // Játékos ID -> Befolyás
         private Dictionary<int, float> _playerInfluences = new Dictionary<int, float>();
 
-        // Inspector megjelenítéshez
         public List<InfluenceEntry> InfluenceDisplay = new List<InfluenceEntry>();
         public List<UnityEngine.Object> OccupyingUnits = new List<UnityEngine.Object>();
 
         public Action OnVisualUpdateRequired;
+        public static System.Action<int, int> OnCellOwnerChanged;
 
         public CellData(int q, int r)
         {
@@ -76,16 +75,26 @@ namespace GridEmpire.Core
 
             if (OwnerId != -1)
             {
+                // Ellenséges terület hódítása (Conquer)
                 ModifyInfluence(OwnerId, -amount);
-                if (GetCaptureProgress(OwnerId) <= 0) OwnerId = -1;
+                if (GetCaptureProgress(OwnerId) <= 0)
+                {
+                    int oldOwner = OwnerId;
+                    OwnerId = -1;
+                    // ESEMÉNY: Valaki elveszítette, mostantól senkié (-1)
+                    OnCellOwnerChanged?.Invoke(oldOwner, -1);
+                }
             }
             else
             {
+                // Semleges terület felfedezése (Explore)
                 ModifyInfluence(playerId, amount);
                 if (GetCaptureProgress(playerId) >= 1.0f)
                 {
                     OwnerId = playerId;
                     ClearOtherInfluences(playerId);
+                    // ESEMÉNY: A semleges területnek lett új gazdája
+                    OnCellOwnerChanged?.Invoke(-1, playerId);
                 }
             }
             OnVisualUpdateRequired?.Invoke();
