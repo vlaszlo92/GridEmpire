@@ -1,24 +1,52 @@
 using GridEmpire.Core;
+using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 namespace GridEmpire.Visuals
 {
     public class CellVisual : MonoBehaviour, ICellPresenter
     {
+        [Header("Settings")]
+        [SerializeField] private GameObject selectionEffect;
+        // Ezzel a kapcsolóval a szerkesztõben (Inspector) is tudsz váltani
+        public static bool IsDebugMode = false;
+
         [SerializeReference] private CellData _data;
         private Renderer _renderer;
         private MaterialPropertyBlock _propBlock;
-        [SerializeField] private GameObject selectionEffect;
 
         private static readonly int ColorProperty = Shader.PropertyToID("_Color");
+
+        // Statikus cache a teljesítményért
+        private static Dictionary<int, Color> _playerColorCache;
+        private static readonly Color NeutralColor = new Color(0.3f, 0.3f, 0.3f);
 
         public CellData Data => _data;
 
         private void Awake()
         {
-            _renderer = GetComponent<Renderer>();
+            _renderer = GetComponentInChildren<Renderer>();
             _propBlock = new MaterialPropertyBlock();
             if (selectionEffect != null) selectionEffect.SetActive(false);
+
+            EnsureColorCacheInitialized();
+        }
+
+        private void EnsureColorCacheInitialized()
+        {
+            if (_playerColorCache != null) return;
+
+            _playerColorCache = new Dictionary<int, Color>();
+            var players = GameController.Instance?.Players;
+
+            if (players != null)
+            {
+                foreach (var p in players)
+                {
+                    _playerColorCache[p.Id] = p.Color;
+                }
+            }
         }
 
         public void Initialize(CellData data)
@@ -26,6 +54,8 @@ namespace GridEmpire.Visuals
             _data = data;
             _data.OnVisualUpdateRequired += UpdateVisual;
             UpdateVisual();
+
+            SetDebugMode(true);
         }
 
         public void SetSelected(bool isSelected)
@@ -37,46 +67,56 @@ namespace GridEmpire.Visuals
         {
             if (_data == null || _renderer == null) return;
 
-            Color baseColor = _data.OwnerId switch { 0 => Color.blue, 1 => Color.red, _ => Color.gray };
-            Color finalColor = _data.CurrentVisibility switch
+            // 1. Alapszín meghatározása (Cache-bõl)
+            Color baseColor = NeutralColor;
+            if (_data.OwnerId != -1 && _playerColorCache.TryGetValue(_data.OwnerId, out Color ownerColor))
             {
-                VisibilityState.Hidden => Color.black,
-                VisibilityState.Explored => Color.Lerp(Color.black, baseColor, 0.2f),
-                _ => baseColor
-            };
+                baseColor = ownerColor;
+            }
+            else if (_data.InfluenceDisplay.Count > 0)
+            {
+                var topInfiltrator = _data.InfluenceDisplay
+                    .OrderByDescending(i => i.Influence)
+                    .FirstOrDefault(i => i.Influence > 0);
 
+                if (topInfiltrator != null && _playerColorCache.TryGetValue(topInfiltrator.PlayerId, out Color infColor))
+                {
+                    baseColor = Color.Lerp(NeutralColor, infColor, topInfiltrator.Influence);
+                }
+            }
+
+            // 2. Bázis fényerõ
+            if (_data.IsBase) baseColor *= 1.5f;
+
+            // 3. Visibility alkalmazása (Kivéve ha Debug Mode-ban vagyunk)
+            Color finalColor;
+            if (IsDebugMode)
+            {
+                finalColor = baseColor;
+            }
+            else
+            {
+                finalColor = _data.CurrentVisibility switch
+                {
+                    VisibilityState.Hidden => Color.black,
+                    VisibilityState.Explored => Color.Lerp(Color.black, baseColor, 0.2f),
+                    _ => baseColor
+                };
+            }
+
+            // 4. Frissítés
             _renderer.GetPropertyBlock(_propBlock);
             _propBlock.SetColor(ColorProperty, finalColor);
             _renderer.SetPropertyBlock(_propBlock);
         }
 
-        public void DebugUpdateVisual()
+        // Segédfüggvény a Debug Mode váltásához kódból
+        public static void SetDebugMode(bool enabled)
         {
-            if (_data == null || _renderer == null) return;
-
-            // 1. Alapszín meghatározása a tulajdonos alapján
-            // 0: Játékos (Kék), 1: AI (Piros), minden más (Szürke/Semleges)
-            Color baseColor = _data.OwnerId switch
-            {
-                0 => new Color(0.2f, 0.4f, 1.0f), // Világosabb kék
-                1 => new Color(1.0f, 0.2f, 0.2f), // Világosabb piros
-                _ => new Color(0.3f, 0.3f, 0.3f)  // Sötétszürke az üres mezõknek
-            };
-
-            // 2. DEBUG MÓD: Figyelmen kívül hagyjuk a VisibilityState-et
-            // Így nem lesz fekete (Hidden) vagy sötétített (Explored) mezõ.
-            Color finalColor = baseColor;
-
-            // 3. EXTRA: Ha a mezõ bázis, tegyük fényesebbé, hogy lássuk a térképen
-            if (_data.IsBase)
-            {
-                finalColor *= 1.5f; // Kicsit "izzik" a bázis
-            }
-
-            // 4. Material Property Block frissítése (teljesítménybarát módon)
-            _renderer.GetPropertyBlock(_propBlock);
-            _propBlock.SetColor(ColorProperty, finalColor);
-            _renderer.SetPropertyBlock(_propBlock);
+            IsDebugMode = enabled;
+            // Frissíteni kell minden látható mezõt a váltáskor
+            var allVisuals = Object.FindObjectsByType<CellVisual>(FindObjectsSortMode.None);
+            foreach (var v in allVisuals) v.UpdateVisual();
         }
     }
 }
