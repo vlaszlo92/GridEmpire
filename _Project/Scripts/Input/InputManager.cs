@@ -3,6 +3,7 @@ using UnityEngine.InputSystem;
 using GridEmpire.Core;
 using GridEmpire.Visuals;
 using GridEmpire.Gameplay;
+using System;
 
 namespace GridEmpire.Input
 {
@@ -10,12 +11,19 @@ namespace GridEmpire.Input
     {
         public static InputManager Instance { get; private set; }
 
-        private GameControls _controls;
+        [SerializeField] private GameControls _controls;
         private Camera _mainCamera;
         private ICellPresenter _lastSelectedPresenter;
         private PlayerProfile localPlayer;
 
-        // Logikai változók a drag/select szétválasztásához
+        [Header("Selection Prefabs")]
+        [SerializeField] private GameObject cellSelectionPrefab; // A mezõ kijelölõ kerete
+        [SerializeField] private GameObject unitSelectionPrefab; // A nyíl az egységhez
+
+        private GameObject _activeCellSelection;
+        private GameObject _activeUnitSelection;
+        private GameObject _activeArrow; 
+        
         private Vector2 _startClickPosition;
         private bool _isPotentialClick;
         [SerializeField] private float _dragThreshold = 10f; // Pixelben mért elmozdulás, ami felett már Drag
@@ -37,8 +45,11 @@ namespace GridEmpire.Input
 
         private void OnEnable()
         {
+            if (_controls == null)
+            {
+                _controls = new GameControls();
+            }
             _controls.Enable();
-            // Nem a .performed-re, hanem a gomb lenyomására és elengedésére figyelünk
             _controls.Player.Select.started += OnSelectStarted;
             _controls.Player.Select.canceled += OnSelectCanceled;
         }
@@ -89,6 +100,7 @@ namespace GridEmpire.Input
             if (Keyboard.current.digit1Key.wasPressedThisFrame) RequestSpawn(0);
             if (Keyboard.current.digit2Key.wasPressedThisFrame) RequestSpawn(1);
             if (Keyboard.current.digit3Key.wasPressedThisFrame) RequestSpawn(2);
+            if (Keyboard.current.digit4Key.wasPressedThisFrame) RequestSpawn(3);
         }
 
         private void ExecuteSelection(Vector2 screenPosition)
@@ -97,22 +109,92 @@ namespace GridEmpire.Input
             if (Physics.Raycast(ray, out RaycastHit hit))
             {
                 ICellPresenter current = hit.collider.GetComponentInParent<ICellPresenter>();
+
                 if (current != null && current is CellVisual visual)
                 {
                     if (visual.Data.CurrentVisibility == VisibilityState.Hidden) return;
 
+                    // --- 1. ÚJ MEZÕRE KATTINTOTTUNK ---
                     if (current != _lastSelectedPresenter)
                     {
-                        if (_lastSelectedPresenter != null) _lastSelectedPresenter.SetSelected(false);
-                        current.SetSelected(true);
+                        ClearAllSelection();
+
                         _lastSelectedPresenter = current;
                         localPlayer.SelectedCell = visual.Data;
-                        Debug.Log($"[Input] Sikeres kijelölés: {visual.Data.Q},{visual.Data.R}");
+
+                        // Mezõ kijelölõ mozgatása és bekapcsolása
+                        ShowCellSelection(visual.transform);
+                        return;
                     }
+
+                    // --- 2. UGYANARRA A MEZÕRE KATTINTOTTUNK ---
+                    UnitController unitOnCell = visual.Data.GetFirstOccupier() as UnitController;
+
+                    if (GameController.Instance.SelectedUnit == null) // Eddig a mezõ volt kijelölve
+                    {
+                        if (unitOnCell != null)
+                        {
+                            // Váltunk az egységre: Mezõ keret KI, Nyíl BE
+                            HideCellSelection();
+                            SelectUnit(unitOnCell);
+                        }
+                        else
+                        {
+                            // Nincs egység: Mindent KI
+                            ClearAllSelection();
+                        }
+                    }
+                    else // Eddig az egység volt kijelölve
+                    {
+                        ClearAllSelection();
+                    }
+                }
+                else
+                {
+                    ClearAllSelection();
                 }
             }
         }
 
+        private void ShowCellSelection(Transform cellTransform)
+        {
+            if (_activeCellSelection == null)
+                _activeCellSelection = Instantiate(cellSelectionPrefab);
+
+            _activeCellSelection.SetActive(true);
+
+            _activeCellSelection.transform.SetParent(cellTransform, false);
+            _activeCellSelection.transform.localRotation = Quaternion.identity;
+        }
+
+        private void HideCellSelection() => _activeCellSelection?.SetActive(false);
+
+        private void SelectUnit(UnitController unit)
+        {
+            GameController.Instance.SelectedUnit = unit;
+            if (_activeUnitSelection == null) _activeUnitSelection = Instantiate(unitSelectionPrefab);
+            _activeUnitSelection.SetActive(true);
+            _activeUnitSelection.transform.SetParent(unit.transform, false);
+            _activeUnitSelection.transform.localPosition = new Vector3(0, 0, 0);
+        }
+
+        private void DeselectUnit()
+        {
+            GameController.Instance.SelectedUnit = null;
+            if (_activeUnitSelection != null)
+            {
+                _activeUnitSelection.SetActive(false);
+                _activeUnitSelection.transform.SetParent(null); // Ne törlõdjön, ha az egység meghal
+            }
+        }
+
+        private void ClearAllSelection()
+        {
+            _lastSelectedPresenter = null;
+            localPlayer.SelectedCell = null;
+            HideCellSelection();
+            DeselectUnit();
+        }
         private void RequestSpawn(int slot) => UnitSpawner.OnRequestUnitSpawn?.Invoke(localPlayer.Id, slot, localPlayer.SelectedCell);
     }
 }
