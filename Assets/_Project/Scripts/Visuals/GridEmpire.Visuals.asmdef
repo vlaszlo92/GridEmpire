@@ -1,0 +1,16 @@
+{
+    "name": "GridEmpire.Visuals",
+    "rootNamespace": "",
+    "references": [
+        "GUID:bf1a4992386722747b0d7e056824464a"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}
