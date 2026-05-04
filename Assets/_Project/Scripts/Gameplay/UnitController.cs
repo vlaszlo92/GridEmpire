@@ -253,7 +253,6 @@ namespace GridEmpire.Gameplay
                 if (_resolver != null) _resolver.EnqueueAction(_nextAction);
             }
         }
-
         private CellData FindExpansionCell()
         {
             var player = GameController.Instance?.GetPlayerById(_ownerId);
@@ -262,25 +261,29 @@ namespace GridEmpire.Gameplay
             var neighbors = _gridManager.GetNeighbors(_currentCell);
             int currentDist = _gridManager.GetDistance(_currentCell, player.BaseCell);
 
-            var preferredCells = neighbors.Where(n =>
-                _gridManager.GetDistance(n, player.BaseCell) > currentDist &&
-                !n.IsOccupied &&
-                n != _previousCell &&
-                (n.OwnerId != _ownerId ? true : n.GetCaptureProgress(_ownerId) >= 1.0f)
-            ).ToList();
+            CellData preferred = null, fallback = null;
+            int preferredCount = 0, fallbackCount = 0;
 
-            if (preferredCells.Count > 0) return preferredCells[Random.Range(0, preferredCells.Count)];
+            foreach (var n in neighbors)
+            {
+                if (n.IsOccupied || n == _previousCell) continue;
+                bool capturable = n.OwnerId != _ownerId || n.GetCaptureProgress(_ownerId) >= 1.0f;
+                if (!capturable) continue;
 
-            var fallbackCells = neighbors.Where(n =>
-                !n.IsOccupied &&
-                !n.IsBase &&
-                n != _previousCell &&
-                (n.OwnerId != _ownerId ? true : n.GetCaptureProgress(_ownerId) >= 1.0f)
-            ).ToList();
+                if (_gridManager.GetDistance(n, player.BaseCell) > currentDist)
+                {
+                    preferredCount++;
+                    // Reservoir sampling: véletlenszerű választás allokáció nélkül
+                    if (Random.Range(0, preferredCount) == 0) preferred = n;
+                }
+                else if (!n.IsBase)
+                {
+                    fallbackCount++;
+                    if (Random.Range(0, fallbackCount) == 0) fallback = n;
+                }
+            }
 
-            if (fallbackCells.Count > 0) return fallbackCells[Random.Range(0, fallbackCells.Count)];
-
-            return null;
+            return preferred ?? fallback;
         }
 
         // ─── COMBAT ─────────────────────────────────────────────────────────────────
@@ -447,12 +450,9 @@ namespace GridEmpire.Gameplay
             bool captured = target.OwnerId == _ownerId;
             if (captured)
             {
-                target.CapturingUnitIds.Clear();
-                _gridManager.FinalizeCapture(target, _ownerId);
-             
                 target.SetInfluence(_ownerId, 1f);
                 target.CapturingUnitIds.Clear();
-
+                _gridManager.FinalizeCapture(target, _ownerId);
                 _resolver?.MarkCellChanged(target.Id);
             }
 
@@ -477,7 +477,7 @@ namespace GridEmpire.Gameplay
             }
             else
             {
-                cell.SetInfluence(attackerId, speed);
+                cell.UpdateCapture(attackerId, speed);
             }
 
             if (captured)
@@ -498,15 +498,20 @@ namespace GridEmpire.Gameplay
             if (_currentCell != null) _currentCell.UnregisterOccupier(this);
             GameController.Instance?.RemoveUnit(this);
 
-            if (IsServer) DeathClientRpc();
-
-            Destroy(gameObject);
+            if (IsServer)
+            {
+                DeathClientRpc();
+                GetComponent<NetworkObject>()?.Despawn(true);
+            }
         }
 
         [ClientRpc]
         private void DeathClientRpc()
         {
             if (IsServer) return;
+            _currentTargetCell?.CapturingUnitIds.Remove(_id);
+            if (_currentCell != null) _currentCell.UnregisterOccupier(this);
+            GameController.Instance?.RemoveUnit(this);
             // TODO: halál animáció
         }
 

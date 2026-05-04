@@ -29,9 +29,13 @@ namespace GridEmpire.Gameplay
         private int _currentUnitIndex = 0;
         private Stopwatch _stopwatch = new Stopwatch();
 
+        private GridManager _gridManager;
+        private Dictionary<int, UnitController> _unitLookup = new Dictionary<int, UnitController>();
+
         private void Awake()
         {
             TurnManager.Instance?.RegisterResolver(this);
+            _gridManager = Object.FindFirstObjectByType<GridManager>();
         }
 
         // --- Regisztrációs API ---
@@ -67,8 +71,15 @@ namespace GridEmpire.Gameplay
         {
             _actionQueue.Clear();
 
-            _processingUnits = _registeredUnits.Where(u => u != null).ToList();
-            _processingSpawners = _registeredSpawners.Where(s => s != null).ToList();
+            _processingUnits = _registeredUnits.ToList();
+            _processingSpawners = _registeredSpawners.ToList();
+
+            _unitLookup.Clear();
+            foreach (var u in _processingUnits)
+                if (u != null) _unitLookup[u.Id] = u;
+
+            if (_gridManager == null)
+                _gridManager = Object.FindFirstObjectByType<GridManager>();
 
             _currentUnitIndex = 0;
             _currentState = ResolveState.Spawning;
@@ -137,12 +148,10 @@ namespace GridEmpire.Gameplay
                 if (u != null && u._isDead) u.ExecuteDeath();
             }
 
-            // 4. Fog of War frissítése
+            // 4. Fog of War frissítése – cacheit GridManager
             var localPlayer = GameController.Instance.GetLocalPlayer();
             if (localPlayer != null)
-            {
-                Object.FindFirstObjectByType<GridManager>()?.UpdateFogOfWar(localPlayer.Id);
-            }
+                _gridManager?.UpdateFogOfWar(localPlayer.Id);
         }
 
         // --- Feldolgozó lépések ---
@@ -157,7 +166,6 @@ namespace GridEmpire.Gameplay
             }
             else
             {
-                // Combat kész – CaptureConflict fázis következik
                 _currentUnitIndex = 0;
                 _currentState = ResolveState.CaptureConflict;
             }
@@ -173,7 +181,6 @@ namespace GridEmpire.Gameplay
             }
             else
             {
-                // CaptureConflict kész – Movement fázis következik
                 _currentUnitIndex = 0;
                 _currentState = ResolveState.Movement;
             }
@@ -196,22 +203,21 @@ namespace GridEmpire.Gameplay
         private void ResolveMovementAndCapture()
         {
             HashSet<CellData> claimedCells = new HashSet<CellData>();
-            GridManager gridManager = Object.FindFirstObjectByType<GridManager>();
 
             foreach (var action in _actionQueue)
             {
-                UnitController controller = _processingUnits.Find(u => u.Id == action.PerformerUnitId);
+                if (!_unitLookup.TryGetValue(action.PerformerUnitId, out UnitController controller)) continue;
                 if (controller == null || controller.IsDead || controller.isInCombat) continue;
 
                 if (action.Type == ActionType.Capture && action.TargetCellId != -1)
                 {
-                    CellData targetCell = gridManager.GetCellById(action.TargetCellId);
+                    CellData targetCell = _gridManager.GetCellById(action.TargetCellId);
                     if (targetCell != null)
                         controller.ExecuteFinalCapture(targetCell);
                 }
                 else if (action.Type == ActionType.Move && action.TargetCellId != -1)
                 {
-                    CellData targetCell = gridManager.GetCellById(action.TargetCellId);
+                    CellData targetCell = _gridManager.GetCellById(action.TargetCellId);
                     if (targetCell != null && !targetCell.IsOccupied && !claimedCells.Contains(targetCell))
                     {
                         claimedCells.Add(targetCell);
@@ -243,8 +249,7 @@ namespace GridEmpire.Gameplay
 
             foreach (var action in _actionQueue)
             {
-                var unit = _processingUnits.Find(u => u.Id == action.PerformerUnitId);
-                if (unit == null) continue;
+                if (!_unitLookup.TryGetValue(action.PerformerUnitId, out UnitController unit)) continue;
 
                 snapshot.UnitActions.Add(new UnitActionResult
                 {

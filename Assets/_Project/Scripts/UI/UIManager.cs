@@ -69,13 +69,30 @@ namespace GridEmpire.UI
         private void OnEnable()
         {
             TurnManager.OnTurnCompleted += ResetVisualTimer;
+            TurnManager.OnTurnCompleted += RefreshGoldDisplay;
             GameController.OnUnitSelected += HandleUnitSelectionChanged;
         }
 
         private void OnDisable()
         {
             TurnManager.OnTurnCompleted -= ResetVisualTimer;
+            TurnManager.OnTurnCompleted -= RefreshGoldDisplay;
             GameController.OnUnitSelected -= HandleUnitSelectionChanged;
+        }
+
+        private void RefreshGoldDisplay()
+        {
+            var sb = new System.Text.StringBuilder();
+            foreach (var p in GameController.Instance.GetPlayers())
+            {
+                string sign = p.GoldIncome >= 0 ? "+" : "";
+                sb.AppendLine($"<color=#{ColorUtility.ToHtmlStringRGB(p.Color)}><b>Player {p.Id}</b></color>");
+                sb.AppendLine($"Gold: {(int)p.Gold} ({sign}{p.GoldIncome:F1})");
+                sb.AppendLine($"Units: {p.ActiveUnits.Count}");
+                sb.AppendLine($"Cells: {p.OwnedCellCount}");
+                sb.AppendLine("------------------");
+            }
+            goldText.text = sb.ToString();
         }
 
         private void HandleUnitSelectionChanged(IUnit unit)
@@ -110,18 +127,6 @@ namespace GridEmpire.UI
 
             if (TurnManager.Instance != null)
                 turnText.text = $"Turn: {TurnManager.Instance.TurnCount}";
-
-            var sb = new System.Text.StringBuilder();
-            foreach (var p in GameController.Instance.GetPlayers())
-            {
-                string sign = p.GoldIncome >= 0 ? "+" : "";
-                sb.AppendLine($"<color=#{ColorUtility.ToHtmlStringRGB(p.Color)}><b>Player {p.Id}</b></color>");
-                sb.AppendLine($"Gold: {(int)p.Gold} ({sign}{p.GoldIncome:F1})");
-                sb.AppendLine($"Units: {p.ActiveUnits.Count}");
-                sb.AppendLine($"Cells: {p.OwnedCellCount}");
-                sb.AppendLine("------------------");
-            }
-            goldText.text = sb.ToString();
 
             var queue = _localSpawner.GetQueue();
             SyncQueueIcons(queue);

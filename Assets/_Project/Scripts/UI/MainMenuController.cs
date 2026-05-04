@@ -27,11 +27,12 @@ namespace GridEmpire.UI
         [SerializeField] private Button goToClientBtn;
 
         [Header("Host Action Buttons")]
-        [SerializeField] private Button generateLobbyBtn;   // ÚJ: lobby generálás
-        [SerializeField] private Button startHostFinalBtn;  // Start – csak ha elég játékos
+        [SerializeField] private Button startHostFinalBtn;
+        [SerializeField] private Button backToLobbyHostBtn;
 
         [Header("Client Action Buttons")]
         [SerializeField] private Button startClientConnectBtn;
+        [SerializeField] private Button backToLobbyClientBtn;
 
         [Header("Settings")]
         [SerializeField] private string gameSceneName = "GameScene";
@@ -49,19 +50,21 @@ namespace GridEmpire.UI
         [Header("Host Network UI")]
         [SerializeField] private TMP_InputField hostCodeDisplay;
         [SerializeField] private Button copyCodeBtn;
-        [SerializeField] private TextMeshProUGUI hostPlayerCountText; // pl. "2 / 3 játékos"
+        [SerializeField] private TextMeshProUGUI hostPlayerCountText;
+        [SerializeField] private TextMeshProUGUI hostLoadingText;      // "Lobby generálása..."
+        [SerializeField] private Transform hostPlayerListContainer;    // ScrollView Content
+        [SerializeField] private TextMeshProUGUI hostPlayerListPrefab; // Prefab egy sorhoz
 
         [Header("Client Network UI")]
         [SerializeField] private TMP_InputField clientCodeInput;
         [SerializeField] private TextMeshProUGUI clientStatusText;
-
-        // Kliens lobby panel elemek
-        [Header("Client Lobby Info UI")]
-        [SerializeField] private TextMeshProUGUI clientPlayerCountText;   // "2 / 3 játékos"
-        [SerializeField] private TextMeshProUGUI clientTotalPlayersText;  // "Játékosok: 3"
-        [SerializeField] private TextMeshProUGUI clientAiBotsText;        // "AI: 1"
-        [SerializeField] private TextMeshProUGUI clientMapSizeText;       // "Pálya: 15"
-        [SerializeField] private TextMeshProUGUI clientTurnSpeedText;     // "Sebesség: 1.0"
+        [SerializeField] private TextMeshProUGUI clientPlayerCountText;
+        [SerializeField] private TextMeshProUGUI clientTotalPlayersText;
+        [SerializeField] private TextMeshProUGUI clientAiBotsText;
+        [SerializeField] private TextMeshProUGUI clientMapSizeText;
+        [SerializeField] private TextMeshProUGUI clientTurnSpeedText;
+        [SerializeField] private Transform clientPlayerListContainer;
+        [SerializeField] private TextMeshProUGUI clientPlayerListPrefab;
 
         [Header("Unit Assets")]
         [SerializeField] private List<UnitData> unitDataList;
@@ -74,6 +77,10 @@ namespace GridEmpire.UI
         private ISession _currentSession;
         private bool _sessionExists = false;
 
+        // Játékos lista cache – host oldalon frissítjük
+        private readonly List<TextMeshProUGUI> _hostPlayerListItems = new List<TextMeshProUGUI>();
+        private readonly List<TextMeshProUGUI> _clientPlayerListItems = new List<TextMeshProUGUI>();
+
         private async void Start()
         {
             ShowPanel(modeSelectorPanel);
@@ -82,8 +89,7 @@ namespace GridEmpire.UI
             SetupGeneralUI(savedSettings);
             InitializeUnitStatsUI();
 
-            // Gombok kezdeti állapota
-            if (generateLobbyBtn != null) generateLobbyBtn.interactable = false;
+            SetHostLoading(false);
             if (startHostFinalBtn != null) startHostFinalBtn.interactable = false;
 
             try
@@ -93,21 +99,20 @@ namespace GridEmpire.UI
                     await AuthenticationService.Instance.SignInAnonymouslyAsync();
                 _servicesInitialized = true;
                 Debug.Log("[UGS] Inicializálva és bejelentkezve.");
-
-                // UGS kész → GenerateLobby gomb aktiválható
-                if (generateLobbyBtn != null) generateLobbyBtn.interactable = true;
             }
             catch (Exception e)
             {
                 Debug.LogError($"[UGS] Inicializálás sikertelen: {e.Message}");
             }
 
-            goToHostBtn.onClick.AddListener(() => ShowPanel(hostSettingsPanel));
-            goToClientBtn.onClick.AddListener(() => ShowPanel(clientWaitingPanel));
+            // Host panelre lépéskor automatikusan generálódik a lobby
+            goToHostBtn.onClick.AddListener(async () =>
+            {
+                ShowPanel(hostSettingsPanel);
+                await CreateHostSession();
+            });
 
-            // ÚJ: GenerateLobby gomb
-            if (generateLobbyBtn != null)
-                generateLobbyBtn.onClick.AddListener(OnGenerateLobbyClicked);
+            goToClientBtn.onClick.AddListener(() => ShowPanel(clientWaitingPanel));
 
             startHostFinalBtn.onClick.AddListener(StartHostGame);
 
@@ -121,103 +126,110 @@ namespace GridEmpire.UI
                         GUIUtility.systemCopyBuffer = hostCodeDisplay.text;
                 });
 
-            // Beállítás slidereken változás → frissítsük a lobby-t ha már létezik
+            // Back to lobby gombok
+            if (backToLobbyHostBtn != null)
+                backToLobbyHostBtn.onClick.AddListener(OnHostBackToLobby);
+
+            if (backToLobbyClientBtn != null)
+                backToLobbyClientBtn.onClick.AddListener(OnClientBackToLobby);
+
+            // Beállítás változáskor frissítés
             totalPlayersSlider?.onValueChanged.AddListener(_ => OnSettingsChanged());
             aiBotsSlider?.onValueChanged.AddListener(_ => OnSettingsChanged());
             mapSizeSlider?.onValueChanged.AddListener(_ => OnSettingsChanged());
             turnSpeedSlider?.onValueChanged.AddListener(_ => OnSettingsChanged());
 
-            // Kliens oldali NetworkVariable figyelés – ha már fut a network
             StartCoroutine(WatchNetworkSettings());
         }
 
-        // ─── LOBBY GENERÁLÁS ─────────────────────────────────────────────────────────
+        // ─── SESSION GENERÁLÁS ────────────────────────────────────────────────────────
 
-        private async void OnGenerateLobbyClicked()
+        private async System.Threading.Tasks.Task CreateHostSession()
         {
             if (!_servicesInitialized) return;
 
             // Ha már van session, zárjuk le
             if (_sessionExists && _currentSession != null)
             {
-                try
-                {
-                    await _currentSession.LeaveAsync();
-                    Debug.Log("[Host] Régi session lezárva.");
-                }
-                catch (Exception e)
-                {
-                    Debug.LogWarning($"[Host] Session lezárás hiba: {e.Message}");
-                }
+                try { await _currentSession.LeaveAsync(); }
+                catch (Exception e) { Debug.LogWarning($"[Host] Session lezárás: {e.Message}"); }
                 _sessionExists = false;
                 _currentSession = null;
             }
 
-            await CreateHostSession();
-        }
-
-        private async System.Threading.Tasks.Task CreateHostSession()
-        {
-            if (generateLobbyBtn != null) generateLobbyBtn.interactable = false;
+            SetHostLoading(true);
             if (startHostFinalBtn != null) startHostFinalBtn.interactable = false;
-            if (hostCodeDisplay != null)
-            {
-                hostCodeDisplay.text = "...";
-                hostCodeDisplay.interactable = false;
-            }
+            if (hostCodeDisplay != null) hostCodeDisplay.text = "...";
 
             try
             {
                 int maxPlayers = (int)totalPlayersSlider.value;
-                var options = new SessionOptions
-                {
-                    MaxPlayers = maxPlayers
-                }.WithRelayNetwork();
+                var options = new SessionOptions { MaxPlayers = maxPlayers }.WithRelayNetwork();
 
                 _currentSession = await MultiplayerService.Instance.CreateSessionAsync(options);
                 _sessionExists = true;
 
-                // Amikor kliens csatlakozik, küldjük újra az aktuális beállításokat
+                // Kliens csatlakozásakor szinkronizáljuk a beállításokat
                 _currentSession.PlayerJoined += playerId =>
                 {
-                    var globalSettings = FindAnyObjectByType<GlobalNetworkSettings>();
-                    if (globalSettings != null)
-                    {
-                        globalSettings.UpdateSettings(
-                            (int)totalPlayersSlider.value,
-                            (int)aiBotsSlider.value,
-                            (int)mapSizeSlider.value,
-                            turnSpeedSlider.value
-                        );
-                        if (NetworkManager.Singleton != null)
-                            globalSettings.ConnectedPlayerCount.Value =
-                                NetworkManager.Singleton.ConnectedClientsIds.Count;
-                    }
+                    Debug.Log($"[Host] Játékos csatlakozott: {playerId}");
+                    SyncSettingsToClients();
+                    UpdateHostPlayerList();
                     UpdateStartButtonState();
+                    UpdateAiBotSliderMax();
                 };
 
-                string joinCode = _currentSession.Code;
-                Debug.Log($"[Host] Session kész. Kód: {joinCode}");
+                // Kliens kilépésekor frissítés
+                _currentSession.PlayerLeaving += playerId =>
+                {
+                    Debug.Log($"[Host] Játékos kilépett: {playerId}");
+                    // TODO: UI értesítés hogy ki lépett ki
+                    UpdateHostPlayerList();
+                    UpdateStartButtonState();
+                    UpdateAiBotSliderMax();
+                };
 
                 if (hostCodeDisplay != null)
-                    hostCodeDisplay.text = joinCode;
+                    hostCodeDisplay.text = _currentSession.Code;
 
-                if (generateLobbyBtn != null) generateLobbyBtn.interactable = true;
+                Debug.Log($"[Host] Session kész. Kód: {_currentSession.Code}");
+
+                UpdateHostPlayerList();
                 UpdateStartButtonState();
             }
             catch (Exception e)
             {
                 Debug.LogError($"[Host] Session hiba: {e.Message}");
                 if (hostCodeDisplay != null) hostCodeDisplay.text = "HIBA";
-                if (generateLobbyBtn != null) generateLobbyBtn.interactable = true;
             }
+            finally
+            {
+                SetHostLoading(false);
+            }
+        }
+
+        private void SetHostLoading(bool loading)
+        {
+            if (hostLoadingText != null)
+                hostLoadingText.gameObject.SetActive(loading);
+            if (hostCodeDisplay != null)
+                hostCodeDisplay.gameObject.SetActive(!loading);
+            if (copyCodeBtn != null)
+                copyCodeBtn.gameObject.SetActive(!loading);
         }
 
         // ─── BEÁLLÍTÁS VÁLTOZÁS ───────────────────────────────────────────────────────
 
         private void OnSettingsChanged()
         {
-            // Ha NetworkManager fut (már van lobby és csatlakoztak), frissítjük élőben
+            SyncSettingsToClients();
+            UpdateStartButtonState();
+            UpdateHostPlayerList();
+            UpdateAiBotSliderMax();
+        }
+
+        private void SyncSettingsToClients()
+        {
             if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsHost &&
                 GlobalNetworkSettings.Instance != null)
             {
@@ -228,8 +240,6 @@ namespace GridEmpire.UI
                     turnSpeedSlider.value
                 );
             }
-
-            UpdateStartButtonState();
         }
 
         private void UpdateStartButtonState()
@@ -240,7 +250,7 @@ namespace GridEmpire.UI
             {
                 startHostFinalBtn.interactable = false;
                 if (hostPlayerCountText != null)
-                    hostPlayerCountText.text = "Először generálj lobby kódot!";
+                    hostPlayerCountText.text = "Lobby generálása...";
                 return;
             }
 
@@ -256,21 +266,187 @@ namespace GridEmpire.UI
             int humanPlayers = totalPlayers - aiBots;
 
             if (hostPlayerCountText != null)
-                hostPlayerCountText.text = $"{connected} / {humanPlayers} játékos csatlakozott";
+                hostPlayerCountText.text = $"{connected} / {humanPlayers} human játékos csatlakozott";
 
-            // Start aktív ha elég human játékos van
             startHostFinalBtn.interactable = connected >= humanPlayers;
+        }
+
+        // ─── JÁTÉKOS LISTA ────────────────────────────────────────────────────────────
+
+        private void UpdateHostPlayerList()
+        {
+            if (hostPlayerListContainer == null || hostPlayerListPrefab == null) return;
+
+            int totalPlayers = (int)totalPlayersSlider.value;
+            int aiBots = (int)aiBotsSlider.value;
+            int humanPlayers = totalPlayers - aiBots;
+            int connected = _currentSession?.Players?.Count ?? 0;
+
+            RebuildPlayerList(
+                hostPlayerListContainer,
+                _hostPlayerListItems,
+                hostPlayerListPrefab,
+                humanPlayers,
+                aiBots,
+                connected,
+                isHost: true
+            );
+        }
+
+        private void UpdateClientPlayerList()
+        {
+            if (clientPlayerListContainer == null || clientPlayerListPrefab == null) return;
+
+            var gns = GlobalNetworkSettings.Instance;
+            if (gns == null) return;
+
+            int totalPlayers = gns.TotalPlayers.Value;
+            int aiBots = gns.TotalAIBots.Value;
+            int humanPlayers = totalPlayers - aiBots;
+            int connected = gns.ConnectedPlayerCount.Value;
+
+            RebuildPlayerList(
+                clientPlayerListContainer,
+                _clientPlayerListItems,
+                clientPlayerListPrefab,
+                humanPlayers,
+                aiBots,
+                connected,
+                isHost: false
+            );
+        }
+
+        private void UpdateAiBotSliderMax()
+        {
+            int totalPlayers = (int)totalPlayersSlider.value;
+            int connectedHumans = NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening
+                ? NetworkManager.Singleton.ConnectedClientsIds.Count
+                : 1;
+
+            int maxBots = Mathf.Max(0, totalPlayers - connectedHumans);
+
+            aiBotsSlider.maxValue = maxBots;
+
+            if (aiBotsSlider.value > maxBots)
+            {
+                aiBotsSlider.value = maxBots;
+                aiBotsInput.text = maxBots.ToString();
+            }
+        }
+
+        /// <summary>
+        /// Újraépíti a játékos listát.
+        /// Formátum:
+        ///   ● Human 1 (Te - Host)   ← ha host
+        ///   ● Human 2               ← csatlakozott
+        ///   ○ Human 3               ← vár
+        ///   ○ AI Bot 1              ← bot
+        /// </summary>
+        private void RebuildPlayerList(
+            Transform container,
+            List<TextMeshProUGUI> items,
+            TextMeshProUGUI prefab,
+            int humanPlayers,
+            int aiBots,
+            int connected,
+            bool isHost)
+        {
+            int totalSlots = humanPlayers + aiBots;
+
+            // Bővítés ha kell
+            while (items.Count < totalSlots)
+            {
+                var newItem = Instantiate(prefab, container);
+                items.Add(newItem);
+            }
+
+            // Elrejtés ha kevesebb kell
+            for (int i = 0; i < items.Count; i++)
+                items[i].gameObject.SetActive(i < totalSlots);
+
+            // Human slotok
+            for (int i = 0; i < humanPlayers; i++)
+            {
+                bool isConnected = i < connected;
+                string dot = isConnected ? "●" : "○";
+                string label;
+
+                if (i == 0 && isHost)
+                    label = $"{dot} Human {i + 1} (Te - Host)";
+                else if (i == 0 && !isHost && isConnected)
+                    label = $"{dot} Human {i + 1} (Host)";
+                else
+                    label = isConnected ? $"{dot} Human {i + 1}" : $"{dot} Human {i + 1} (vár...)";
+
+                items[i].text = label;
+                items[i].color = isConnected ? Color.white : Color.gray;
+            }
+
+            // AI slotok
+            for (int i = 0; i < aiBots; i++)
+            {
+                int slotIdx = humanPlayers + i;
+                items[slotIdx].text = $"● AI Bot {i + 1}";
+                items[slotIdx].color = new Color(0.6f, 0.8f, 1f); // világoskék
+            }
+        }
+
+        // ─── BACK TO LOBBY ────────────────────────────────────────────────────────────
+
+        private async void OnHostBackToLobby()
+        {
+            if (_sessionExists && _currentSession != null)
+            {
+                try { await _currentSession.LeaveAsync(); }
+                catch (Exception e) { Debug.LogWarning($"[Host] Session lezárás: {e.Message}"); }
+                _sessionExists = false;
+                _currentSession = null;
+            }
+
+            if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening)
+                NetworkManager.Singleton.Shutdown();
+
+            if (startHostFinalBtn != null) startHostFinalBtn.interactable = false;
+            if (hostCodeDisplay != null) hostCodeDisplay.text = "";
+            if (hostPlayerCountText != null) hostPlayerCountText.text = "";
+
+            ClearPlayerList(_hostPlayerListItems);
+            ShowPanel(modeSelectorPanel);
+        }
+
+        private async void OnClientBackToLobby()
+        {
+            if (_currentSession != null)
+            {
+                try
+                {
+                    await _currentSession.LeaveAsync();
+                    Debug.Log("[Client] Kilépett a sessionből.");
+                }
+                catch (Exception e) { Debug.LogWarning($"[Client] Session elhagyás: {e.Message}"); }
+                _currentSession = null;
+            }
+
+            if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening)
+                NetworkManager.Singleton.Shutdown();
+
+            SetClientStatus("", Color.white);
+            ClearPlayerList(_clientPlayerListItems);
+            ShowPanel(modeSelectorPanel);
+        }
+
+        private void ClearPlayerList(List<TextMeshProUGUI> items)
+        {
+            foreach (var item in items)
+                if (item != null) Destroy(item.gameObject);
+            items.Clear();
         }
 
         // ─── HOST JÁTÉK INDÍTÁSA ──────────────────────────────────────────────────────
 
         private void StartHostGame()
         {
-            if (_currentSession == null)
-            {
-                Debug.LogError("[Host] Nincs aktív session.");
-                return;
-            }
+            if (_currentSession == null) { Debug.LogError("[Host] Nincs aktív session."); return; }
 
             GameSettings settings = new GameSettings
             {
@@ -282,17 +458,14 @@ namespace GridEmpire.UI
             settings.Save();
 
             startHostFinalBtn.interactable = false;
-            generateLobbyBtn.interactable = false;
+            if (backToLobbyHostBtn != null) backToLobbyHostBtn.interactable = false;
 
             var globalSettings = FindAnyObjectByType<GlobalNetworkSettings>();
             if (globalSettings != null)
                 globalSettings.InitializeFromSettings(settings);
 
             if (!NetworkManager.Singleton.IsListening)
-            {
                 NetworkManager.Singleton.StartHost();
-                Debug.Log("[Host] StartHost() meghívva.");
-            }
 
             StartCoroutine(LoadGameSceneSafe());
         }
@@ -301,12 +474,7 @@ namespace GridEmpire.UI
 
         private async void StartClientConnect()
         {
-            if (!_servicesInitialized)
-            {
-                SetClientStatus("Szolgáltatások nem elérhetők!", Color.red);
-                return;
-            }
-
+            if (!_servicesInitialized) { SetClientStatus("Szolgáltatások nem elérhetők!", Color.red); return; }
             if (clientCodeInput == null || string.IsNullOrEmpty(clientCodeInput.text))
             {
                 SetClientStatus("Add meg a csatlakozási kódot!", Color.red);
@@ -315,9 +483,7 @@ namespace GridEmpire.UI
 
             string joinCode = clientCodeInput.text.Trim().ToUpper();
             SetClientStatus("Csatlakozás...", Color.yellow);
-
-            if (startClientConnectBtn != null)
-                startClientConnectBtn.interactable = false;
+            if (startClientConnectBtn != null) startClientConnectBtn.interactable = false;
 
             try
             {
@@ -325,10 +491,7 @@ namespace GridEmpire.UI
                 Debug.Log($"[Client] Session OK.");
 
                 if (!NetworkManager.Singleton.IsListening)
-                {
                     NetworkManager.Singleton.StartClient();
-                    Debug.Log("[Client] StartClient() meghívva.");
-                }
 
                 SetClientStatus("Csatlakozva! Várakozás a hostra...", Color.green);
             }
@@ -336,20 +499,18 @@ namespace GridEmpire.UI
             {
                 Debug.LogError($"[Client] Session hiba: {e.Message}");
                 SetClientStatus($"Hiba: {e.Message}", Color.red);
-                if (startClientConnectBtn != null)
-                    startClientConnectBtn.interactable = true;
+                if (startClientConnectBtn != null) startClientConnectBtn.interactable = true;
             }
         }
 
         private void SetClientStatus(string msg, Color color)
         {
-            Debug.Log($"[Client Status] {msg}");
             if (clientStatusText == null) return;
             clientStatusText.text = msg;
             clientStatusText.color = color;
         }
 
-        // ─── KLIENS LOBBY INFO FRISSÍTÉS ─────────────────────────────────────────────
+        // ─── WATCH NETWORK SETTINGS ───────────────────────────────────────────────────
 
         private IEnumerator WatchNetworkSettings()
         {
@@ -357,20 +518,22 @@ namespace GridEmpire.UI
             {
                 yield return new WaitForSeconds(0.5f);
 
-                // Host oldal: frissítjük a csatlakozott játékosok számát
                 if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsHost)
                 {
-                    GlobalNetworkSettings.Instance.ConnectedPlayerCount.Value = NetworkManager.Singleton.ConnectedClientsIds.Count;
+                    if (GlobalNetworkSettings.Instance != null)
+                        GlobalNetworkSettings.Instance.ConnectedPlayerCount.Value =
+                            NetworkManager.Singleton.ConnectedClientsIds.Count;
                     UpdateStartButtonState();
+                    UpdateAiBotSliderMax();
                 }
 
-                // Kliens oldal: mutatjuk a szerver által küldött beállításokat
                 if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsClient &&
                     !NetworkManager.Singleton.IsHost &&
                     GlobalNetworkSettings.Instance != null)
                 {
                     UpdateClientLobbyInfo();
-                }
+                    UpdateClientPlayerList();
+                }                
             }
         }
 
@@ -386,16 +549,12 @@ namespace GridEmpire.UI
 
             if (clientPlayerCountText != null)
                 clientPlayerCountText.text = $"{connected} / {humanPlayers} játékos";
-
             if (clientTotalPlayersText != null)
                 clientTotalPlayersText.text = $"Játékosok: {totalPlayers}";
-
             if (clientAiBotsText != null)
                 clientAiBotsText.text = $"AI: {aiBots}";
-
             if (clientMapSizeText != null)
                 clientMapSizeText.text = $"Pálya méret: {gns.NetworkMapRadius.Value}";
-
             if (clientTurnSpeedText != null)
                 clientTurnSpeedText.text = $"Körsebesség: {gns.TurnSpeed.Value:F1}";
         }
@@ -407,18 +566,15 @@ namespace GridEmpire.UI
             while (NetworkManager.Singleton == null || !NetworkManager.Singleton.IsHost)
                 yield return null;
 
-            int expectedPlayers = (int)totalPlayersSlider.value;
-            int expectedHumans = expectedPlayers - (int)aiBotsSlider.value;
+            int expectedHumans = (int)totalPlayersSlider.value - (int)aiBotsSlider.value;
 
             while (NetworkManager.Singleton.ConnectedClientsIds.Count < expectedHumans)
             {
-                Debug.Log($"[Host] Kliensek: {NetworkManager.Singleton.ConnectedClientsIds.Count}/{expectedHumans}");
                 yield return new WaitForSeconds(0.5f);
             }
 
             Debug.Log("[Host] Minden kliens csatlakozott, scene load indul.");
-            var status = NetworkManager.Singleton.SceneManager.LoadScene(gameSceneName, LoadSceneMode.Single);
-            Debug.Log($"[Host] Scene load status: {status}");
+            NetworkManager.Singleton.SceneManager.LoadScene(gameSceneName, LoadSceneMode.Single);
         }
 
         // ─── SETTINGS UI ─────────────────────────────────────────────────────────────

@@ -37,6 +37,7 @@ namespace GridEmpire.Core
         public float Gold => gold;
         public float GoldIncome => goldIncome;
         public void SetGold(float amount) => gold = amount;
+        public void SetIncome(float amount) => goldIncome = amount;
         public CellData BaseCell { get => baseCell; set => baseCell = value; }
         public CellData SelectedCell { get => selectedCell; set => selectedCell = value; }
 

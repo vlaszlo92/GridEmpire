@@ -35,6 +35,7 @@ namespace GridEmpire.Core
         private bool _isPaused;
         private bool _gameStarted = false;
         private float _lastWarningTime = -999f;
+        private int _cachedAiCount = 1;
 
         public static event Action OnTurnCompleted;
         public static event Action OnProcessingStarted;
@@ -59,7 +60,9 @@ namespace GridEmpire.Core
         private void OnGameStart()
         {
             _gameStarted = true;
-            Debug.Log("[TurnManager] Játék elindult.");
+            _cachedAiCount = Mathf.Max(1,
+                GameController.Instance?.Players.Count(p => p.IsAI) ?? 1);
+            UnityEngine.Debug.Log("[TurnManager] Játék elindult.");
         }
 
         void LoadSettings()
@@ -169,16 +172,7 @@ namespace GridEmpire.Core
         public float ComputeDynamicBudgetMs()
         {
             float tickMs = TickDuration > 0f ? TickDuration * 1000f : 1000f / 60f;
-            int workUnits = 1;
-            try
-            {
-                var players = GameController.Instance?.Players;
-                if (players != null && players.Count > 0)
-                    workUnits = Mathf.Max(1, players.Count(p => p.IsAI));
-            }
-            catch { workUnits = 1; }
-
-            float rawPerFrame = (tickMs * budgetFraction) / Mathf.Max(1, workUnits);
+            float rawPerFrame = (tickMs * budgetFraction) / _cachedAiCount;
             float cap = tickMs * maxCalculationTimeCapFraction;
             float computed = Mathf.Clamp(rawPerFrame, minCalculationTimePerFrameMs, cap);
             if (float.IsNaN(computed) || computed <= 0f) computed = defaultMaxCalculationTimePerFrameMs;

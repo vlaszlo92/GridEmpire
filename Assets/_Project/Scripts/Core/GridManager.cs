@@ -19,6 +19,7 @@ namespace GridEmpire.Core
 
         public static bool IsDebugMode = GameController.IsDebugMode;
 
+        private readonly List<CellData> _neighborBuffer = new List<CellData>(6);
         private Dictionary<Vector2Int, CellData> _grid = new Dictionary<Vector2Int, CellData>();
         private Dictionary<CellData, ICellPresenter> _presenterMap = new Dictionary<CellData, ICellPresenter>();
         private Dictionary<int, CellData> _cellByIdLookup = new Dictionary<int, CellData>();
@@ -152,14 +153,14 @@ namespace GridEmpire.Core
 
         public List<CellData> GetNeighbors(CellData c)
         {
-            var neighbors = new List<CellData>();
-            if (c == null) return neighbors;
+            _neighborBuffer.Clear();
+            if (c == null) return _neighborBuffer;
             foreach (var d in Directions)
             {
                 CellData n = GetCell(c.Q + d.x, c.R + d.y);
-                if (n != null) neighbors.Add(n);
+                if (n != null) _neighborBuffer.Add(n);
             }
-            return neighbors;
+            return _neighborBuffer;
         }
 
         public CellData GetNeighborInDirection(CellData fromCell, int directionIndex)

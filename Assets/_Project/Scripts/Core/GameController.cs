@@ -353,11 +353,32 @@ namespace GridEmpire.Core
         }
 
         // ─── GAZDASÁG ────────────────────────────────────────────────────────────────
-
         private void ProcessEconomy()
         {
+            if (!IsServer) return;
             foreach (var player in _players.Where(p => p.IsAlive))
                 player.AddGold(player.GoldIncome);
+
+            // Szinkronizál minden kliensre
+            var ids = _players.Select(p => p.Id).ToArray();
+            var golds = _players.Select(p => p.Gold).ToArray();
+            var incomes = _players.Select(p => p.GoldIncome).ToArray();
+            SyncEconomyClientRpc(ids, golds, incomes);
+        }
+
+        [ClientRpc]
+        private void SyncEconomyClientRpc(int[] playerIds, float[] golds, float[] incomes)
+        {
+            if (IsServer) return;
+            for (int i = 0; i < playerIds.Length; i++)
+            {
+                var player = GetPlayerById(playerIds[i]);
+                if (player != null)
+                {
+                    player.SetGold(golds[i]);       // ezt a metódust hozzá kell adni PlayerProfile-ba
+                    player.SetIncome(incomes[i]);   // ezt is
+                }
+            }
         }
 
         private void HandleCellOwnershipChange(int fromPlayer, int toPlayer)

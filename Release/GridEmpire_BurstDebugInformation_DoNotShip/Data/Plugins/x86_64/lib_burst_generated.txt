@@ -1,4 +1,4 @@
-Library: E:\Programok\Unity_Projekts\Projects\GridEmpire2\Temp\BurstOutput\Data\Plugins\x86_64\lib_burst_generated
+Library: E:\Programok\Unity_Projekts\Projects\GridEmpire\Temp\BurstOutput\Data\Plugins\x86_64\lib_burst_generated
 --platform=Windows
 --minimum-os-version=
 --backend=burst-llvm-19
@@ -10,10 +10,10 @@ Library: E:\Programok\Unity_Projekts\Projects\GridEmpire2\Temp\BurstOutput\Data\
 --target-framework=NetFramework
 --linker-options=PdbAltPath="GridEmpire_Data/Plugins/x86_64/lib_burst_generated.pdb"
 --generate-link-xml=Temp\burst.link.xml
---temp-folder=E:\Programok\Unity_Projekts\Projects\GridEmpire2\Temp\Burst
+--temp-folder=E:\Programok\Unity_Projekts\Projects\GridEmpire\Temp\Burst
 --key-folder=C:/Program Files/Unity/Hub/Editor/6000.3.9f1/Editor/Data/PlaybackEngines/WindowsStandaloneSupport
---decode-folder=E:\Programok\Unity_Projekts\Projects\GridEmpire2\Library\Burst
---output=E:\Programok\Unity_Projekts\Projects\GridEmpire2\Temp\BurstOutput\Data\Plugins\x86_64\lib_burst_generated
+--decode-folder=E:\Programok\Unity_Projekts\Projects\GridEmpire\Library\Burst
+--output=E:\Programok\Unity_Projekts\Projects\GridEmpire\Temp\BurstOutput\Data\Plugins\x86_64\lib_burst_generated
 --pdb-search-paths=Temp/ManagedSymbols/
 
 --method=Unity.InferenceEngine.IParallelForBatchExtensions+ParallelForBatchJobStruct`1[[Unity.InferenceEngine.CPUBackend+AddIntJob, Unity.InferenceEngine, Version=2.5.5.0, Culture=neutral, PublicKeyToken=null]], Unity.InferenceEngine, Version=2.5.5.0, Culture=neutral, PublicKeyToken=null::Execute(Unity.InferenceEngine.CPUBackend+AddIntJob&, Unity.InferenceEngine, Version=2.5.5.0, Culture=neutral, PublicKeyToken=null|System.IntPtr, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089|System.IntPtr, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089|Unity.Jobs.LowLevel.Unsafe.JobRanges&, UnityEngine.CoreModule, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null|System.Int32, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089)--59acb1a6bbdc5702ce87eb37fc08b9ae
@@ -127,10 +127,10 @@ Library: E:\Programok\Unity_Projekts\Projects\GridEmpire2\Temp\BurstOutput\Data\
 --target-framework=NetFramework
 --linker-options=PdbAltPath="GridEmpire_Data/Plugins/x86_64/lib_burst_generated.pdb"
 --generate-link-xml=Temp\burst.link.xml
---temp-folder=E:\Programok\Unity_Projekts\Projects\GridEmpire2\Temp\Burst
+--temp-folder=E:\Programok\Unity_Projekts\Projects\GridEmpire\Temp\Burst
 --key-folder=C:/Program Files/Unity/Hub/Editor/6000.3.9f1/Editor/Data/PlaybackEngines/WindowsStandaloneSupport
---decode-folder=E:\Programok\Unity_Projekts\Projects\GridEmpire2\Library\Burst
---output=E:\Programok\Unity_Projekts\Projects\GridEmpire2\Temp\BurstOutput\Data\Plugins\x86_64\lib_burst_generated
+--decode-folder=E:\Programok\Unity_Projekts\Projects\GridEmpire\Library\Burst
+--output=E:\Programok\Unity_Projekts\Projects\GridEmpire\Temp\BurstOutput\Data\Plugins\x86_64\lib_burst_generated
 --pdb-search-paths=Temp/ManagedSymbols/
 
 --method=Unity.InferenceEngine.IParallelForBatchExtensions+ParallelForBatchJobStruct`1[[Unity.InferenceEngine.CPUBackend+AddIntJob, Unity.InferenceEngine, Version=2.5.5.0, Culture=neutral, PublicKeyToken=null]], Unity.InferenceEngine, Version=2.5.5.0, Culture=neutral, PublicKeyToken=null::Execute(Unity.InferenceEngine.CPUBackend+AddIntJob&, Unity.InferenceEngine, Version=2.5.5.0, Culture=neutral, PublicKeyToken=null|System.IntPtr, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089|System.IntPtr, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089|Unity.Jobs.LowLevel.Unsafe.JobRanges&, UnityEngine.CoreModule, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null|System.Int32, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089)--59acb1a6bbdc5702ce87eb37fc08b9ae
@@ -244,10 +244,10 @@ Library: E:\Programok\Unity_Projekts\Projects\GridEmpire2\Temp\BurstOutput\Data\
 --target-framework=NetFramework
 --linker-options=PdbAltPath="GridEmpire_Data/Plugins/x86_64/lib_burst_generated.pdb"
 --generate-link-xml=Temp\burst.link.xml
---temp-folder=E:\Programok\Unity_Projekts\Projects\GridEmpire2\Temp\Burst
+--temp-folder=E:\Programok\Unity_Projekts\Projects\GridEmpire\Temp\Burst
 --key-folder=C:/Program Files/Unity/Hub/Editor/6000.3.9f1/Editor/Data/PlaybackEngines/WindowsStandaloneSupport
---decode-folder=E:\Programok\Unity_Projekts\Projects\GridEmpire2\Library\Burst
---output=E:\Programok\Unity_Projekts\Projects\GridEmpire2\Temp\BurstOutput\Data\Plugins\x86_64\lib_burst_generated
+--decode-folder=E:\Programok\Unity_Projekts\Projects\GridEmpire\Library\Burst
+--output=E:\Programok\Unity_Projekts\Projects\GridEmpire\Temp\BurstOutput\Data\Plugins\x86_64\lib_burst_generated
 --pdb-search-paths=Temp/ManagedSymbols/
 
 --method=Unity.Jobs.IJobParallelForExtensions+ParallelForJobStruct`1[[UnityEngine.Rendering.GPUInstanceDataBuffer+ConvertCPUInstancesToGPUInstancesJob, Unity.RenderPipelines.GPUDriven.Runtime, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]], UnityEngine.CoreModule, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null::Execute(UnityEngine.Rendering.GPUInstanceDataBuffer+ConvertCPUInstancesToGPUInstancesJob&, Unity.RenderPipelines.GPUDriven.Runtime, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null|System.IntPtr, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089|System.IntPtr, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089|Unity.Jobs.LowLevel.Unsafe.JobRanges&, UnityEngine.CoreModule, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null|System.Int32, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089)--a917331aad44b603aa293fb2ddd84845
@@ -361,10 +361,10 @@ Library: E:\Programok\Unity_Projekts\Projects\GridEmpire2\Temp\BurstOutput\Data\
 --target-framework=NetFramework
 --linker-options=PdbAltPath="GridEmpire_Data/Plugins/x86_64/lib_burst_generated.pdb"
 --generate-link-xml=Temp\burst.link.xml
---temp-folder=E:\Programok\Unity_Projekts\Projects\GridEmpire2\Temp\Burst
+--temp-folder=E:\Programok\Unity_Projekts\Projects\GridEmpire\Temp\Burst
 --key-folder=C:/Program Files/Unity/Hub/Editor/6000.3.9f1/Editor/Data/PlaybackEngines/WindowsStandaloneSupport
---decode-folder=E:\Programok\Unity_Projekts\Projects\GridEmpire2\Library\Burst
---output=E:\Programok\Unity_Projekts\Projects\GridEmpire2\Temp\BurstOutput\Data\Plugins\x86_64\lib_burst_generated
+--decode-folder=E:\Programok\Unity_Projekts\Projects\GridEmpire\Library\Burst
+--output=E:\Programok\Unity_Projekts\Projects\GridEmpire\Temp\BurstOutput\Data\Plugins\x86_64\lib_burst_generated
 --pdb-search-paths=Temp/ManagedSymbols/
 
 --method=Unity.Jobs.IJobParallelForExtensions+ParallelForJobStruct`1[[UnityEngine.Rendering.GPUInstanceDataBuffer+ConvertCPUInstancesToGPUInstancesJob, Unity.RenderPipelines.GPUDriven.Runtime, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]], UnityEngine.CoreModule, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null::Execute(UnityEngine.Rendering.GPUInstanceDataBuffer+ConvertCPUInstancesToGPUInstancesJob&, Unity.RenderPipelines.GPUDriven.Runtime, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null|System.IntPtr, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089|System.IntPtr, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089|Unity.Jobs.LowLevel.Unsafe.JobRanges&, UnityEngine.CoreModule, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null|System.Int32, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089)--a917331aad44b603aa293fb2ddd84845
@@ -478,10 +478,10 @@ Library: E:\Programok\Unity_Projekts\Projects\GridEmpire2\Temp\BurstOutput\Data\
 --target-framework=NetFramework
 --linker-options=PdbAltPath="GridEmpire_Data/Plugins/x86_64/lib_burst_generated.pdb"
 --generate-link-xml=Temp\burst.link.xml
---temp-folder=E:\Programok\Unity_Projekts\Projects\GridEmpire2\Temp\Burst
+--temp-folder=E:\Programok\Unity_Projekts\Projects\GridEmpire\Temp\Burst
 --key-folder=C:/Program Files/Unity/Hub/Editor/6000.3.9f1/Editor/Data/PlaybackEngines/WindowsStandaloneSupport
---decode-folder=E:\Programok\Unity_Projekts\Projects\GridEmpire2\Library\Burst
---output=E:\Programok\Unity_Projekts\Projects\GridEmpire2\Temp\BurstOutput\Data\Plugins\x86_64\lib_burst_generated
+--decode-folder=E:\Programok\Unity_Projekts\Projects\GridEmpire\Library\Burst
+--output=E:\Programok\Unity_Projekts\Projects\GridEmpire\Temp\BurstOutput\Data\Plugins\x86_64\lib_burst_generated
 --pdb-search-paths=Temp/ManagedSymbols/
 
 --method=Unity.InferenceEngine.CPUBackend+ConvJob, Unity.InferenceEngine, Version=2.5.5.0, Culture=neutral, PublicKeyToken=null::CanUseDepthwiseConvKernel(Unity.InferenceEngine.CPUBackend+ConvJob*, Unity.InferenceEngine, Version=2.5.5.0, Culture=neutral, PublicKeyToken=null)--499117ad07a5029f6555fc3c901489c2
@@ -496,10 +496,10 @@ Library: E:\Programok\Unity_Projekts\Projects\GridEmpire2\Temp\BurstOutput\Data\
 --target-framework=NetFramework
 --linker-options=PdbAltPath="GridEmpire_Data/Plugins/x86_64/lib_burst_generated.pdb"
 --generate-link-xml=Temp\burst.link.xml
---temp-folder=E:\Programok\Unity_Projekts\Projects\GridEmpire2\Temp\Burst
+--temp-folder=E:\Programok\Unity_Projekts\Projects\GridEmpire\Temp\Burst
 --key-folder=C:/Program Files/Unity/Hub/Editor/6000.3.9f1/Editor/Data/PlaybackEngines/WindowsStandaloneSupport
---decode-folder=E:\Programok\Unity_Projekts\Projects\GridEmpire2\Library\Burst
---output=E:\Programok\Unity_Projekts\Projects\GridEmpire2\Temp\BurstOutput\Data\Plugins\x86_64\lib_burst_generated
+--decode-folder=E:\Programok\Unity_Projekts\Projects\GridEmpire\Library\Burst
+--output=E:\Programok\Unity_Projekts\Projects\GridEmpire\Temp\BurstOutput\Data\Plugins\x86_64\lib_burst_generated
 --pdb-search-paths=Temp/ManagedSymbols/
 
 --method=Unity.InferenceEngine.CPUBackend+ConvJob, Unity.InferenceEngine, Version=2.5.5.0, Culture=neutral, PublicKeyToken=null::CanUseDepthwiseConvKernel(Unity.InferenceEngine.CPUBackend+ConvJob*, Unity.InferenceEngine, Version=2.5.5.0, Culture=neutral, PublicKeyToken=null)--499117ad07a5029f6555fc3c901489c2
@@ -515,10 +515,10 @@ Library: E:\Programok\Unity_Projekts\Projects\GridEmpire2\Temp\BurstOutput\Data\
 --float-mode=Fast
 --linker-options=PdbAltPath="GridEmpire_Data/Plugins/x86_64/lib_burst_generated.pdb"
 --generate-link-xml=Temp\burst.link.xml
---temp-folder=E:\Programok\Unity_Projekts\Projects\GridEmpire2\Temp\Burst
+--temp-folder=E:\Programok\Unity_Projekts\Projects\GridEmpire\Temp\Burst
 --key-folder=C:/Program Files/Unity/Hub/Editor/6000.3.9f1/Editor/Data/PlaybackEngines/WindowsStandaloneSupport
---decode-folder=E:\Programok\Unity_Projekts\Projects\GridEmpire2\Library\Burst
---output=E:\Programok\Unity_Projekts\Projects\GridEmpire2\Temp\BurstOutput\Data\Plugins\x86_64\lib_burst_generated
+--decode-folder=E:\Programok\Unity_Projekts\Projects\GridEmpire\Library\Burst
+--output=E:\Programok\Unity_Projekts\Projects\GridEmpire\Temp\BurstOutput\Data\Plugins\x86_64\lib_burst_generated
 --pdb-search-paths=Temp/ManagedSymbols/
 
 --method=Unity.Jobs.IJobParallelForExtensions+ParallelForJobStruct`1[[Unity.InferenceEngine.CPUBackend+GlobalAverageVariancePoolJob, Unity.InferenceEngine, Version=2.5.5.0, Culture=neutral, PublicKeyToken=null]], UnityEngine.CoreModule, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null::Execute(Unity.InferenceEngine.CPUBackend+GlobalAverageVariancePoolJob&, Unity.InferenceEngine, Version=2.5.5.0, Culture=neutral, PublicKeyToken=null|System.IntPtr, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089|System.IntPtr, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089|Unity.Jobs.LowLevel.Unsafe.JobRanges&, UnityEngine.CoreModule, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null|System.Int32, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089)--7e188f97e7c8acfe68e9aa6fe0ca2545
@@ -534,10 +534,10 @@ Library: E:\Programok\Unity_Projekts\Projects\GridEmpire2\Temp\BurstOutput\Data\
 --float-mode=Fast
 --linker-options=PdbAltPath="GridEmpire_Data/Plugins/x86_64/lib_burst_generated.pdb"
 --generate-link-xml=Temp\burst.link.xml
---temp-folder=E:\Programok\Unity_Projekts\Projects\GridEmpire2\Temp\Burst
+--temp-folder=E:\Programok\Unity_Projekts\Projects\GridEmpire\Temp\Burst
 --key-folder=C:/Program Files/Unity/Hub/Editor/6000.3.9f1/Editor/Data/PlaybackEngines/WindowsStandaloneSupport
---decode-folder=E:\Programok\Unity_Projekts\Projects\GridEmpire2\Library\Burst
---output=E:\Programok\Unity_Projekts\Projects\GridEmpire2\Temp\BurstOutput\Data\Plugins\x86_64\lib_burst_generated
+--decode-folder=E:\Programok\Unity_Projekts\Projects\GridEmpire\Library\Burst
+--output=E:\Programok\Unity_Projekts\Projects\GridEmpire\Temp\BurstOutput\Data\Plugins\x86_64\lib_burst_generated
 --pdb-search-paths=Temp/ManagedSymbols/
 
 --method=Unity.Jobs.IJobParallelForExtensions+ParallelForJobStruct`1[[Unity.InferenceEngine.CPUBackend+GlobalAverageVariancePoolJob, Unity.InferenceEngine, Version=2.5.5.0, Culture=neutral, PublicKeyToken=null]], UnityEngine.CoreModule, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null::Execute(Unity.InferenceEngine.CPUBackend+GlobalAverageVariancePoolJob&, Unity.InferenceEngine, Version=2.5.5.0, Culture=neutral, PublicKeyToken=null|System.IntPtr, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089|System.IntPtr, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089|Unity.Jobs.LowLevel.Unsafe.JobRanges&, UnityEngine.CoreModule, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null|System.Int32, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089)--7e188f97e7c8acfe68e9aa6fe0ca2545
@@ -552,10 +552,10 @@ Library: E:\Programok\Unity_Projekts\Projects\GridEmpire2\Temp\BurstOutput\Data\
 --target-framework=NetFramework
 --linker-options=PdbAltPath="GridEmpire_Data/Plugins/x86_64/lib_burst_generated.pdb"
 --generate-link-xml=Temp\burst.link.xml
---temp-folder=E:\Programok\Unity_Projekts\Projects\GridEmpire2\Temp\Burst
+--temp-folder=E:\Programok\Unity_Projekts\Projects\GridEmpire\Temp\Burst
 --key-folder=C:/Program Files/Unity/Hub/Editor/6000.3.9f1/Editor/Data/PlaybackEngines/WindowsStandaloneSupport
---decode-folder=E:\Programok\Unity_Projekts\Projects\GridEmpire2\Library\Burst
---output=E:\Programok\Unity_Projekts\Projects\GridEmpire2\Temp\BurstOutput\Data\Plugins\x86_64\lib_burst_generated
+--decode-folder=E:\Programok\Unity_Projekts\Projects\GridEmpire\Library\Burst
+--output=E:\Programok\Unity_Projekts\Projects\GridEmpire\Temp\BurstOutput\Data\Plugins\x86_64\lib_burst_generated
 --pdb-search-paths=Temp/ManagedSymbols/
 
 --method=UnityEngine.Rendering.Universal.ShadowUtility, Unity.RenderPipelines.Universal.2D.Runtime, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null::GetVertexReferenceStats(Unity.Collections.NativeArray`1[[UnityEngine.Vector3, UnityEngine.CoreModule, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]&, UnityEngine.CoreModule, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null|Unity.Collections.NativeArray`1[[UnityEngine.Rendering.Universal.ShadowEdge, Unity.RenderPipelines.Universal.2D.Runtime, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]&, UnityEngine.CoreModule, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null|System.Int32, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089|System.Boolean&, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089|System.Int32&, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089|Unity.Collections.NativeArray`1[[UnityEngine.Rendering.Universal.ShadowUtility+RemappingInfo, Unity.RenderPipelines.Universal.2D.Runtime, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]&, UnityEngine.CoreModule, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null)--988a40d3aa93620eb189303886118f02
@@ -586,10 +586,10 @@ Library: E:\Programok\Unity_Projekts\Projects\GridEmpire2\Temp\BurstOutput\Data\
 --target-framework=NetFramework
 --linker-options=PdbAltPath="GridEmpire_Data/Plugins/x86_64/lib_burst_generated.pdb"
 --generate-link-xml=Temp\burst.link.xml
---temp-folder=E:\Programok\Unity_Projekts\Projects\GridEmpire2\Temp\Burst
+--temp-folder=E:\Programok\Unity_Projekts\Projects\GridEmpire\Temp\Burst
 --key-folder=C:/Program Files/Unity/Hub/Editor/6000.3.9f1/Editor/Data/PlaybackEngines/WindowsStandaloneSupport
---decode-folder=E:\Programok\Unity_Projekts\Projects\GridEmpire2\Library\Burst
---output=E:\Programok\Unity_Projekts\Projects\GridEmpire2\Temp\BurstOutput\Data\Plugins\x86_64\lib_burst_generated
+--decode-folder=E:\Programok\Unity_Projekts\Projects\GridEmpire\Library\Burst
+--output=E:\Programok\Unity_Projekts\Projects\GridEmpire\Temp\BurstOutput\Data\Plugins\x86_64\lib_burst_generated
 --pdb-search-paths=Temp/ManagedSymbols/
 
 --method=UnityEngine.Rendering.Universal.ShadowUtility, Unity.RenderPipelines.Universal.2D.Runtime, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null::GetVertexReferenceStats(Unity.Collections.NativeArray`1[[UnityEngine.Vector3, UnityEngine.CoreModule, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]&, UnityEngine.CoreModule, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null|Unity.Collections.NativeArray`1[[UnityEngine.Rendering.Universal.ShadowEdge, Unity.RenderPipelines.Universal.2D.Runtime, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]&, UnityEngine.CoreModule, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null|System.Int32, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089|System.Boolean&, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089|System.Int32&, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089|Unity.Collections.NativeArray`1[[UnityEngine.Rendering.Universal.ShadowUtility+RemappingInfo, Unity.RenderPipelines.Universal.2D.Runtime, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]&, UnityEngine.CoreModule, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null)--988a40d3aa93620eb189303886118f02
@@ -620,10 +620,10 @@ Library: E:\Programok\Unity_Projekts\Projects\GridEmpire2\Temp\BurstOutput\Data\
 --target-framework=NetFramework
 --linker-options=PdbAltPath="GridEmpire_Data/Plugins/x86_64/lib_burst_generated.pdb"
 --generate-link-xml=Temp\burst.link.xml
---temp-folder=E:\Programok\Unity_Projekts\Projects\GridEmpire2\Temp\Burst
+--temp-folder=E:\Programok\Unity_Projekts\Projects\GridEmpire\Temp\Burst
 --key-folder=C:/Program Files/Unity/Hub/Editor/6000.3.9f1/Editor/Data/PlaybackEngines/WindowsStandaloneSupport
---decode-folder=E:\Programok\Unity_Projekts\Projects\GridEmpire2\Library\Burst
---output=E:\Programok\Unity_Projekts\Projects\GridEmpire2\Temp\BurstOutput\Data\Plugins\x86_64\lib_burst_generated
+--decode-folder=E:\Programok\Unity_Projekts\Projects\GridEmpire\Library\Burst
+--output=E:\Programok\Unity_Projekts\Projects\GridEmpire\Temp\BurstOutput\Data\Plugins\x86_64\lib_burst_generated
 --pdb-search-paths=Temp/ManagedSymbols/
 
 --method=Unity.InferenceEngine.IParallelForBatchExtensions+ParallelForBatchJobStruct`1[[Unity.InferenceEngine.CPUBackend+WindowedDFTMatrixOutRealImaJob, Unity.InferenceEngine, Version=2.5.5.0, Culture=neutral, PublicKeyToken=null]], Unity.InferenceEngine, Version=2.5.5.0, Culture=neutral, PublicKeyToken=null::Execute(Unity.InferenceEngine.CPUBackend+WindowedDFTMatrixOutRealImaJob&, Unity.InferenceEngine, Version=2.5.5.0, Culture=neutral, PublicKeyToken=null|System.IntPtr, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089|System.IntPtr, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089|Unity.Jobs.LowLevel.Unsafe.JobRanges&, UnityEngine.CoreModule, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null|System.Int32, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089)--a5323892324b0104ccb156875c95d0c5
@@ -737,10 +737,10 @@ Library: E:\Programok\Unity_Projekts\Projects\GridEmpire2\Temp\BurstOutput\Data\
 --target-framework=NetFramework
 --linker-options=PdbAltPath="GridEmpire_Data/Plugins/x86_64/lib_burst_generated.pdb"
 --generate-link-xml=Temp\burst.link.xml
---temp-folder=E:\Programok\Unity_Projekts\Projects\GridEmpire2\Temp\Burst
+--temp-folder=E:\Programok\Unity_Projekts\Projects\GridEmpire\Temp\Burst
 --key-folder=C:/Program Files/Unity/Hub/Editor/6000.3.9f1/Editor/Data/PlaybackEngines/WindowsStandaloneSupport
---decode-folder=E:\Programok\Unity_Projekts\Projects\GridEmpire2\Library\Burst
---output=E:\Programok\Unity_Projekts\Projects\GridEmpire2\Temp\BurstOutput\Data\Plugins\x86_64\lib_burst_generated
+--decode-folder=E:\Programok\Unity_Projekts\Projects\GridEmpire\Library\Burst
+--output=E:\Programok\Unity_Projekts\Projects\GridEmpire\Temp\BurstOutput\Data\Plugins\x86_64\lib_burst_generated
 --pdb-search-paths=Temp/ManagedSymbols/
 
 --method=Unity.InferenceEngine.IParallelForBatchExtensions+ParallelForBatchJobStruct`1[[Unity.InferenceEngine.CPUBackend+WindowedDFTMatrixOutRealImaJob, Unity.InferenceEngine, Version=2.5.5.0, Culture=neutral, PublicKeyToken=null]], Unity.InferenceEngine, Version=2.5.5.0, Culture=neutral, PublicKeyToken=null::Execute(Unity.InferenceEngine.CPUBackend+WindowedDFTMatrixOutRealImaJob&, Unity.InferenceEngine, Version=2.5.5.0, Culture=neutral, PublicKeyToken=null|System.IntPtr, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089|System.IntPtr, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089|Unity.Jobs.LowLevel.Unsafe.JobRanges&, UnityEngine.CoreModule, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null|System.Int32, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089)--a5323892324b0104ccb156875c95d0c5
@@ -855,10 +855,10 @@ Library: E:\Programok\Unity_Projekts\Projects\GridEmpire2\Temp\BurstOutput\Data\
 --float-mode=Fast
 --linker-options=PdbAltPath="GridEmpire_Data/Plugins/x86_64/lib_burst_generated.pdb"
 --generate-link-xml=Temp\burst.link.xml
---temp-folder=E:\Programok\Unity_Projekts\Projects\GridEmpire2\Temp\Burst
+--temp-folder=E:\Programok\Unity_Projekts\Projects\GridEmpire\Temp\Burst
 --key-folder=C:/Program Files/Unity/Hub/Editor/6000.3.9f1/Editor/Data/PlaybackEngines/WindowsStandaloneSupport
---decode-folder=E:\Programok\Unity_Projekts\Projects\GridEmpire2\Library\Burst
---output=E:\Programok\Unity_Projekts\Projects\GridEmpire2\Temp\BurstOutput\Data\Plugins\x86_64\lib_burst_generated
+--decode-folder=E:\Programok\Unity_Projekts\Projects\GridEmpire\Library\Burst
+--output=E:\Programok\Unity_Projekts\Projects\GridEmpire\Temp\BurstOutput\Data\Plugins\x86_64\lib_burst_generated
 --pdb-search-paths=Temp/ManagedSymbols/
 
 --method=Unity.InferenceEngine.IParallelForBatchExtensions+ParallelForBatchJobStruct`1[[Unity.InferenceEngine.CPUBackend+AveragePool3DJob, Unity.InferenceEngine, Version=2.5.5.0, Culture=neutral, PublicKeyToken=null]], Unity.InferenceEngine, Version=2.5.5.0, Culture=neutral, PublicKeyToken=null::Execute(Unity.InferenceEngine.CPUBackend+AveragePool3DJob&, Unity.InferenceEngine, Version=2.5.5.0, Culture=neutral, PublicKeyToken=null|System.IntPtr, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089|System.IntPtr, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089|Unity.Jobs.LowLevel.Unsafe.JobRanges&, UnityEngine.CoreModule, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null|System.Int32, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089)--192b89ea9a4779077826e35024eef1cf
@@ -933,10 +933,10 @@ Library: E:\Programok\Unity_Projekts\Projects\GridEmpire2\Temp\BurstOutput\Data\
 --float-mode=Fast
 --linker-options=PdbAltPath="GridEmpire_Data/Plugins/x86_64/lib_burst_generated.pdb"
 --generate-link-xml=Temp\burst.link.xml
---temp-folder=E:\Programok\Unity_Projekts\Projects\GridEmpire2\Temp\Burst
+--temp-folder=E:\Programok\Unity_Projekts\Projects\GridEmpire\Temp\Burst
 --key-folder=C:/Program Files/Unity/Hub/Editor/6000.3.9f1/Editor/Data/PlaybackEngines/WindowsStandaloneSupport
---decode-folder=E:\Programok\Unity_Projekts\Projects\GridEmpire2\Library\Burst
---output=E:\Programok\Unity_Projekts\Projects\GridEmpire2\Temp\BurstOutput\Data\Plugins\x86_64\lib_burst_generated
+--decode-folder=E:\Programok\Unity_Projekts\Projects\GridEmpire\Library\Burst
+--output=E:\Programok\Unity_Projekts\Projects\GridEmpire\Temp\BurstOutput\Data\Plugins\x86_64\lib_burst_generated
 --pdb-search-paths=Temp/ManagedSymbols/
 
 --method=Unity.InferenceEngine.IParallelForBatchExtensions+ParallelForBatchJobStruct`1[[Unity.InferenceEngine.CPUBackend+AveragePool3DJob, Unity.InferenceEngine, Version=2.5.5.0, Culture=neutral, PublicKeyToken=null]], Unity.InferenceEngine, Version=2.5.5.0, Culture=neutral, PublicKeyToken=null::Execute(Unity.InferenceEngine.CPUBackend+AveragePool3DJob&, Unity.InferenceEngine, Version=2.5.5.0, Culture=neutral, PublicKeyToken=null|System.IntPtr, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089|System.IntPtr, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089|Unity.Jobs.LowLevel.Unsafe.JobRanges&, UnityEngine.CoreModule, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null|System.Int32, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089)--192b89ea9a4779077826e35024eef1cf

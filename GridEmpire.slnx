@@ -1,6 +1,8 @@
 ﻿<Solution>
   <Project Path="GridEmpire.Core.csproj" />
-  <Project Path="Assembly-CSharp.csproj" />
   <Project Path="Assembly-CSharp-Editor.csproj" />
+  <Project Path="Assembly-CSharp.csproj" />
+  <Project Path="GridEmpire.Shared.csproj" />
   <Project Path="GridEmpire.Visuals.csproj" />
+  <Project Path="GridEmpire.Networking.csproj" />
 </Solution>
