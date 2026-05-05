@@ -129,9 +129,7 @@ namespace GridEmpire.Input
         }
 
         private void ProcessSelectionLogic(CellVisual visual, UnitController unit)
-        {
-            Debug.Log($"[Selection] SelectedUnit={GameController.Instance.SelectedUnit?.Id}, lastPresenter={_lastSelectedPresenter != null}, sameCell={ReferenceEquals(visual, _lastSelectedPresenter)}");
-
+        {            
             // --- UNIT SELECTION MODE ---
             if (!isFieldSelection)
             {

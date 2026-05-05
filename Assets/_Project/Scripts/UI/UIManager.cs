@@ -82,6 +82,9 @@ namespace GridEmpire.UI
 
         private void RefreshGoldDisplay()
         {
+            goldText.text = "Gold: " + _localPlayer.Gold.ToString();
+            return;
+
             var sb = new System.Text.StringBuilder();
             foreach (var p in GameController.Instance.GetPlayers())
             {
