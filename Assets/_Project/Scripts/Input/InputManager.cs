@@ -130,6 +130,8 @@ namespace GridEmpire.Input
 
         private void ProcessSelectionLogic(CellVisual visual, UnitController unit)
         {
+            Debug.Log($"[Selection] SelectedUnit={GameController.Instance.SelectedUnit?.Id}, lastPresenter={_lastSelectedPresenter != null}, sameCell={ReferenceEquals(visual, _lastSelectedPresenter)}");
+
             // --- UNIT SELECTION MODE ---
             if (!isFieldSelection)
             {
@@ -147,19 +149,9 @@ namespace GridEmpire.Input
             }
 
             // --- FIELD SELECTION MODE ---
-
-            // A: Mozgásparancs – ha van kijelölt egységünk és más mezõre kattintunk
-            if (GameController.Instance.SelectedUnit != null &&
-                GameController.Instance.SelectedUnit.OwnerId == localPlayer.Id &&
-                !ReferenceEquals(visual, _lastSelectedPresenter))
-            {
-                GameController.Instance.SelectedUnit.RequestMove(visual.Data);
-                ClearAllSelection();
-                return;
-            }
-
-            // B: Új mezõ kijelölése
-            if (!ReferenceEquals(visual, _lastSelectedPresenter))
+                        
+            // A: Új mezõ kijelölése
+            if (_lastSelectedPresenter == null && GameController.Instance.SelectedUnit == null)
             {
                 ClearAllSelection();
                 _lastSelectedPresenter = visual;
@@ -168,10 +160,18 @@ namespace GridEmpire.Input
                 return;
             }
 
+            // B: Más mezõre kattintás -> törlés
+            if (!ReferenceEquals(visual, _lastSelectedPresenter) || GameController.Instance.SelectedUnit != null)
+            {
+                ClearAllSelection();
+                return;
+            }
+
             // C: Dupla kattintás ugyanarra a mezõre – váltás az egységre
             if (unit != null && GameController.Instance.SelectedUnit == null && unit.OwnerId == localPlayer.Id)
             {
                 HideCellSelection();
+                _lastSelectedPresenter = null;
                 SelectUnit(unit);
                 return;
             }

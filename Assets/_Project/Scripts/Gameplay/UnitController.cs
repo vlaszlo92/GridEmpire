@@ -153,11 +153,11 @@ namespace GridEmpire.Gameplay
         public void PlanAction()
         {
             if (!NetworkManager.Singleton.IsServer || _isDead) return;
-            Debug.Log($"[PlanAction] unit={_id}, cell={_currentCell?.Id}, targetCell={_currentTargetCell?.Id}, " +
-              $"targetOwner={_currentTargetCell?.OwnerId}, myOwner={_ownerId}, " +
-              $"isOccupied={_currentTargetCell?.IsOccupied}, " +
-              $"captureProgress={_currentTargetCell?.GetCaptureProgress(_ownerId):F2}, " +
-              $"prevCell={_previousCell?.Id}");
+            //Debug.Log($"[PlanAction] unit={_id}, cell={_currentCell?.Id}, targetCell={_currentTargetCell?.Id}, " +
+            //  $"targetOwner={_currentTargetCell?.OwnerId}, myOwner={_ownerId}, " +
+            //  $"isOccupied={_currentTargetCell?.IsOccupied}, " +
+            //  $"captureProgress={_currentTargetCell?.GetCaptureProgress(_ownerId):F2}, " +
+            //  $"prevCell={_previousCell?.Id}");
             _nextAction = new UnitAction { PerformerUnitId = _id, PlayerId = _ownerId, Type = ActionType.Idle, TargetCellId = -1 };
             _currentStamina = Mathf.Min(_currentStamina + _data.staminaPerTurn, _data.maxStamina);
 
