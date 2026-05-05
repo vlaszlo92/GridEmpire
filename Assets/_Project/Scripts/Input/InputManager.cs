@@ -133,7 +133,7 @@ namespace GridEmpire.Input
             // --- UNIT SELECTION MODE ---
             if (!isFieldSelection)
             {
-                if (unit != null)
+                if (unit != null && unit.OwnerId == localPlayer.Id)
                 {
                     SelectUnit(unit);
                     localPlayer.SelectedCell = visual.Data;
@@ -169,7 +169,7 @@ namespace GridEmpire.Input
             }
 
             // C: Dupla kattintás ugyanarra a mezõre – váltás az egységre
-            if (unit != null && GameController.Instance.SelectedUnit == null)
+            if (unit != null && GameController.Instance.SelectedUnit == null && unit.OwnerId == localPlayer.Id)
             {
                 HideCellSelection();
                 SelectUnit(unit);
@@ -235,9 +235,9 @@ namespace GridEmpire.Input
                 Debug.LogWarning("[InputManager] Nem sikerült: Nincs cella!");
         }
 
-        public void ChangeSelectionType()
+        public void SetSelectionType(bool isField)
         {
-            isFieldSelection = !isFieldSelection;
+            isFieldSelection = isField;
             ClearAllSelection();
         }
     }

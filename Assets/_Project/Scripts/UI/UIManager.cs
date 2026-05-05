@@ -233,8 +233,15 @@ namespace GridEmpire.UI
             _isFieldSelected = !_isFieldSelected;
             if (selectorBtn != null)
                 selectorBtn.image.sprite = _isFieldSelected ? selectorFieldImage : selectorUnitImage;
-        }
 
-        public void DeleteSelectedUnit() => _selectedUnit?.ExecuteDeath();
+            InputManager.Instance?.SetSelectionType(_isFieldSelected);
+        }
+        public void DeleteSelectedUnit()
+        {
+            if (_selectedUnit == null) return;
+            if (_localPlayer == null) return;
+            if (_selectedUnit.OwnerId != _localPlayer.Id) return;
+            _selectedUnit.ExecuteDeath();
+        }
     }
 }
