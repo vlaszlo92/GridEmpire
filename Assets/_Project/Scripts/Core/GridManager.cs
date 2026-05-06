@@ -104,7 +104,7 @@ namespace GridEmpire.Core
 
         public void UpdateFogOfWar(int forPlayerId)
         {
-            if (IsDebugMode)
+            if (IsDebugMode || !GlobalNetworkSettings.Instance.FogOfWarEnabled.Value)
             {
                 foreach (var c in _grid.Values) c.CurrentVisibility = VisibilityState.Visible;
                 foreach (var p in _presenterMap.Values) p.UpdateVisual();

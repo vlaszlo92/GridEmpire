@@ -25,7 +25,24 @@ namespace GridEmpire.Core
         public int OwnerId = -1;
         public bool IsBase = false;
         public bool IsOccupied;
-        public VisibilityState CurrentVisibility = VisibilityState.Hidden;
+        private VisibilityState _currentVisibility = VisibilityState.Hidden;
+
+        public VisibilityState CurrentVisibility
+        {
+            get => _currentVisibility;
+            set
+            {
+                if (_currentVisibility == value) return; // csak ha változott
+                _currentVisibility = value;
+
+                // Ha van rajta egység, értesítjük
+                foreach (var obj in OccupyingUnits)
+                {
+                    var unit = obj as IUnit;
+                    unit?.OnCellVisibilityChanged(value);
+                }
+            }
+        }
 
         private Dictionary<int, float> _playerInfluences = new Dictionary<int, float>();
 

@@ -12,6 +12,7 @@ namespace GridEmpire.Shared
         public int aiBots = 1;
         public float turnSpeedMultiplier = 1.0f;
         public int mapRadius = 15;
+        public bool fogOfWarEnabled = true;
 
         private static string SavePath => Path.Combine(Application.persistentDataPath, "game_settings.json");
 

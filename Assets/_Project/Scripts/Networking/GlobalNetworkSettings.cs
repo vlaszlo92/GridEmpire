@@ -14,6 +14,7 @@ namespace GridEmpire.Networking
         public NetworkVariable<float> TurnSpeed = new NetworkVariable<float>(1.0f);
         public NetworkList<PlayerClientMapping> PlayerMappings;
         public NetworkVariable<int> ConnectedPlayerCount = new NetworkVariable<int>(0);
+        public NetworkVariable<bool> FogOfWarEnabled = new NetworkVariable<bool>(true);
 
         public void UpdateSettings(int totalPlayers, int aiBots, int mapRadius, float turnSpeed)
         {

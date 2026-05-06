@@ -35,6 +35,7 @@ namespace GridEmpire.Gameplay
         [SerializeField] private float _currentStamina;
 
         private PlayerProfile _ownerProfile;
+        private MeshRenderer[] _renderers;
 
         public int OwnerId => _ownerId;
         public UnitData Data => _data;
@@ -75,6 +76,7 @@ namespace GridEmpire.Gameplay
             _ownerProfile = GameController.Instance.GetPlayerById(_ownerId);
             _ownerProfile?.AddUnit(this);
             SyncPositionToCurrentCell();
+            OnCellVisibilityChanged(_currentCell.CurrentVisibility);
         }
 
         private void Update()
@@ -117,6 +119,7 @@ namespace GridEmpire.Gameplay
             if (_currentCell != null) _currentCell.RegisterOccupier(this);
 
             UpdateInitialFacing();
+            OnCellVisibilityChanged(_currentCell.CurrentVisibility);
         }
 
         private void UpdateInitialFacing()
@@ -285,6 +288,22 @@ namespace GridEmpire.Gameplay
 
             return preferred ?? fallback;
         }
+
+        public void OnCellVisibilityChanged(VisibilityState visibility)
+        {
+            bool isOwn = _ownerId == GameController.Instance?.GetLocalPlayer()?.Id;
+            bool visible = isOwn || visibility == VisibilityState.Visible;
+            SetVisible(visible);
+        }
+
+        private void SetVisible(bool visible)
+        {
+            if (_renderers == null)
+                _renderers = GetComponentsInChildren<MeshRenderer>();
+            foreach (var r in _renderers)
+                r.enabled = visible;
+        }
+
 
         // ─── COMBAT ─────────────────────────────────────────────────────────────────
 

@@ -46,6 +46,7 @@ namespace GridEmpire.UI
         public TMP_InputField turnSpeedInput;
         public Slider mapSizeSlider;
         public TMP_InputField mapSizeInput;
+        public Toggle fogOfWarToggle;
 
         [Header("Host Network UI")]
         [SerializeField] private TMP_InputField hostCodeDisplay;
@@ -453,7 +454,8 @@ namespace GridEmpire.UI
                 totalPlayers = (int)totalPlayersSlider.value,
                 aiBots = (int)aiBotsSlider.value,
                 mapRadius = (int)mapSizeSlider.value,
-                turnSpeedMultiplier = turnSpeedSlider.value
+                turnSpeedMultiplier = turnSpeedSlider.value,
+                fogOfWarEnabled = fogOfWarToggle != null ? fogOfWarToggle.isOn : true
             };
             settings.Save();
 
@@ -578,13 +580,22 @@ namespace GridEmpire.UI
         }
 
         // ─── SETTINGS UI ─────────────────────────────────────────────────────────────
-
         private void SetupGeneralUI(GameSettings settings)
         {
             BindElement(totalPlayersSlider, totalPlayersInput, settings.totalPlayers, 1, 6, true, (v) => { });
             BindElement(aiBotsSlider, aiBotsInput, settings.aiBots, 0, 6, true, (v) => { });
             BindElement(turnSpeedSlider, turnSpeedInput, settings.turnSpeedMultiplier, 0.5f, 250f, false, (v) => { });
             BindElement(mapSizeSlider, mapSizeInput, settings.mapRadius, 8, 25, true, (v) => { });
+            if (fogOfWarToggle != null)
+            {
+                fogOfWarToggle.isOn = settings.fogOfWarEnabled;
+                fogOfWarToggle.onValueChanged.AddListener(value =>
+                {
+                    settings.fogOfWarEnabled = value;
+                    if (GlobalNetworkSettings.Instance != null)
+                        GlobalNetworkSettings.Instance.FogOfWarEnabled.Value = value;
+                });
+            }
         }
 
         private void ShowPanel(GameObject panelToShow)

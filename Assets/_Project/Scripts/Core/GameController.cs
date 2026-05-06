@@ -39,7 +39,7 @@ namespace GridEmpire.Core
 
         public static System.Action<IUnit> OnUnitSelected;
         public static System.Action OnUnitRemoved;
-        public static bool IsDebugMode = true;
+        public static bool IsDebugMode;
 
         private IUnit _selectedUnit;
         public IUnit SelectedUnit
@@ -119,6 +119,7 @@ namespace GridEmpire.Core
             Debug.Log("[GameController] BaseCells beállítva.");
 
             // 5. FogOfWar a host playernek
+            IsDebugMode = !GlobalNetworkSettings.Instance.FogOfWarEnabled.Value;
             var hostPlayer = GetPlayerById(0);
             if (hostPlayer != null)
                 GridManager.Instance.UpdateFogOfWar(hostPlayer.Id);
