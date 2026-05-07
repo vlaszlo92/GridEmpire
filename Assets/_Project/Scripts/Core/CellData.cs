@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Runtime.CompilerServices;
 using UnityEngine;
 
 namespace GridEmpire.Core
@@ -32,22 +31,15 @@ namespace GridEmpire.Core
             get => _currentVisibility;
             set
             {
-                if (_currentVisibility == value) return; // csak ha változott
+                if (_currentVisibility == value) return;
                 _currentVisibility = value;
-
-                // Ha van rajta egység, értesítjük
-                foreach (var obj in OccupyingUnits)
-                {
-                    var unit = obj as IUnit;
-                    unit?.OnCellVisibilityChanged(value);
-                }
             }
         }
 
         private Dictionary<int, float> _playerInfluences = new Dictionary<int, float>();
 
         public List<InfluenceEntry> InfluenceDisplay = new List<InfluenceEntry>();
-        public List<UnityEngine.Object> OccupyingUnits = new List<UnityEngine.Object>();
+        public IUnit Occupier { get; private set; }
         public List<int> CapturingUnitIds = new List<int>();
 
         public Action OnVisualUpdateRequired;
@@ -60,30 +52,22 @@ namespace GridEmpire.Core
             Id = id;
         }
 
-        public void RegisterOccupier(object unit)
+        public void RegisterOccupier(IUnit unit)
         {
-            UnityEngine.Object unityObj = unit as UnityEngine.Object;
-            if (unityObj != null && !OccupyingUnits.Contains(unityObj))
+            Occupier = unit;
+            IsOccupied = true;
+        }
+
+        public void UnregisterOccupier(IUnit unit)
+        {
+            if (Occupier == unit)
             {
-                OccupyingUnits.Add(unityObj);
-                IsOccupied = true;
+                Occupier = null;
+                IsOccupied = false;
             }
         }
 
-        public void UnregisterOccupier(object unit)
-        {
-            UnityEngine.Object unityObj = unit as UnityEngine.Object;
-            if (OccupyingUnits.Contains(unityObj))
-            {
-                OccupyingUnits.Remove(unityObj);
-                if (OccupyingUnits.Count == 0) IsOccupied = false;
-            }
-        }
-
-        public object GetFirstOccupier()
-        {
-            return OccupyingUnits.Count > 0 ? OccupyingUnits[0] : null;
-        }
+        public IUnit GetOccupier() => Occupier;
 
         public float GetCaptureProgress(int playerId)
         {

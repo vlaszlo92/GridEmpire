@@ -36,6 +36,7 @@ namespace GridEmpire.Gameplay
 
         private PlayerProfile _ownerProfile;
         private MeshRenderer[] _renderers;
+        private Coroutine _fadeCoroutine;
 
         public int OwnerId => _ownerId;
         public UnitData Data => _data;
@@ -43,11 +44,29 @@ namespace GridEmpire.Gameplay
         public bool IsDead => _isDead;
         public void DestroyUnit() => ExecuteDeath();
 
+        private Material[] _fadeMaterials;
+
+        private float _currentAlpha = 0f;
+        private float _targetAlpha = 0f;
+        private bool _isFading = false;
+
         private void Awake()
         {
             _gridManager = FindFirstObjectByType<GridManager>();
             _resolver = FindFirstObjectByType<TurnResolver>();
+
+            _renderers = GetComponentsInChildren<MeshRenderer>();
+            _fadeMaterials = _renderers
+                .Where(r => r != null && r.material.HasProperty("_BaseColor"))
+                .Select(r => r.material)
+                .ToArray();
+
+            _currentAlpha = 0f;
+            _targetAlpha = 0f;
+            ApplyAlpha(0f);
+            foreach (var r in _renderers) r.enabled = false;
         }
+
 
         public override void OnNetworkSpawn()
         {
@@ -62,6 +81,10 @@ namespace GridEmpire.Gameplay
 
         private IEnumerator ClientInitDeferred()
         {
+            yield return new WaitUntil(() => NetworkUnitId.Value != 0);
+            _id = NetworkUnitId.Value;
+            _ownerId = NetworkOwnerId.Value;
+
             yield return new WaitUntil(() =>
                 GameController.Instance != null &&
                 GameController.Instance.GetPlayerById(_ownerId) != null &&
@@ -76,14 +99,20 @@ namespace GridEmpire.Gameplay
             _ownerProfile = GameController.Instance.GetPlayerById(_ownerId);
             _ownerProfile?.AddUnit(this);
             SyncPositionToCurrentCell();
-            OnCellVisibilityChanged(_currentCell.CurrentVisibility);
         }
 
         private void Update()
         {
-            if (_previousCell != null && _gridManager != null)
+            if (!_isFading) return;
+
+            float speed = TurnManager.Instance != null ? 1f / TurnManager.Instance.TickDuration : 1f;
+            _currentAlpha = Mathf.MoveTowards(_currentAlpha, _targetAlpha, speed * Time.deltaTime);
+            ApplyAlpha(_currentAlpha);
+
+            if (Mathf.Approximately(_currentAlpha, _targetAlpha))
             {
-                Debug.DrawLine(transform.position, _gridManager.GetWorldPosition(_previousCell.Q, _previousCell.R), Color.red);
+                _isFading = false;
+                foreach (var r in _renderers) r.enabled = _targetAlpha > 0f;
             }
         }
 
@@ -119,7 +148,6 @@ namespace GridEmpire.Gameplay
             if (_currentCell != null) _currentCell.RegisterOccupier(this);
 
             UpdateInitialFacing();
-            OnCellVisibilityChanged(_currentCell.CurrentVisibility);
         }
 
         private void UpdateInitialFacing()
@@ -289,21 +317,25 @@ namespace GridEmpire.Gameplay
             return preferred ?? fallback;
         }
 
-        public void OnCellVisibilityChanged(VisibilityState visibility)
+        public void SetVisible(bool visible)
         {
-            bool isOwn = _ownerId == GameController.Instance?.GetLocalPlayer()?.Id;
-            bool visible = isOwn || visibility == VisibilityState.Visible;
-            SetVisible(visible);
+            _targetAlpha = visible ? 1f : 0f;
+            _isFading = true;
+
+            if (visible)
+                foreach (var r in _renderers) r.enabled = true;
         }
 
-        private void SetVisible(bool visible)
+        private void ApplyAlpha(float alpha)
         {
-            if (_renderers == null)
-                _renderers = GetComponentsInChildren<MeshRenderer>();
-            foreach (var r in _renderers)
-                r.enabled = visible;
+            if (_fadeMaterials == null) return;
+            foreach (var mat in _fadeMaterials)
+            {
+                Color c = mat.GetColor("_BaseColor");
+                c.a = alpha;
+                mat.SetColor("_BaseColor", c);
+            }
         }
-
 
         // ─── COMBAT ─────────────────────────────────────────────────────────────────
 
@@ -565,7 +597,7 @@ namespace GridEmpire.Gameplay
             var neighbors = _gridManager.GetNeighbors(_currentCell);
             foreach (var n in neighbors)
             {
-                if (n.IsOccupied && n.GetFirstOccupier() is UnitController uc && uc._ownerId != _ownerId && !uc._isDead)
+                if (n.IsOccupied && n.GetOccupier() is UnitController uc && uc._ownerId != _ownerId && !uc._isDead)
                     return uc;
             }
             return null;

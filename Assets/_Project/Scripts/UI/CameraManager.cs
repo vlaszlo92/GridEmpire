@@ -23,6 +23,12 @@ namespace GridEmpire.UI
         [SerializeField] private float cameraDistance = 10f;
         [SerializeField] private float cameraTilt = 45f;
 
+        [Header("Idle Breath")]
+        [SerializeField] private float breathAmplitude = 0.03f;
+        [SerializeField] private float breathSpeed = 0.5f;
+
+        private float _baseY;
+        private float _lastMoveTime;
         private bool _isPlayerSpawned = false;
 
         private void OnEnable()
@@ -47,6 +53,7 @@ namespace GridEmpire.UI
             HandleMovement();
             HandleZoom();
             ClampPosition();
+            ApplyBreath();
         }
 
         private void HandleMovement()
@@ -63,6 +70,7 @@ namespace GridEmpire.UI
             Vector3 move = (right * -delta.x + forward * -delta.y) * moveSpeed * Time.deltaTime;
 
             transform.position += move;
+            _lastMoveTime = Time.time;
         }
 
         private void HandleZoom()
@@ -75,6 +83,8 @@ namespace GridEmpire.UI
 
             if (nextPos.y >= zoomLimits.x && nextPos.y <= zoomLimits.y)
                 transform.position = nextPos;
+            _baseY = transform.position.y;
+            _lastMoveTime = Time.time;
         }
 
         private void ClampPosition()
@@ -138,6 +148,15 @@ namespace GridEmpire.UI
             transform.rotation = horizontalRot * Quaternion.Euler(cameraTilt, 0f, 0f);
 
             _isPlayerSpawned = true;
+            _baseY = camPos.y;
+        }
+        private void ApplyBreath()
+        {
+            if (Time.time - _lastMoveTime < 3f) return;
+
+            Vector3 pos = transform.position;
+            pos.y = _baseY + Mathf.Sin(Time.time * breathSpeed) * breathAmplitude;
+            transform.position = pos;
         }
     }
 }

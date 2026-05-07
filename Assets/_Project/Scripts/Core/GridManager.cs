@@ -104,36 +104,62 @@ namespace GridEmpire.Core
 
         public void UpdateFogOfWar(int forPlayerId)
         {
+            var visibleCells = new HashSet<CellData>();
+
             if (IsDebugMode || !GlobalNetworkSettings.Instance.FogOfWarEnabled.Value)
             {
                 foreach (var c in _grid.Values) c.CurrentVisibility = VisibilityState.Visible;
                 foreach (var p in _presenterMap.Values) p.UpdateVisual();
+                // Unit-ok is mind látható debug módban
+                foreach (var unit in GameController.Instance.GetAllUnits())
+                    (unit as IUnit)?.SetVisible(true);
                 return;
             }
-
-            foreach (var c in _grid.Values)
-                if (c.CurrentVisibility == VisibilityState.Visible)
-                    c.CurrentVisibility = VisibilityState.Explored;
-
+            var allUnits = GameController.Instance.GetAllUnits().ToList();
+            Debug.Log($"[FogOfWar] Összes unit: {allUnits.Count}, " +
+                      $"ownerek: {string.Join(",", allUnits.Select(u => u.OwnerId))}");
+            // 1. Látható cellák összegyűjtése
             var player = GameController.Instance.GetPlayerById(forPlayerId);
-            if (player == null) return;
-
-            if (player.BaseCell != null)
+            if (player != null)
             {
-                player.BaseCell.CurrentVisibility = VisibilityState.Visible;
-                foreach (var n in GetNeighbors(player.BaseCell)) n.CurrentVisibility = VisibilityState.Visible;
-            }
-
-            foreach (IUnit unit in player.ActiveUnits)
-            {
-                if (unit != null && !unit.IsDead && unit.CurrentCell != null)
+                if (player.BaseCell != null)
                 {
-                    unit.CurrentCell.CurrentVisibility = VisibilityState.Visible;
-                    foreach (var n in GetNeighbors(unit.CurrentCell)) n.CurrentVisibility = VisibilityState.Visible;
+                    visibleCells.Add(player.BaseCell);
+                    foreach (var n in GetNeighbors(player.BaseCell)) visibleCells.Add(n);
+                }
+
+                foreach (IUnit unit in player.ActiveUnits)
+                {
+                    if (unit == null || unit.IsDead || unit.CurrentCell == null) continue;
+                    visibleCells.Add(unit.CurrentCell);
+                    foreach (var n in GetNeighbors(unit.CurrentCell)) visibleCells.Add(n);
                 }
             }
 
+            // 2. Cellák láthatóságának beállítása
+            foreach (var c in _grid.Values)
+            {
+                if (visibleCells.Contains(c))
+                    c.CurrentVisibility = VisibilityState.Visible;
+                else if (c.CurrentVisibility == VisibilityState.Visible)
+                    c.CurrentVisibility = VisibilityState.Explored;
+            }
             foreach (var p in _presenterMap.Values) p.UpdateVisual();
+
+            // 3. Unit-ok láthatóságának beállítása
+            allUnits = GameController.Instance.GetAllUnits().ToList();
+            Debug.Log($"[FogOfWar] Összes unit: {allUnits.Count}, forPlayerId={forPlayerId}");
+
+            foreach (var unit in allUnits)
+            {
+                var uc = unit as IUnit;
+                if (uc == null) { Debug.Log("[FogOfWar] uc == null, skip"); continue; }
+
+                bool isOwn = uc.OwnerId == forPlayerId;
+                bool visible = isOwn || (uc.CurrentCell != null && visibleCells.Contains(uc.CurrentCell));
+                Debug.Log($"[FogOfWar] unit={uc.Id} owner={uc.OwnerId} isOwn={isOwn} visible={visible} currentCell={uc.CurrentCell?.Id}");
+                uc.SetVisible(visible);
+            }
         }
 
         public void FinalizeCapture(CellData cell, int playerId)

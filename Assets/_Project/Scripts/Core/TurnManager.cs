@@ -160,11 +160,18 @@ namespace GridEmpire.Core
                 player.SetGold(playerSync.CurrentGold);
             }
 
-            var localPlayer = GameController.Instance.GetLocalPlayer();
-            if (localPlayer != null) gridManager.UpdateFogOfWar(localPlayer.Id);
-
             TurnCount = snapshot.TurnIndex;
             OnTurnCompleted?.Invoke();
+
+            // Egy frame késleltetés hogy a ClientRpc-k (Move, Capture) mind megérkezzenek
+            StartCoroutine(DelayedFogUpdate(gridManager));
+        }
+
+        private IEnumerator DelayedFogUpdate(GridManager gridManager)
+        {
+            yield return null; // egy frame várakozás
+            var localPlayer = GameController.Instance.GetLocalPlayer();
+            if (localPlayer != null) gridManager.UpdateFogOfWar(localPlayer.Id);
         }
 
         public void SetPaused(bool paused) => _isPaused = paused;

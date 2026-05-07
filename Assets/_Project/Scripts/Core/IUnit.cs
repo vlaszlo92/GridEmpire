@@ -15,6 +15,6 @@ namespace GridEmpire.Core
         void DestroyUnit();
         float GetCurrentHP();
         void SyncFromSnapshot(float newHp, bool isDead);
-        void OnCellVisibilityChanged(VisibilityState value);
+        void SetVisible(bool visible);
     }
 }

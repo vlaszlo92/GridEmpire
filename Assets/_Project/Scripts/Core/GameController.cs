@@ -403,6 +403,7 @@ namespace GridEmpire.Core
         public IUnit GetUnitById(int id) => _unitRegistry.GetValueOrDefault(id);
         public void RegisterSpawner(ISpawner spawner) => _spawnerRegistry[spawner.OwnerId] = spawner;
         public ISpawner GetSpawnerByPlayerId(int id) => _spawnerRegistry.GetValueOrDefault(id);
+        public IEnumerable<IUnit> GetAllUnits() => _unitRegistry.Values;
 
         public void RegisterUnitData(UnitData data)
         {

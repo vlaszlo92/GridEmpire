@@ -124,7 +124,7 @@ namespace GridEmpire.Input
                 return;
             }
 
-            UnitController unitOnCell = visual.Data.GetFirstOccupier() as UnitController;
+            UnitController unitOnCell = visual.Data.GetOccupier() as UnitController;
             ProcessSelectionLogic(visual, unitOnCell);
         }
 
