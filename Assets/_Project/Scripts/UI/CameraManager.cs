@@ -1,6 +1,7 @@
 ﻿using UnityEngine;
 using GridEmpire.Core;
 using GridEmpire.Input;
+using System.Collections;
 
 namespace GridEmpire.UI
 {
@@ -27,33 +28,78 @@ namespace GridEmpire.UI
         [SerializeField] private float breathAmplitude = 0.03f;
         [SerializeField] private float breathSpeed = 0.5f;
 
+        [Header("Intro Animation")]
+        [SerializeField] private float introStartDistance = 20f;
+        [SerializeField] private float introStartHeight = 15f;
+        [SerializeField] private float introDuration = 1.5f;
+        [SerializeField] private float introDelay = 0.5f;
+
+        private bool _isIntroPlaying = false;
+        private Vector3 _introStartPos;
+        private Vector3 _introTargetPos;
+        private Quaternion _introStartRot;
+        private Quaternion _introTargetRot;
+        private float _introElapsed = 0f;
+        private float _introDelayElapsed = 0f;
+
         private float _baseY;
         private float _lastMoveTime;
         private bool _isPlayerSpawned = false;
 
-        private void OnEnable()
+        private void Awake()
         {
-            GameController.OnLocalPlayerReady += FocusOnBase;
+            StartCoroutine(WaitAndFocus());
         }
 
-        private void OnDisable()
+        private IEnumerator WaitAndFocus()
         {
-            GameController.OnLocalPlayerReady -= FocusOnBase;
+            yield return new WaitUntil(() =>
+                GameController.Instance != null &&
+                GameController.Instance.GetLocalPlayer() != null &&
+                GameController.Instance.GetLocalPlayer().BaseCell != null &&
+                FindFirstObjectByType<GridManager>() != null
+            );
+
+            FocusOnBase();
         }
         private void LateUpdate()
         {
-            if (!_isPlayerSpawned)
+            if (_isIntroPlaying)
             {
-                FocusOnBase();
+                HandleIntro();
                 return;
             }
 
             if (InputManager.Instance == null) return;
-
             HandleMovement();
             HandleZoom();
             ClampPosition();
             ApplyBreath();
+        }
+
+        private void HandleIntro()
+        {
+            if (_introDelayElapsed < introDelay)
+            {
+                _introDelayElapsed += Time.deltaTime;
+                return;
+            }
+
+            _introElapsed += Time.deltaTime;
+            float t = Mathf.Clamp01(_introElapsed / introDuration);
+            float smoothT = Mathf.SmoothStep(0f, 1f, t);
+
+            transform.position = Vector3.Lerp(_introStartPos, _introTargetPos, smoothT);
+
+            if (t >= 1f)
+            {
+                transform.position = _introTargetPos;
+                transform.rotation = _introTargetRot;
+                Debug.Log($"[Intro] VÉGE előtt pos={transform.position}");
+                _isIntroPlaying = false;
+                _isPlayerSpawned = true;
+                Debug.Log($"[Intro] VÉGE után pos={transform.position}");
+            }
         }
 
         private void HandleMovement()
@@ -89,39 +135,38 @@ namespace GridEmpire.UI
 
         private void ClampPosition()
         {
+            Vector3 before = transform.position;
             Vector3 pos = transform.position;
             pos.x = Mathf.Clamp(pos.x, xLimits.x, xLimits.y);
             pos.z = Mathf.Clamp(pos.z, zLimits.x, zLimits.y);
             pos.y = Mathf.Clamp(pos.y, zoomLimits.x, zoomLimits.y);
             transform.position = pos;
+            if (before != transform.position)
+                Debug.Log($"[Clamp] Pozíció változott: {before} → {transform.position}");
         }
 
         public void FocusOnBase()
         {
             var localPlayer = GameController.Instance?.GetLocalPlayer();
             var gridManager = FindFirstObjectByType<GridManager>();
+            Debug.Log($"[Camera] FocusOnBase: localPlayer={localPlayer?.Id}, " +
+                      $"baseCell={localPlayer?.BaseCell?.Id}, gridManager={gridManager != null}");
+
             if (localPlayer == null || localPlayer.BaseCell == null || gridManager == null)
                 return;
 
-            Debug.Log("CameraManager: FocusOnBase called. LocalPlayer: " + (localPlayer.Id) + " " + localPlayer.BaseCell + ", GridManager: " + (gridManager != null));
-            // Saját bázis pozíciója
             Vector3 myBasePos = gridManager.GetWorldPosition(
                 localPlayer.BaseCell.Q,
                 localPlayer.BaseCell.R
             );
 
-            // Átlós ellenfél: (id + 3) % playerCount
             var allPlayers = GameController.Instance.Players;
             int oppositeId = (localPlayer.Id + 3) % allPlayers.Count;
             PlayerProfile oppositePlayer = null;
-
             foreach (var p in allPlayers)
-            {
                 if (p.Id == oppositeId) { oppositePlayer = p; break; }
-            }
 
             Vector3 directionToOpposite;
-
             if (oppositePlayer != null && oppositePlayer.BaseCell != null)
             {
                 Vector3 oppositeBasePos = gridManager.GetWorldPosition(
@@ -132,23 +177,32 @@ namespace GridEmpire.UI
             }
             else
             {
-                // Fallback: pálya közepe felé
                 directionToOpposite = (Vector3.zero - myBasePos).normalized;
             }
 
-            // Kamera: bázis mögött, ellentétes irányban, megadott magasságban
-            Vector3 camPos = myBasePos - directionToOpposite * cameraDistance;
-            camPos.y = cameraHeight;
-            transform.position = camPos;
+            // Célpozíció – egy picit közelebb mint a max zoom
+            Vector3 targetPos = myBasePos - directionToOpposite * (cameraDistance - 2.5f);
+            targetPos.y = cameraHeight;
 
-            // Forgatás: előre néz az ellenfél bázisa felé, dőlésszöggel
-            Vector3 lookDir = directionToOpposite;
-            lookDir.y = 0f;
-            Quaternion horizontalRot = Quaternion.LookRotation(lookDir);
-            transform.rotation = horizontalRot * Quaternion.Euler(cameraTilt, 0f, 0f);
+            // Startpozíció – távolabb és magasabb
+            Vector3 startPos = myBasePos - directionToOpposite * (cameraDistance + introStartDistance);
+            startPos.y = cameraHeight + introStartHeight;
 
-            _isPlayerSpawned = true;
-            _baseY = camPos.y;
+            Quaternion targetRot = Quaternion.LookRotation(directionToOpposite) * Quaternion.Euler(cameraTilt, 0f, 0f);
+
+            // Kamera azonnal a startpozícióba ugrik
+            transform.position = startPos;
+            transform.rotation = targetRot;
+
+            _introStartRot = targetRot;
+            _introStartPos = startPos;
+            _introTargetPos = targetPos;
+            _introTargetRot = targetRot;
+            _introElapsed = 0f;
+            _introDelayElapsed = 0f;
+            _isIntroPlaying = true;
+            _isPlayerSpawned = false;
+            _baseY = targetPos.y;
         }
         private void ApplyBreath()
         {
