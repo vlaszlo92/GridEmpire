@@ -88,9 +88,8 @@ MonoBehaviour:
     OwnerId: 0
     IsBase: 0
     IsOccupied: 0
-    CurrentVisibility: 0
     InfluenceDisplay: []
-    OccupyingUnits: []
+    CapturingUnitIds: 
   _combatTarget: {fileID: 0}
   _currentStamina: 0
 --- !u!1001 &171644053912618691

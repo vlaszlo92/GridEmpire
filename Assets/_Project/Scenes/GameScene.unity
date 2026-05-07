@@ -552,6 +552,8 @@ MonoBehaviour:
   cameraHeight: 15
   cameraDistance: 10
   cameraTilt: 45
+  breathAmplitude: 0.03
+  breathSpeed: 0.5
 --- !u!1 &338867846
 GameObject:
   m_ObjectHideFlags: 0
