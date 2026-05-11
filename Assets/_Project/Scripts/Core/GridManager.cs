@@ -24,7 +24,9 @@ namespace GridEmpire.Core
         private Dictionary<CellData, ICellPresenter> _presenterMap = new Dictionary<CellData, ICellPresenter>();
         private Dictionary<int, CellData> _cellByIdLookup = new Dictionary<int, CellData>();
 
-        Vector2Int[] Directions = {
+        private static readonly float Sqrt3 = Mathf.Sqrt(3f);
+
+        private static readonly Vector2Int[] Directions = {
             new Vector2Int(0, -1), new Vector2Int(1, -1), new Vector2Int(1, 0),
             new Vector2Int(0, 1),  new Vector2Int(-1, 1), new Vector2Int(-1, 0)
         };
@@ -104,22 +106,22 @@ namespace GridEmpire.Core
 
         public void UpdateFogOfWar(int forPlayerId)
         {
-            var visibleCells = new HashSet<CellData>();
-
+            // Debug / FoW kikapcsolva
             if (IsDebugMode || !GlobalNetworkSettings.Instance.FogOfWarEnabled.Value)
             {
-                foreach (var c in _grid.Values) c.CurrentVisibility = VisibilityState.Visible;
-                foreach (var p in _presenterMap.Values) p.UpdateVisual();
-                // Unit-ok is mind látható debug módban
-                foreach (var unit in GameController.Instance.GetAllUnits())
-                    (unit as IUnit)?.SetVisible(true);
+                foreach (var (cell, presenter) in _presenterMap)
+                {
+                    cell.CurrentVisibility = VisibilityState.Visible;
+                    presenter.UpdateVisual();
+                }
+                GameController.Instance.UpdateUnitVisibility(null, forPlayerId); // null = mindenki látszik
                 return;
             }
-            var allUnits = GameController.Instance.GetAllUnits().ToList();
-            Debug.Log($"[FogOfWar] Összes unit: {allUnits.Count}, " +
-                      $"ownerek: {string.Join(",", allUnits.Select(u => u.OwnerId))}");
+
             // 1. Látható cellák összegyűjtése
+            var visibleCells = new HashSet<CellData>();
             var player = GameController.Instance.GetPlayerById(forPlayerId);
+
             if (player != null)
             {
                 if (player.BaseCell != null)
@@ -136,30 +138,21 @@ namespace GridEmpire.Core
                 }
             }
 
-            // 2. Cellák láthatóságának beállítása
-            foreach (var c in _grid.Values)
+            // 2. Cellák láthatósága + presenter frissítés – egy loopban
+            foreach (var (cell, presenter) in _presenterMap)
             {
-                if (visibleCells.Contains(c))
-                    c.CurrentVisibility = VisibilityState.Visible;
-                else if (c.CurrentVisibility == VisibilityState.Visible)
-                    c.CurrentVisibility = VisibilityState.Explored;
+                var oldState = cell.CurrentVisibility;
+
+                cell.CurrentVisibility = visibleCells.Contains(cell)
+                    ? VisibilityState.Visible
+                    : (oldState == VisibilityState.Visible ? VisibilityState.Explored : oldState);
+
+                if (oldState != cell.CurrentVisibility)
+                    presenter.UpdateVisual();
             }
-            foreach (var p in _presenterMap.Values) p.UpdateVisual();
 
-            // 3. Unit-ok láthatóságának beállítása
-            allUnits = GameController.Instance.GetAllUnits().ToList();
-            Debug.Log($"[FogOfWar] Összes unit: {allUnits.Count}, forPlayerId={forPlayerId}");
-
-            foreach (var unit in allUnits)
-            {
-                var uc = unit as IUnit;
-                if (uc == null) { Debug.Log("[FogOfWar] uc == null, skip"); continue; }
-
-                bool isOwn = uc.OwnerId == forPlayerId;
-                bool visible = isOwn || (uc.CurrentCell != null && visibleCells.Contains(uc.CurrentCell));
-                Debug.Log($"[FogOfWar] unit={uc.Id} owner={uc.OwnerId} isOwn={isOwn} visible={visible} currentCell={uc.CurrentCell?.Id}");
-                uc.SetVisible(visible);
-            }
+            // 3. Unit-ok láthatósága
+            GameController.Instance.UpdateUnitVisibility(visibleCells, forPlayerId);
         }
 
         public void FinalizeCapture(CellData cell, int playerId)
@@ -212,13 +205,13 @@ namespace GridEmpire.Core
         public Vector3 GetWorldPosition(int q, int r)
         {
             float rv = hexSize * 0.5f;
-            return new Vector3(rv * (Mathf.Sqrt(3f) * q + (Mathf.Sqrt(3f) / 2f) * r), 0, rv * (1.5f * r));
+            return new Vector3(rv * (Sqrt3 * q + (Sqrt3 / 2f) * r), 0, rv * (1.5f * r));
         }
 
         public CellData GetCellAtPosition(Vector3 worldPosition)
         {
             float size = hexSize * 0.5f;
-            float q = (Mathf.Sqrt(3f) / 3f * worldPosition.x - 1f / 3f * worldPosition.z) / size;
+            float q = (Sqrt3 / 3f * worldPosition.x - 1f / 3f * worldPosition.z) / size;
             float r = (2f / 3f * worldPosition.z) / size;
             return GetCell(RoundToHex(q, r).x, RoundToHex(q, r).y);
         }

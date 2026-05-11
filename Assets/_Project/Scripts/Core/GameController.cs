@@ -1,6 +1,7 @@
 ﻿using GridEmpire.AI;
 using GridEmpire.Networking;
 using GridEmpire.Shared;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
@@ -376,8 +377,8 @@ namespace GridEmpire.Core
                 var player = GetPlayerById(playerIds[i]);
                 if (player != null)
                 {
-                    player.SetGold(golds[i]);       // ezt a metódust hozzá kell adni PlayerProfile-ba
-                    player.SetIncome(incomes[i]);   // ezt is
+                    player.SyncGold(golds[i]);
+                    player.SyncIncome(incomes[i]);
                 }
             }
         }
@@ -398,12 +399,22 @@ namespace GridEmpire.Core
         // ─── REGISTRY ────────────────────────────────────────────────────────────────
 
         public int GetNextAvailableId() => _nextUnitId++;
-        public void RegisterUnit(IUnit unit) => _unitRegistry[unit.Id] = unit;
-        public void UnregisterUnit(int id) => _unitRegistry.Remove(id);
+        public void RegisterUnit(IUnit unit)
+        {
+            _unitRegistry[unit.Id] = unit;
+            GetPlayerById(unit.OwnerId)?.AddUnit(unit);
+        }
+
+        public void UnregisterUnit(int id)
+        {
+            if (!_unitRegistry.Remove(id, out var unit)) return;
+            GetPlayerById(unit.OwnerId)?.RemoveUnit(unit);
+        }
         public IUnit GetUnitById(int id) => _unitRegistry.GetValueOrDefault(id);
         public void RegisterSpawner(ISpawner spawner) => _spawnerRegistry[spawner.OwnerId] = spawner;
         public ISpawner GetSpawnerByPlayerId(int id) => _spawnerRegistry.GetValueOrDefault(id);
-        public IEnumerable<IUnit> GetAllUnits() => _unitRegistry.Values;
+        public IReadOnlyCollection<IUnit> GetAllUnits() => _unitRegistry.Values;
+        public IReadOnlyCollection<IUnit> GetUnitsForPlayer(int playerId) => GetPlayerById(playerId)?.ActiveUnits ?? (IReadOnlyCollection<IUnit>)Array.Empty<IUnit>();
 
         public void RegisterUnitData(UnitData data)
         {
@@ -422,9 +433,7 @@ namespace GridEmpire.Core
         {
             if (unit == null) return;
             UnregisterUnit(unit.Id);
-            if (_selectedUnit != null && _selectedUnit.Id == unit.Id) SelectedUnit = null;
-            var player = GetPlayerById(unit.OwnerId);
-            if (player != null) { player.RemoveUnit(unit); player.RecalculateIncome(); }
+            if (_selectedUnit?.Id == unit.Id) SelectedUnit = null;
             OnUnitRemoved?.Invoke();
         }
 
@@ -432,5 +441,15 @@ namespace GridEmpire.Core
         public PlayerProfile GetLocalPlayer() => _players.FirstOrDefault(p => p.IsLocalPlayer);
         public PlayerProfile GetPlayerById(int id) => _players.FirstOrDefault(p => p.Id == id);
         public IReadOnlyList<PlayerProfile> GetPlayers() => Players;
+        public void UpdateUnitVisibility(HashSet<CellData> visibleCells, int forPlayerId)
+        {
+            foreach (var unit in _unitRegistry.Values)
+            {
+                bool visible = visibleCells == null
+                               || unit.OwnerId == forPlayerId
+                               || (unit.CurrentCell != null && visibleCells.Contains(unit.CurrentCell));
+                unit.SetVisible(visible);
+            }
+        }
     }
 }

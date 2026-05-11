@@ -24,12 +24,13 @@ namespace GridEmpire.Core
         [SerializeField] private float minCalculationTimePerFrameMs = 0.5f;
         [Range(0.1f, 1.0f)][SerializeField] private float maxCalculationTimeCapFraction = 0.9f;
         [SerializeField] private float warningRateLimitSeconds = 1.0f;
-
+                
         public float TickDuration => tickDuration;
         public int TurnCount { get; private set; } = 0;
         public TurnPhase CurrentPhase { get; private set; } = TurnPhase.Idle;
         public float CalculationProgress { get; private set; }
 
+        private GridManager _gridManager;
         private ITurnResolver _resolver;
         private float _timer;
         private bool _isPaused;
@@ -44,6 +45,7 @@ namespace GridEmpire.Core
         {
             if (Instance == null) Instance = this;
             else { Destroy(gameObject); return; }
+            _gridManager = FindFirstObjectByType<GridManager>();
             LoadSettings();
         }
 
@@ -143,9 +145,12 @@ namespace GridEmpire.Core
         }
 
         private void ApplySnapshot(TurnSnapshot snapshot)
-        {
-            var gridManager = FindFirstObjectByType<GridManager>();
-            if (gridManager == null) return;
+        {            
+            if (_gridManager == null)
+            {
+                _gridManager = FindFirstObjectByType<GridManager>(); 
+                return; 
+            }
 
             foreach (var unitSync in snapshot.UnitActions)
             {
@@ -157,14 +162,14 @@ namespace GridEmpire.Core
             {
                 var player = GameController.Instance.GetPlayerById(playerSync.PlayerId);
                 if (player == null) continue;
-                player.SetGold(playerSync.CurrentGold);
+                player.SyncGold(playerSync.CurrentGold);
             }
 
             TurnCount = snapshot.TurnIndex;
             OnTurnCompleted?.Invoke();
 
             // Egy frame késleltetés hogy a ClientRpc-k (Move, Capture) mind megérkezzenek
-            StartCoroutine(DelayedFogUpdate(gridManager));
+            StartCoroutine(DelayedFogUpdate(_gridManager));
         }
 
         private IEnumerator DelayedFogUpdate(GridManager gridManager)

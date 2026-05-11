@@ -34,6 +34,7 @@ namespace GridEmpire.UI
         [SerializeField] private float introDuration = 1.5f;
         [SerializeField] private float introDelay = 0.5f;
 
+        private GridManager _gridManager;
         private bool _isIntroPlaying = false;
         private Vector3 _introStartPos;
         private Vector3 _introTargetPos;
@@ -44,7 +45,6 @@ namespace GridEmpire.UI
 
         private float _baseY;
         private float _lastMoveTime;
-        private bool _isPlayerSpawned = false;
 
         private void Awake()
         {
@@ -59,7 +59,7 @@ namespace GridEmpire.UI
                 GameController.Instance.GetLocalPlayer().BaseCell != null &&
                 FindFirstObjectByType<GridManager>() != null
             );
-
+            _gridManager = FindFirstObjectByType<GridManager>();
             FocusOnBase();
         }
         private void LateUpdate()
@@ -97,7 +97,6 @@ namespace GridEmpire.UI
                 transform.rotation = _introTargetRot;
                 Debug.Log($"[Intro] VÉGE előtt pos={transform.position}");
                 _isIntroPlaying = false;
-                _isPlayerSpawned = true;
                 Debug.Log($"[Intro] VÉGE után pos={transform.position}");
             }
         }
@@ -148,14 +147,14 @@ namespace GridEmpire.UI
         public void FocusOnBase()
         {
             var localPlayer = GameController.Instance?.GetLocalPlayer();
-            var gridManager = FindFirstObjectByType<GridManager>();
+            if (_gridManager == null) _gridManager = FindFirstObjectByType<GridManager>();
             Debug.Log($"[Camera] FocusOnBase: localPlayer={localPlayer?.Id}, " +
-                      $"baseCell={localPlayer?.BaseCell?.Id}, gridManager={gridManager != null}");
+                      $"baseCell={localPlayer?.BaseCell?.Id}, gridManager={_gridManager != null}");
 
-            if (localPlayer == null || localPlayer.BaseCell == null || gridManager == null)
+            if (localPlayer == null || localPlayer.BaseCell == null || _gridManager == null)
                 return;
 
-            Vector3 myBasePos = gridManager.GetWorldPosition(
+            Vector3 myBasePos = _gridManager.GetWorldPosition(
                 localPlayer.BaseCell.Q,
                 localPlayer.BaseCell.R
             );
@@ -169,7 +168,7 @@ namespace GridEmpire.UI
             Vector3 directionToOpposite;
             if (oppositePlayer != null && oppositePlayer.BaseCell != null)
             {
-                Vector3 oppositeBasePos = gridManager.GetWorldPosition(
+                Vector3 oppositeBasePos = _gridManager.GetWorldPosition(
                     oppositePlayer.BaseCell.Q,
                     oppositePlayer.BaseCell.R
                 );
@@ -201,7 +200,6 @@ namespace GridEmpire.UI
             _introElapsed = 0f;
             _introDelayElapsed = 0f;
             _isIntroPlaying = true;
-            _isPlayerSpawned = false;
             _baseY = targetPos.y;
         }
         private void ApplyBreath()

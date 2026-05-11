@@ -9,7 +9,6 @@ public class FadeTest : MonoBehaviour
     private Material[] _materials;
     private float _currentAlpha = 1f;
     private float _targetAlpha = 1f;
-    private bool _isFading = false;
     private MeshRenderer[] _renderers;
 
     private void Awake()

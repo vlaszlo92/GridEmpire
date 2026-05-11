@@ -21,11 +21,9 @@ namespace GridEmpire.Core
         [SerializeField] private CellData baseCell;
         [SerializeField] private CellData selectedCell;
 
-        // Runtime-only lista IUnit interfészen keresztül (nem serializált)
-        private readonly List<IUnit> _activeUnits = new List<IUnit>();
-        public IReadOnlyList<IUnit> ActiveUnits => _activeUnits;
+        private readonly HashSet<IUnit> _activeUnits = new();
+        public IReadOnlyCollection<IUnit> ActiveUnits => _activeUnits;
 
-        // Publikus propertyk — API változatlan, csak a backing field-ekre hivatkoznak
         public int Id => id;
         public string Name => name;
         public Color Color => color;
@@ -36,8 +34,8 @@ namespace GridEmpire.Core
         public int OwnedCellCount => ownedCellCount;
         public float Gold => gold;
         public float GoldIncome => goldIncome;
-        public void SetGold(float amount) => gold = amount;
-        public void SetIncome(float amount) => goldIncome = amount;
+        internal void SyncGold(float amount) => gold = amount;
+        internal void SyncIncome(float amount) => goldIncome = amount;
         public CellData BaseCell { get => baseCell; set => baseCell = value; }
         public CellData SelectedCell { get => selectedCell; set => selectedCell = value; }
 
@@ -56,15 +54,14 @@ namespace GridEmpire.Core
         // API: runtime kezelés (megtartva a te logikádat)
         public void AddUnit(IUnit unit)
         {
-            if (unit == null) return;
-            if (!_activeUnits.Contains(unit)) _activeUnits.Add(unit);
+            if (unit == null || !_activeUnits.Add(unit)) return;
             RecalculateIncome();
         }
 
         public void RemoveUnit(IUnit unit)
         {
-            if (unit == null) return;
-            if (_activeUnits.Remove(unit)) RecalculateIncome();
+            if (unit == null || !_activeUnits.Remove(unit)) return;
+            RecalculateIncome();
         }
 
         public void ChangeOwnedCells(int delta)

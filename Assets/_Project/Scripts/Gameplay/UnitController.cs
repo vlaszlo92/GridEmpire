@@ -96,8 +96,6 @@ namespace GridEmpire.Gameplay
 
             _gridManager = FindFirstObjectByType<GridManager>();
             GameController.Instance.RegisterUnit(this);
-            _ownerProfile = GameController.Instance.GetPlayerById(_ownerId);
-            _ownerProfile?.AddUnit(this);
             SyncPositionToCurrentCell();
         }
 
@@ -134,9 +132,6 @@ namespace GridEmpire.Gameplay
             _resolver = FindFirstObjectByType<TurnResolver>();
             _resolver?.RegisterUnit(this);
             GameController.Instance.RegisterUnit(this);
-
-            _ownerProfile = GameController.Instance?.GetPlayerById(ownerId);
-            _ownerProfile?.AddUnit(this);
 
             _initialPath = path != null ? new List<CellData>(path) : new List<CellData>();
 
