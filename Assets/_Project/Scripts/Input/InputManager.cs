@@ -149,7 +149,7 @@ namespace GridEmpire.Input
             // --- FIELD SELECTION MODE ---
                         
             // A: Új mezõ kijelölése
-            if (_lastSelectedPresenter == null && GameController.Instance.SelectedUnit == null)
+            if (!ReferenceEquals(_lastSelectedPresenter, visual))
             {
                 ClearAllSelection();
                 _lastSelectedPresenter = visual;
@@ -159,23 +159,17 @@ namespace GridEmpire.Input
             }
 
             // B: Más mezõre kattintás -> törlés
-            if (!ReferenceEquals(visual, _lastSelectedPresenter) || GameController.Instance.SelectedUnit != null)
-            {
-                ClearAllSelection();
-                return;
-            }
-
-            // C: Dupla kattintás ugyanarra a mezõre – váltás az egységre
-            if (unit != null && GameController.Instance.SelectedUnit == null && unit.OwnerId == localPlayer.Id)
+            if (unit != null && unit.OwnerId == localPlayer.Id)
             {
                 HideCellSelection();
                 _lastSelectedPresenter = null;
                 SelectUnit(unit);
                 return;
+               
+            } else {
+                ClearAllSelection();
+                return;
             }
-
-            // D: Minden más esetben törlés
-            ClearAllSelection();
         }
 
         private void ShowCellSelection(Transform cellTransform)
