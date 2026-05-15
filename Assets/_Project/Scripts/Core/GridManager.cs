@@ -141,14 +141,11 @@ namespace GridEmpire.Core
             // 2. Cellák láthatósága + presenter frissítés – egy loopban
             foreach (var (cell, presenter) in _presenterMap)
             {
-                var oldState = cell.CurrentVisibility;
-
                 cell.CurrentVisibility = visibleCells.Contains(cell)
                     ? VisibilityState.Visible
-                    : (oldState == VisibilityState.Visible ? VisibilityState.Explored : oldState);
+                    : (cell.OwnerId == forPlayerId ? VisibilityState.Explored : VisibilityState.Hidden);
 
-                if (oldState != cell.CurrentVisibility)
-                    presenter.UpdateVisual();
+                presenter.UpdateVisual();
             }
 
             // 3. Unit-ok láthatósága

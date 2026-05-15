@@ -107,6 +107,13 @@ namespace GridEmpire.Visuals
             _renderer.GetPropertyBlock(_propBlock);
             _propBlock.SetColor(ColorProperty, finalColor);
             _renderer.SetPropertyBlock(_propBlock);
+
+            if (FogOfWarManager.Instance != null)
+            {
+                bool shouldHaveFog = !IsDebugMode &&
+                    _data.CurrentVisibility == VisibilityState.Hidden;
+                FogOfWarManager.Instance.SetFog(this, shouldHaveFog);
+            }
         }
 
         // Segédfüggvény a Debug Mode váltásához kódból
