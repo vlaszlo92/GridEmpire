@@ -8,8 +8,8 @@ namespace GridEmpire.UI
     public class CameraManager : MonoBehaviour
     {
         [Header("Movement Settings")]
-        [SerializeField] private float moveSpeed = 20f;
-        [SerializeField] private float zoomSpeed = 10f;
+        [SerializeField] private float moveSpeed = 15f;
+        [SerializeField] private float zoomSpeed = 500f;
         [SerializeField] private Vector2 zoomLimits = new Vector2(5f, 40f);
 
         [Header("Position Clamp")]
@@ -123,12 +123,19 @@ namespace GridEmpire.UI
             float scroll = InputManager.Instance.CameraZoomDelta;
             if (Mathf.Abs(scroll) < 0.01f) return;
 
+            float minScrollStep = breathAmplitude * 2f + 0.1f;
             float zoomDirection = scroll > 0 ? 1f : -1f;
             Vector3 nextPos = transform.position + transform.forward * zoomDirection * zoomSpeed * Time.deltaTime;
 
-            if (nextPos.y >= zoomLimits.x && nextPos.y <= zoomLimits.y)
+            // Minimum scroll lépés biztosítása
+            if (Mathf.Abs(nextPos.y - transform.position.y) < minScrollStep)
+                nextPos = transform.position + transform.forward * zoomDirection * minScrollStep;
+
+            if (nextPos.y >= zoomLimits.x + breathAmplitude && nextPos.y <= zoomLimits.y - breathAmplitude)
+            {
                 transform.position = nextPos;
-            _baseY = transform.position.y;
+                _baseY = transform.position.y;
+            }
             _lastMoveTime = Time.time;
         }
 
@@ -204,10 +211,9 @@ namespace GridEmpire.UI
         }
         private void ApplyBreath()
         {
-            if (Time.time - _lastMoveTime < 3f) return;
-
             Vector3 pos = transform.position;
-            pos.y = _baseY + Mathf.Sin(Time.time * breathSpeed) * breathAmplitude;
+            float breathY = _baseY + Mathf.Sin(Time.time * breathSpeed) * breathAmplitude;
+            pos.y = Mathf.Clamp(breathY, zoomLimits.x + breathAmplitude, zoomLimits.y - breathAmplitude);
             transform.position = pos;
         }
     }

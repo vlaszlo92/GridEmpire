@@ -16,7 +16,7 @@ namespace GridEmpire.Visuals
         private Renderer _renderer;
         private MaterialPropertyBlock _propBlock;
 
-        private static readonly int ColorProperty = Shader.PropertyToID("_Color");
+        private static readonly int ColorProperty = Shader.PropertyToID("_BaseColor");
 
         // Statikus cache a teljesítményért
         private static Dictionary<int, Color> _playerColorCache;
@@ -99,7 +99,7 @@ namespace GridEmpire.Visuals
                 finalColor = _data.CurrentVisibility switch
                 {
                     VisibilityState.Hidden => Color.black,
-                    VisibilityState.Explored => Color.Lerp(Color.black, baseColor, 0.2f),
+                    VisibilityState.Explored => Color.Lerp(Color.black, baseColor, 0.63f),
                     _ => baseColor
                 };
             }

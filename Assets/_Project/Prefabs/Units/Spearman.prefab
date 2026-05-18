@@ -11,7 +11,7 @@ GameObject:
   - component: {fileID: 7104545505974051359}
   - component: {fileID: -8476388842279313080}
   - component: {fileID: 6944444391666318870}
-  m_Layer: 0
+  m_Layer: 6
   m_Name: Spearman
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -100,6 +100,10 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 7104545505974051359}
     m_Modifications:
+    - target: {fileID: 1253216352218317480, guid: 69ad4303cc60faa47a6e104bf9339ef5, type: 3}
+      propertyPath: m_Layer
+      value: 6
+      objectReference: {fileID: 0}
     - target: {fileID: 1618860718621070803, guid: 69ad4303cc60faa47a6e104bf9339ef5, type: 3}
       propertyPath: m_LocalScale.x
       value: 0.1
@@ -156,13 +160,49 @@ PrefabInstance:
       propertyPath: m_Mesh
       value: 
       objectReference: {fileID: 0}
+    - target: {fileID: 2731776384046990397, guid: 69ad4303cc60faa47a6e104bf9339ef5, type: 3}
+      propertyPath: m_Layer
+      value: 6
+      objectReference: {fileID: 0}
     - target: {fileID: 3349182552458040400, guid: 69ad4303cc60faa47a6e104bf9339ef5, type: 3}
       propertyPath: m_Mesh
       value: 
       objectReference: {fileID: 0}
+    - target: {fileID: 4078515466310597532, guid: 69ad4303cc60faa47a6e104bf9339ef5, type: 3}
+      propertyPath: m_Layer
+      value: 6
+      objectReference: {fileID: 0}
+    - target: {fileID: 5329653049973190781, guid: 69ad4303cc60faa47a6e104bf9339ef5, type: 3}
+      propertyPath: m_Layer
+      value: 6
+      objectReference: {fileID: 0}
+    - target: {fileID: 5551614838961554050, guid: 69ad4303cc60faa47a6e104bf9339ef5, type: 3}
+      propertyPath: m_Layer
+      value: 6
+      objectReference: {fileID: 0}
     - target: {fileID: 5981927088141409193, guid: 69ad4303cc60faa47a6e104bf9339ef5, type: 3}
       propertyPath: m_Name
       value: Spearman
+      objectReference: {fileID: 0}
+    - target: {fileID: 5981927088141409193, guid: 69ad4303cc60faa47a6e104bf9339ef5, type: 3}
+      propertyPath: m_Layer
+      value: 6
+      objectReference: {fileID: 0}
+    - target: {fileID: 6061860757012137403, guid: 69ad4303cc60faa47a6e104bf9339ef5, type: 3}
+      propertyPath: m_Layer
+      value: 6
+      objectReference: {fileID: 0}
+    - target: {fileID: 8111684133456410968, guid: 69ad4303cc60faa47a6e104bf9339ef5, type: 3}
+      propertyPath: m_Layer
+      value: 6
+      objectReference: {fileID: 0}
+    - target: {fileID: 8235891436322694779, guid: 69ad4303cc60faa47a6e104bf9339ef5, type: 3}
+      propertyPath: m_Layer
+      value: 6
+      objectReference: {fileID: 0}
+    - target: {fileID: 8611587290843410474, guid: 69ad4303cc60faa47a6e104bf9339ef5, type: 3}
+      propertyPath: m_Layer
+      value: 6
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []

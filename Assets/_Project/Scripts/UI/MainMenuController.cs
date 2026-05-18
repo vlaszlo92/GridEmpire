@@ -585,7 +585,7 @@ namespace GridEmpire.UI
             BindElement(totalPlayersSlider, totalPlayersInput, settings.totalPlayers, 1, 6, true, (v) => { });
             BindElement(aiBotsSlider, aiBotsInput, settings.aiBots, 0, 6, true, (v) => { });
             BindElement(turnSpeedSlider, turnSpeedInput, settings.turnSpeedMultiplier, 0.5f, 250f, false, (v) => { });
-            BindElement(mapSizeSlider, mapSizeInput, settings.mapRadius, 8, 25, true, (v) => { });
+            BindElement(mapSizeSlider, mapSizeInput, settings.mapRadius, 1, 25, true, (v) => { });
             if (fogOfWarToggle != null)
             {
                 fogOfWarToggle.isOn = settings.fogOfWarEnabled;

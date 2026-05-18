@@ -32,42 +32,13 @@ public class FogOfWarManager : MonoBehaviour
     {
         if (fogObjects.ContainsKey(cell)) return;
 
-        var fog = Instantiate(fogPrefab,
-            cell.transform.position + Vector3.up * 0.1f,
-            Quaternion.identity);
-
+        var fog = Instantiate(fogPrefab, cell.transform.position, Quaternion.identity);
         fog.transform.SetParent(cell.transform);
 
         // Beállítások alkalmazása
         var ps = fog.GetComponent<ParticleSystem>();
-        if (ps != null) ApplySettings(ps);
 
         fogObjects[cell] = fog;
-    }
-
-    private void ApplySettings(ParticleSystem ps)
-    {
-        var main = ps.main;
-        main.startSize = startSize;
-        main.startSpeed = startSpeed;
-        main.maxParticles = maxParticles;
-
-        var startColor = main.startColor.color;
-        startColor.a = (byte)(startOpacity * 255);
-        main.startColor = startColor;
-
-        var emission = ps.emission;
-        emission.rateOverTime = emissionRate;
-    }
-
-    private void OnValidate()
-    {
-        foreach (var fog in fogObjects.Values)
-        {
-            if (fog == null) continue;
-            var ps = fog.GetComponent<ParticleSystem>();
-            if (ps != null) ApplySettings(ps);
-        }
     }
 
     private void HideFog(CellVisual cell)
