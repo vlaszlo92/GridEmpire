@@ -23,6 +23,7 @@ namespace GridEmpire.Gameplay
         public bool isInCombat = false;
         public CellData _currentCell;
         public UnitController _combatTarget;
+        public UnitAnimator _unitAnimator;
 
         private CellData _currentTargetCell;
         private GridManager _gridManager;
@@ -35,8 +36,7 @@ namespace GridEmpire.Gameplay
         [SerializeField] private float _currentStamina;
 
         private PlayerProfile _ownerProfile;
-        private MeshRenderer[] _renderers;
-        private Coroutine _fadeCoroutine;
+        private Renderer[] _renderers;
 
         public int OwnerId => _ownerId;
         public UnitData Data => _data;
@@ -44,27 +44,20 @@ namespace GridEmpire.Gameplay
         public bool IsDead => _isDead;
         public void DestroyUnit() => ExecuteDeath();
 
-        private Material[] _fadeMaterials;
-
-        private float _currentAlpha = 0f;
-        private float _targetAlpha = 0f;
-        private bool _isFading = false;
-
         private void Awake()
         {
             _gridManager = FindFirstObjectByType<GridManager>();
             _resolver = FindFirstObjectByType<TurnResolver>();
 
-            _renderers = GetComponentsInChildren<MeshRenderer>();
-            _fadeMaterials = _renderers
-                .Where(r => r != null && r.material.HasProperty("_BaseColor"))
-                .Select(r => r.material)
-                .ToArray();
+            var meshRenderers = GetComponentsInChildren<MeshRenderer>();
+            var skinnedRenderers = GetComponentsInChildren<SkinnedMeshRenderer>();
 
-            _currentAlpha = 0f;
-            _targetAlpha = 0f;
-            ApplyAlpha(0f);
+            _renderers = meshRenderers.Cast<Renderer>().Concat(skinnedRenderers.Cast<Renderer>()).ToArray();
+
             foreach (var r in _renderers) r.enabled = false;
+
+            _unitAnimator = GetComponent<UnitAnimator>();
+            //Debug.Log($"[UC] UnitAnimator found: {_unitAnimator != null} on {gameObject.name}");
         }
 
 
@@ -97,21 +90,7 @@ namespace GridEmpire.Gameplay
             _gridManager = FindFirstObjectByType<GridManager>();
             GameController.Instance.RegisterUnit(this);
             SyncPositionToCurrentCell();
-        }
-
-        private void Update()
-        {
-            if (!_isFading) return;
-
-            float speed = TurnManager.Instance != null ? 1f / TurnManager.Instance.TickDuration : 1f;
-            _currentAlpha = Mathf.MoveTowards(_currentAlpha, _targetAlpha, speed * Time.deltaTime);
-            ApplyAlpha(_currentAlpha);
-
-            if (Mathf.Approximately(_currentAlpha, _targetAlpha))
-            {
-                _isFading = false;
-                foreach (var r in _renderers) r.enabled = _targetAlpha > 0f;
-            }
+            ApplyPlayerColor();
         }
 
         public void Initialize(int uniqueId, UnitData data, List<CellData> path, GridManager gm, int ownerId)
@@ -143,6 +122,7 @@ namespace GridEmpire.Gameplay
             if (_currentCell != null) _currentCell.RegisterOccupier(this);
 
             UpdateInitialFacing();
+            ApplyPlayerColor();
         }
 
         private void UpdateInitialFacing()
@@ -237,7 +217,6 @@ namespace GridEmpire.Gameplay
                     else 
                     { 
                         _currentTargetCell = null;
-                        return;
                     }
                 }
             }
@@ -314,22 +293,7 @@ namespace GridEmpire.Gameplay
 
         public void SetVisible(bool visible)
         {
-            _targetAlpha = visible ? 1f : 0f;
-            _isFading = true;
-
-            if (visible)
-                foreach (var r in _renderers) r.enabled = true;
-        }
-
-        private void ApplyAlpha(float alpha)
-        {
-            if (_fadeMaterials == null) return;
-            foreach (var mat in _fadeMaterials)
-            {
-                Color c = mat.GetColor("_BaseColor");
-                c.a = alpha;
-                mat.SetColor("_BaseColor", c);
-            }
+            foreach (var r in _renderers) r.enabled = visible;
         }
 
         // ─── COMBAT ─────────────────────────────────────────────────────────────────
@@ -351,7 +315,8 @@ namespace GridEmpire.Gameplay
 
                 int targetCellId = target._currentCell?.Id ?? -1;
                 int myCellId = _currentCell?.Id ?? -1;
-
+                
+                _unitAnimator?.Play(ActionType.Attack);
                 AttackClientRpc(targetCellId);
                 target.BeAttackedClientRpc(myCellId);
             }
@@ -377,6 +342,7 @@ namespace GridEmpire.Gameplay
                 {
                     enemy.RegisterPendingDamage(_data.baseDamage);
                     RegisterPendingDamage(enemy._data.baseDamage);
+                    _unitAnimator?.Play(ActionType.Attack);
                     AttackClientRpc(enemy._id);
                 }
             }
@@ -390,6 +356,7 @@ namespace GridEmpire.Gameplay
             if (cell == null) return;
             Vector3 targetPos = _gridManager.GetWorldPosition(cell.Q, cell.R);
             FaceTarget(targetPos);
+            _unitAnimator?.Play(ActionType.Attack);
         }
 
         [ClientRpc]
@@ -454,7 +421,8 @@ namespace GridEmpire.Gameplay
             if (_previousCell != null) _resolver?.MarkCellChanged(_previousCell.Id);
 
             StopAllCoroutines();
-            StartCoroutine(Animate(next));
+            StartCoroutine(MoveToCell(next));
+            _unitAnimator?.Play(ActionType.Move);
             MoveClientRpc(next.Id);
         }
 
@@ -471,8 +439,8 @@ namespace GridEmpire.Gameplay
             _currentCell.RegisterOccupier(this);
 
             StopAllCoroutines();
-            StartCoroutine(Animate(next));
-            // TODO: mozgás animáció
+            StartCoroutine(MoveToCell(next));
+            _unitAnimator?.Play(ActionType.Move);
         }
 
         // ─── CAPTURE ─────────────────────────────────────────────────────────────────
@@ -501,7 +469,7 @@ namespace GridEmpire.Gameplay
                 _gridManager.FinalizeCapture(target, _ownerId);
                 _resolver?.MarkCellChanged(target.Id);
             }
-
+            _unitAnimator?.Play(ActionType.Capture);
             CaptureClientRpc(target.Id, target.OwnerId, speed, captured, _ownerId);
         }
 
@@ -530,7 +498,7 @@ namespace GridEmpire.Gameplay
                 _gridManager.FinalizeCapture(cell, attackerId);
 
             cell.OnVisualUpdateRequired?.Invoke();
-            // TODO: foglalás animáció
+            _unitAnimator?.Play(ActionType.Capture);
         }
 
         // ─── DEATH ───────────────────────────────────────────────────────────────────
@@ -547,7 +515,11 @@ namespace GridEmpire.Gameplay
             if (IsServer)
             {
                 DeathClientRpc();
-                GetComponent<NetworkObject>()?.Despawn(true);
+                _unitAnimator?.PlayDeath(() =>
+                {
+                    if (TryGetComponent<NetworkObject>(out var netObj) && netObj.IsSpawned)
+                        netObj.Despawn(true);
+                });
             }
         }
 
@@ -558,12 +530,42 @@ namespace GridEmpire.Gameplay
             _currentTargetCell?.CapturingUnitIds.Remove(_id);
             if (_currentCell != null) _currentCell.UnregisterOccupier(this);
             GameController.Instance?.RemoveUnit(this);
-            // TODO: halál animáció
+            _unitAnimator?.PlayDeath();
+        }
+
+        [ClientRpc]
+        public void IdleClientRpc()
+        {
+            if (IsServer) return;
+            _unitAnimator?.Play(ActionType.Idle);
         }
 
         // ─── HELPERS ─────────────────────────────────────────────────────────────────
+        private void ApplyPlayerColor()
+        {
+            return;
+            var player = GameController.Instance?.GetPlayerById(_ownerId);
+            if (player == null) return;
 
-        private IEnumerator Animate(CellData c)
+            foreach (var r in _renderers)
+            {
+                //if (r.gameObject.name == "shield_wood" || r.gameObject.name == "sword_wood")
+                //{
+                //    foreach (var mat in r.materials)
+                //    {
+                //        mat.SetColor("_BaseColor", player.Color);
+                //    }
+
+                //}                
+                //else 
+                if (r.gameObject.name == "body_head" || r.gameObject.name == "sword_wood")
+                {
+                    r.materials[1].SetColor("_BaseColor", player.Color);
+                }
+            }
+        }
+
+        private IEnumerator MoveToCell(CellData c)
         {
             Vector3 startPos = transform.position;
             Vector3 targetPos = _gridManager.GetWorldPosition(c.Q, c.R);

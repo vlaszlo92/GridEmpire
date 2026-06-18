@@ -148,6 +148,17 @@ namespace GridEmpire.Gameplay
                 if (u != null && u._isDead) u.ExecuteDeath();
             }
 
+            HashSet<int> activeUnitIds = new HashSet<int>(_actionQueue.Select(a => a.PerformerUnitId));
+            foreach (var u in _processingUnits)
+            {
+                if (u == null || u._isDead) continue;
+                if (!activeUnitIds.Contains(u.Id))
+                {
+                    u._unitAnimator?.Play(ActionType.Idle);
+                    u.IdleClientRpc();
+                }
+            }
+
             // 4. Fog of War frissítése – cacheit GridManager
             var localPlayer = GameController.Instance.GetLocalPlayer();
             if (localPlayer != null)

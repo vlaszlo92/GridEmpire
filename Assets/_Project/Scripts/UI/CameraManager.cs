@@ -95,9 +95,9 @@ namespace GridEmpire.UI
             {
                 transform.position = _introTargetPos;
                 transform.rotation = _introTargetRot;
-                Debug.Log($"[Intro] VÉGE előtt pos={transform.position}");
+                //Debug.Log($"[Intro] VÉGE előtt pos={transform.position}");
                 _isIntroPlaying = false;
-                Debug.Log($"[Intro] VÉGE után pos={transform.position}");
+                //Debug.Log($"[Intro] VÉGE után pos={transform.position}");
             }
         }
 

@@ -9,7 +9,8 @@ namespace GridEmpire.Core
         // Serialized backing fields (Inspector számára)
         [SerializeField] private int id;
         [SerializeField] private string name;
-        [SerializeField] private Color color;
+        [SerializeField] private Color color; 
+
         [SerializeField] private bool isAI;
         [SerializeField] private bool isLocalPlayer;
         [SerializeField] private bool isAlive = true;
@@ -39,7 +40,6 @@ namespace GridEmpire.Core
         public CellData BaseCell { get => baseCell; set => baseCell = value; }
         public CellData SelectedCell { get => selectedCell; set => selectedCell = value; }
 
-        // Konstruktor — beállítja a serialized backing fieldeket is
         public PlayerProfile(int id, string name, Color color, bool isAi, bool isLocal, CellData selectedCell)
         {
             this.id = id;

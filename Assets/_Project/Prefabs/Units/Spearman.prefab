@@ -91,6 +91,7 @@ MonoBehaviour:
     InfluenceDisplay: []
     CapturingUnitIds: 
   _combatTarget: {fileID: 0}
+  _unitAnimator: {fileID: 0}
   _currentStamina: 0
 --- !u!1001 &7405792438667762169
 PrefabInstance:
