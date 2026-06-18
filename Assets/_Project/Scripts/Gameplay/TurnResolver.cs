@@ -152,7 +152,8 @@ namespace GridEmpire.Gameplay
             foreach (var u in _processingUnits)
             {
                 if (u == null || u._isDead) continue;
-                if (!activeUnitIds.Contains(u.Id))
+                if (!activeUnitIds.Contains(u.Id) ||
+                    _actionQueue.Any(a => a.PerformerUnitId == u.Id && a.Type == ActionType.Idle))
                 {
                     u._unitAnimator?.Play(ActionType.Idle);
                     u.IdleClientRpc();

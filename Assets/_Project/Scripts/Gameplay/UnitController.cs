@@ -159,36 +159,33 @@ namespace GridEmpire.Gameplay
         public void PlanAction()
         {
             if (!NetworkManager.Singleton.IsServer || _isDead) return;
-            //Debug.Log($"[PlanAction] unit={_id}, cell={_currentCell?.Id}, targetCell={_currentTargetCell?.Id}, " +
-            //  $"targetOwner={_currentTargetCell?.OwnerId}, myOwner={_ownerId}, " +
-            //  $"isOccupied={_currentTargetCell?.IsOccupied}, " +
-            //  $"captureProgress={_currentTargetCell?.GetCaptureProgress(_ownerId):F2}, " +
-            //  $"prevCell={_previousCell?.Id}");
             _nextAction = new UnitAction { PerformerUnitId = _id, PlayerId = _ownerId, Type = ActionType.Idle, TargetCellId = -1 };
             _currentStamina = Mathf.Min(_currentStamina + _data.staminaPerTurn, _data.maxStamina);
+            bool canMove = _currentStamina >= 1.0f;
 
             UnitController nearbyEnemy = ScanForEnemies();
             if (nearbyEnemy != null)
             {
                 if (_combatTarget != null && !_combatTarget.IsDead &&
                     _gridManager.GetDistance(_currentCell, _combatTarget.CurrentCell) == 1)
-                {
                     nearbyEnemy = _combatTarget;
-                }
                 else
-                {
                     _combatTarget = nearbyEnemy;
-                }
 
                 _nextAction.Type = ActionType.Attack;
                 _nextAction.TargetUnitId = nearbyEnemy.Id;
                 isInCombat = true;
                 _previousCell = _currentCell;
-                ApplyFacingAndEnqueue();
+                EnqueueAction();
                 return;
             }
 
             isInCombat = false;
+            if (!canMove)
+            {
+                _resolver?.EnqueueAction(_nextAction);
+                return;
+            }
 
             if (_currentTargetCell != null && _currentTargetCell.IsOccupied && _currentTargetCell.OwnerId != _ownerId)
                 _currentTargetCell = null;
@@ -201,7 +198,7 @@ namespace GridEmpire.Gameplay
                     _nextAction.Type = ActionType.Capture;
                     _nextAction.TargetCellId = _currentTargetCell.Id;
                     _previousCell = _currentCell;
-                    ApplyFacingAndEnqueue();
+                    EnqueueAction();
                     return;
                 }
                 else if (_currentCell != _currentTargetCell)
@@ -211,7 +208,7 @@ namespace GridEmpire.Gameplay
                     {
                         _nextAction.Type = ActionType.Move;
                         _nextAction.TargetCellId = _currentTargetCell.Id;
-                        ApplyFacingAndEnqueue();
+                        EnqueueAction();
                         return;
                     }
                     else 
@@ -231,12 +228,10 @@ namespace GridEmpire.Gameplay
             }
             else
             {
-                _nextAction.Type = ActionType.Idle;
-                _nextAction.TargetCellId = -1;
-                _previousCell = null;
+                _previousCell = _currentCell;
             }
 
-            ApplyFacingAndEnqueue();
+            EnqueueAction();
         }
 
         private CellData GetValidNeighbor()
@@ -249,15 +244,12 @@ namespace GridEmpire.Gameplay
             return FindExpansionCell();
         }
 
-        private void ApplyFacingAndEnqueue()
+        private void EnqueueAction()
         {
             if (_nextAction.TargetCellId >= 0 || _nextAction.TargetUnitId > 0)
-            {
-                if (_nextAction.Type == ActionType.Move && _currentStamina < 1.0f)
-                    _nextAction.Type = ActionType.Idle;
-                if (_resolver != null) _resolver.EnqueueAction(_nextAction);
-            }
+                _resolver?.EnqueueAction(_nextAction);
         }
+
         private CellData FindExpansionCell()
         {
             var player = GameController.Instance?.GetPlayerById(_ownerId);
