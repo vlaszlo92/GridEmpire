@@ -12,6 +12,8 @@ namespace GridEmpire.Core
         public static GridManager Instance { get; private set; }
         public bool IsReady { get; private set; } = false;
 
+        public static event System.Action OnVisibilityUpdated;
+
         [Header("Grid Settings")]
         [SerializeField] private int radius = 5;
         [SerializeField] private float hexSize = 1.0f;
@@ -150,6 +152,8 @@ namespace GridEmpire.Core
 
             // 3. Unit-ok láthatósága
             GameController.Instance.UpdateUnitVisibility(visibleCells, forPlayerId);
+
+            OnVisibilityUpdated?.Invoke();
         }
 
         public void FinalizeCapture(CellData cell, int playerId)

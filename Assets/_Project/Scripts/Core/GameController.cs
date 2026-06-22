@@ -434,7 +434,7 @@ namespace GridEmpire.Core
             if (unit == null) return;
             UnregisterUnit(unit.Id);
             if (_selectedUnit?.Id == unit.Id) SelectedUnit = null;
-            OnUnitRemoved?.Invoke();
+            OnUnitRemoved?.Invoke();            
         }
 
         public void RefreshPlayerIncome(PlayerProfile player) => player?.RecalculateIncome();

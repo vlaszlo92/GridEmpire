@@ -1,4 +1,5 @@
 ﻿using GridEmpire.Core;
+using GridEmpire.Input;
 using GridEmpire.Shared;
 using System.Collections;
 using System.Collections.Generic;
@@ -393,10 +394,7 @@ namespace GridEmpire.Gameplay
             _previousCell = _currentCell;
 
             if (_currentCell != null) _currentCell.UnregisterOccupier(this);
-
-            Vector3 targetPos = _gridManager.GetWorldPosition(next.Q, next.R);
-            FaceTarget(targetPos);
-
+            
             _currentCell = next;
             _currentCell.RegisterOccupier(this);
             
@@ -413,6 +411,8 @@ namespace GridEmpire.Gameplay
             if (_previousCell != null) _resolver?.MarkCellChanged(_previousCell.Id);
 
             StopAllCoroutines();
+            Vector3 targetPos = _gridManager.GetWorldPosition(next.Q, next.R);
+            FaceTarget(targetPos);
             StartCoroutine(MoveToCell(next));
             _unitAnimator?.Play(ActionType.Move);
             MoveClientRpc(next.Id);
@@ -574,11 +574,45 @@ namespace GridEmpire.Gameplay
             transform.position = targetPos;
         }
 
+        //public void FaceTarget(Vector3 targetPos)
+        //{
+        //    Vector3 dir = (targetPos - transform.position).normalized;
+        //    dir.y = 0;
+        //    if (dir != Vector3.zero) transform.rotation = Quaternion.LookRotation(dir);
+        //}
+
+        private Coroutine _rotateCoroutine;
+
         public void FaceTarget(Vector3 targetPos)
         {
             Vector3 dir = (targetPos - transform.position).normalized;
             dir.y = 0;
-            if (dir != Vector3.zero) transform.rotation = Quaternion.LookRotation(dir);
+            if (dir == Vector3.zero) return;
+
+            Quaternion target = Quaternion.LookRotation(dir);
+            if (Quaternion.Angle(transform.rotation, target) < 5f)
+            {
+                transform.rotation = target;
+                return;
+            }
+
+            if (_rotateCoroutine != null) StopCoroutine(_rotateCoroutine);
+            _rotateCoroutine = StartCoroutine(RotateTowards(target));
+        }
+
+        private IEnumerator RotateTowards(Quaternion target)
+        {
+            float duration = TurnManager.Instance != null ? TurnManager.Instance.TickDuration * 0.1f : 0.1f;
+            float elapsed = 0f;
+            Quaternion start = transform.rotation;
+
+            while (elapsed < duration)
+            {
+                elapsed += Time.deltaTime;
+                transform.rotation = Quaternion.Slerp(start, target, elapsed / duration);
+                yield return null;
+            }
+            transform.rotation = target;
         }
 
         public UnitController ScanForEnemies()
@@ -626,8 +660,7 @@ namespace GridEmpire.Gameplay
             if (GameController.Instance != null)
                 GameController.Instance.UnregisterUnit(_id);
             if (!_isDead)
-                GameController.Instance?.RemoveUnit(this);
-
+                GameController.Instance?.RemoveUnit(this);            
             base.OnDestroy();
         }
     }

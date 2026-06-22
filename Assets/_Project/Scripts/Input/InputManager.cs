@@ -51,6 +51,8 @@ namespace GridEmpire.Input
             _controls.Enable();
             _controls.Player.Select.started += OnSelectStarted;
             _controls.Player.Select.canceled += OnSelectCanceled;
+            GridManager.OnVisibilityUpdated += OnVisibilityUpdated;
+
         }
 
         private void OnDisable()
@@ -75,6 +77,12 @@ namespace GridEmpire.Input
             Vector2 endPosition = _controls.Player.PointerPosition.ReadValue<Vector2>();
             if (Vector2.Distance(_startClickPosition, endPosition) < _dragThreshold)
                 _clickPending = true;
+        }
+        private void OnVisibilityUpdated()
+        {
+            if (_lastSelectedPresenter is CellVisual cv &&
+                cv.Data.CurrentVisibility == VisibilityState.Hidden)
+                ClearAllSelection();
         }
 
         private void Update()
@@ -205,7 +213,7 @@ namespace GridEmpire.Input
             }
         }
 
-        private void ClearAllSelection()
+        public void ClearAllSelection()
         {
             _lastSelectedPresenter = null;
             if (localPlayer != null) localPlayer.SelectedCell = null;
