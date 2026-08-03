@@ -43,6 +43,7 @@ namespace GridEmpire.UI
         [Header("Settings Panel")]
         [SerializeField] private GameObject settingsDropdown;
         [SerializeField] private RectTransform settingsDropdownRect;
+        [SerializeField] private CanvasGroup settingsCanvasGroup;
         [SerializeField] private Slider masterSlider;
         [SerializeField] private Slider musicSlider;
         [SerializeField] private Slider effectsSlider;
@@ -81,6 +82,12 @@ namespace GridEmpire.UI
             if (settingsDropdownRect != null)
                 settingsDropdownRect.sizeDelta = new Vector2(settingsDropdownRect.sizeDelta.x, 0f);
 
+            if (settingsCanvasGroup != null)
+            {
+                settingsCanvasGroup.alpha = 0f;
+                settingsCanvasGroup.interactable = false;
+                settingsCanvasGroup.blocksRaycasts = false;
+            }
             InitSlider(masterSlider, AudioManager.MasterKey, v => AudioManager.Instance?.SetMasterVolume(v));
             InitSlider(musicSlider, AudioManager.MusicKey, v => AudioManager.Instance?.SetMusicVolume(v));
             InitSlider(effectsSlider, AudioManager.EffectsKey, v => AudioManager.Instance?.SetEffectsVolume(v));
@@ -168,10 +175,21 @@ namespace GridEmpire.UI
 
             if (settingsDropdownRect != null)
             {
-                float current = settingsDropdownRect.sizeDelta.y;
-                float next = Mathf.Lerp(current, _targetHeight, Time.deltaTime * animationSpeed);
-                settingsDropdownRect.sizeDelta = new Vector2(settingsDropdownRect.sizeDelta.x, next);
-                settingsDropdown.SetActive(next > 1f);
+                float currentHeight = settingsDropdownRect.sizeDelta.y;
+                float nextHeight = Mathf.Lerp(currentHeight, _targetHeight, Time.deltaTime * animationSpeed);
+                settingsDropdownRect.sizeDelta = new Vector2(settingsDropdownRect.sizeDelta.x, nextHeight);
+
+                float progress = Mathf.Clamp01(nextHeight / dropdownHeight);
+
+                if (settingsCanvasGroup != null)
+                {
+                    settingsCanvasGroup.alpha = progress;
+
+                    bool isVisible = progress > 0.1f;
+                    settingsCanvasGroup.interactable = isVisible;
+                    settingsCanvasGroup.blocksRaycasts = isVisible;
+                }
+                settingsDropdown.SetActive(progress > 0.01f);
             }
         }
 

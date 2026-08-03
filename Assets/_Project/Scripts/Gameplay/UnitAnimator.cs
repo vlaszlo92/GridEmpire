@@ -34,8 +34,8 @@ namespace GridEmpire.Gameplay
                 _ => 0
             };
 
-            float delay = Random.Range(0f, 0.1f);
-            float speed = _baseSpeed + Random.Range(-0.05f, 0.05f);
+            float delay = Random.Range(0f, 0.5f);
+            float speed = _baseSpeed + Random.Range(-0.25f, 0.25f);
             StartCoroutine(PlayDelayed(state, speed, delay));
         }
 

@@ -1598,6 +1598,7 @@ MonoBehaviour:
   selectorUnitImage: {fileID: -1895239298, guid: 8a7eeeec73e908b42a663f87fa2e3af7, type: 3}
   settingsDropdown: {fileID: 534440741}
   settingsDropdownRect: {fileID: 534440742}
+  settingsCanvasGroup: {fileID: 534440746}
   masterSlider: {fileID: 1786303564}
   musicSlider: {fileID: 716917717}
   effectsSlider: {fileID: 2004942197}
@@ -1614,6 +1615,8 @@ GameObject:
   - component: {fileID: 534440742}
   - component: {fileID: 534440744}
   - component: {fileID: 534440743}
+  - component: {fileID: 534440746}
+  - component: {fileID: 534440745}
   m_Layer: 5
   m_Name: SettingsDropdown
   m_TagString: Untagged
@@ -1679,6 +1682,32 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 534440741}
   m_CullTransparentMesh: 1
+--- !u!114 &534440745
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 534440741}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3312d7739989d2b4e91e6319e9a96d76, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.RectMask2D
+  m_Padding: {x: 0, y: 0, z: 0, w: 0}
+  m_Softness: {x: 0, y: 0}
+--- !u!225 &534440746
+CanvasGroup:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 534440741}
+  m_Enabled: 1
+  m_Alpha: 1
+  m_Interactable: 1
+  m_BlocksRaycasts: 1
+  m_IgnoreParentGroups: 0
 --- !u!1 &539779464
 GameObject:
   m_ObjectHideFlags: 0
