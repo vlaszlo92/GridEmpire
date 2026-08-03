@@ -168,7 +168,11 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 2063574365029136615, guid: 3aa3ee232c91a9a4ba284e1d6afe61a9, type: 3}
       propertyPath: m_Volume
-      value: 0.5
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 2063574365029136615, guid: 3aa3ee232c91a9a4ba284e1d6afe61a9, type: 3}
+      propertyPath: DopplerLevel
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 2569546877900440701, guid: 3aa3ee232c91a9a4ba284e1d6afe61a9, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
@@ -347,6 +351,11 @@ MonoBehaviour:
   - {fileID: 8300000, guid: c0c61a1cd611a0b41b56b5b23f3094f3, type: 3}
   - {fileID: 8300000, guid: ed6029c12fa469943bc89465c414ec98, type: 3}
   - {fileID: 8300000, guid: 85fb9170ac7be0a479f03d16f608bd1e, type: 3}
+  _infantryFootstepClips: []
+  _mountFootstepClips: []
+  _deathClips: []
+  _conqueringClips: []
+  _isMount: 0
 --- !u!82 &-948113512483731583
 AudioSource:
   m_ObjectHideFlags: 0

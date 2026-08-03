@@ -6307,22 +6307,22 @@ AudioSource:
   m_GameObject: {fileID: 5751265048347933878}
   m_Enabled: 1
   serializedVersion: 4
-  OutputAudioMixerGroup: {fileID: 0}
+  OutputAudioMixerGroup: {fileID: -1422796074637167410, guid: 65629ebfda23ab5419da9dd9f263f0fa, type: 2}
   m_audioClip: {fileID: 0}
   m_Resource: {fileID: 0}
   m_PlayOnAwake: 0
-  m_Volume: 0.5
+  m_Volume: 1
   m_Pitch: 1
   Loop: 0
   Mute: 0
   Spatialize: 0
   SpatializePostEffects: 0
   Priority: 128
-  DopplerLevel: 1
-  MinDistance: 3
-  MaxDistance: 30
+  DopplerLevel: 0
+  MinDistance: 1
+  MaxDistance: 8
   Pan2D: 0
-  rolloffMode: 0
+  rolloffMode: 2
   BypassEffects: 0
   BypassListenerEffects: 0
   BypassReverbZones: 0
@@ -6330,23 +6330,41 @@ AudioSource:
     serializedVersion: 2
     m_Curve:
     - serializedVersion: 3
-      time: 0
+      time: 0.112205505
       value: 1
-      inSlope: 0
-      outSlope: 0
+      inSlope: -8.0032
+      outSlope: -8.0032
       tangentMode: 0
       weightedMode: 0
-      inWeight: 0.33333334
-      outWeight: 0.33333334
+      inWeight: 0
+      outWeight: 0
+    - serializedVersion: 3
+      time: 0.21375275
+      value: 0.36523438
+      inSlope: -2.3852875
+      outSlope: -2.3852875
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.53453505
+      outWeight: 0.22352012
+    - serializedVersion: 3
+      time: 0.44030762
+      value: 0.115234375
+      inSlope: -0.5002
+      outSlope: -0.5002
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
     - serializedVersion: 3
       time: 1
       value: 0
-      inSlope: 0
-      outSlope: 0
+      inSlope: -0.12505
+      outSlope: -0.12505
       tangentMode: 0
       weightedMode: 0
-      inWeight: 0.33333334
-      outWeight: 0.33333334
+      inWeight: 0
+      outWeight: 0
     m_PreInfinity: 2
     m_PostInfinity: 2
     m_RotationOrder: 4
@@ -6462,6 +6480,11 @@ MonoBehaviour:
   - {fileID: 8300000, guid: c0c61a1cd611a0b41b56b5b23f3094f3, type: 3}
   - {fileID: 8300000, guid: ed6029c12fa469943bc89465c414ec98, type: 3}
   - {fileID: 8300000, guid: 85fb9170ac7be0a479f03d16f608bd1e, type: 3}
+  _infantryFootstepClips: []
+  _mountFootstepClips: []
+  _deathClips: []
+  _conqueringClips: []
+  _isMount: 0
 --- !u!1001 &6938038757127112830
 PrefabInstance:
   m_ObjectHideFlags: 0

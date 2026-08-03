@@ -40,6 +40,19 @@ namespace GridEmpire.UI
         [SerializeField] private Button selectorBtn;
         [SerializeField] private Sprite selectorFieldImage, selectorUnitImage;
 
+        [Header("Settings Panel")]
+        [SerializeField] private GameObject settingsDropdown;
+        [SerializeField] private RectTransform settingsDropdownRect;
+        [SerializeField] private Slider masterSlider;
+        [SerializeField] private Slider musicSlider;
+        [SerializeField] private Slider effectsSlider;
+
+        [SerializeField] private float dropdownHeight = 200f;
+        [SerializeField] private float animationSpeed = 8f;
+
+        private bool _settingsOpen = false;
+        private float _targetHeight = 0f;
+
         private PlayerProfile _localPlayer;
         private UnitSpawner _localSpawner;
         private UnitController _selectedUnit;
@@ -64,6 +77,13 @@ namespace GridEmpire.UI
             cavalryBtn.onClick.AddListener(() => RequestSpawn(2));
             scoutBtn.onClick.AddListener(() => RequestSpawn(3));
             if (clearQueueBtn != null) clearQueueBtn.onClick.AddListener(HandleClearQueue);
+
+            if (settingsDropdownRect != null)
+                settingsDropdownRect.sizeDelta = new Vector2(settingsDropdownRect.sizeDelta.x, 0f);
+
+            InitSlider(masterSlider, AudioManager.MasterKey, v => AudioManager.Instance?.SetMasterVolume(v));
+            InitSlider(musicSlider, AudioManager.MusicKey, v => AudioManager.Instance?.SetMusicVolume(v));
+            InitSlider(effectsSlider, AudioManager.EffectsKey, v => AudioManager.Instance?.SetEffectsVolume(v));
         }
 
         private void OnEnable()
@@ -80,6 +100,13 @@ namespace GridEmpire.UI
             GameController.OnUnitSelected -= HandleUnitSelectionChanged;
         }
 
+        private void InitSlider(Slider slider, string key, UnityEngine.Events.UnityAction<float> onValueChanged)
+        {
+            if (slider == null || AudioManager.Instance == null) return;
+
+            slider.SetValueWithoutNotify(AudioManager.Instance.GetVolume(key));
+            slider.onValueChanged.AddListener(onValueChanged);
+        }
         private void RefreshGoldDisplay()
         {
             goldText.text = "Gold: " + _localPlayer.Gold.ToString();
@@ -135,6 +162,17 @@ namespace GridEmpire.UI
             SyncQueueIcons(queue);
             HandleSmoothFill(queue, currentDuration);
             if (clearQueueBtn != null) clearQueueBtn.gameObject.SetActive(queue.Count >= 2);
+
+            if (UnityEngine.Input.GetKeyDown(KeyCode.Escape))
+                ToggleSettings();
+
+            if (settingsDropdownRect != null)
+            {
+                float current = settingsDropdownRect.sizeDelta.y;
+                float next = Mathf.Lerp(current, _targetHeight, Time.deltaTime * animationSpeed);
+                settingsDropdownRect.sizeDelta = new Vector2(settingsDropdownRect.sizeDelta.x, next);
+                settingsDropdown.SetActive(next > 1f);
+            }
         }
 
         private void TrySetupLocalReferences()
@@ -239,12 +277,20 @@ namespace GridEmpire.UI
 
             InputManager.Instance?.SetSelectionType(_isFieldSelected);
         }
+
         public void DeleteSelectedUnit()
         {
             if (_selectedUnit == null) return;
             if (_localPlayer == null) return;
             if (_selectedUnit.OwnerId != _localPlayer.Id) return;
             _selectedUnit.ExecuteDeath();
+        }
+
+        public void ToggleSettings()
+        {
+            _settingsOpen = !_settingsOpen;
+            _targetHeight = _settingsOpen ? dropdownHeight : 0f;
+            if (_settingsOpen) settingsDropdown.SetActive(true);
         }
     }
 }

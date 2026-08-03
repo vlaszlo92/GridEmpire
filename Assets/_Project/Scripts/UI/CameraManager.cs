@@ -1,4 +1,5 @@
 ﻿using UnityEngine;
+using UnityEngine.EventSystems;
 using GridEmpire.Core;
 using GridEmpire.Input;
 using System.Collections;
@@ -103,6 +104,7 @@ namespace GridEmpire.UI
 
         private void HandleMovement()
         {
+            if (EventSystem.current != null && EventSystem.current.IsPointerOverGameObject()) return;
             if (!InputManager.Instance.IsSelectPressed) return;
 
             Vector2 delta = InputManager.Instance.CameraMoveDelta;
@@ -120,6 +122,7 @@ namespace GridEmpire.UI
 
         private void HandleZoom()
         {
+            if (EventSystem.current != null && EventSystem.current.IsPointerOverGameObject()) return;
             float scroll = InputManager.Instance.CameraZoomDelta;
             if (Mathf.Abs(scroll) < 0.01f) return;
 

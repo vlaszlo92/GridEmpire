@@ -48,18 +48,12 @@ namespace GridEmpire.Gameplay
                 _animators[i].SetInteger("State", state);
                 _animators[i].speed = speed;
             }
-            if (state == 3)
-            {
-                _infantryAudio?.PlayConquering();
-            }
         }
 
         public void PlayDeath(System.Action onFadeComplete = null)
         {
             for (int i = 0; i < _animators.Length; i++)
                 _animators[i].SetInteger("State", 4);
-
-            _infantryAudio?.PlayDeath();
 
             float deathAnimLength = 0f;
             var clips = _animators[0].runtimeAnimatorController.animationClips;

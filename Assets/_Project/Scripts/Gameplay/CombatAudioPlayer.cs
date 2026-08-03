@@ -33,7 +33,6 @@ namespace GridEmpire.Gameplay
 
         public void PlayConquering()
         {
-            Debug.Log($"[CombatAudioPlayer] PlayConquering. clips: {(_conqueringClips == null ? "NULL" : _conqueringClips.Length.ToString())}");
             PlayRandom(_conqueringClips);
         }
 
