@@ -288,6 +288,12 @@ namespace GridEmpire.Gameplay
         {
             foreach (var r in _renderers) r.enabled = visible;
         }
+        public void SetAudioVisible(bool visible)
+        {
+            var audioSources = GetComponentsInChildren<AudioSource>();
+            foreach (var source in audioSources)
+                source.mute = !visible;
+        }
 
         // ─── COMBAT ─────────────────────────────────────────────────────────────────
 

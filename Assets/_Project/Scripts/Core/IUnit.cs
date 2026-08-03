@@ -16,5 +16,6 @@ namespace GridEmpire.Core
         float GetCurrentHP();
         void SyncFromSnapshot(float newHp, bool isDead);
         void SetVisible(bool visible);
+        void SetAudioVisible(bool visible);
     }
 }

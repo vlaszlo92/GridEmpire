@@ -22,9 +22,9 @@ MonoBehaviour:
   maxHp: 400
   staminaPerTurn: 1
   maxStamina: 2
-  conquerSpeed: 0.2
-  exploreSpeed: 0.5
+  conquerSpeed: 1
+  exploreSpeed: 1
   baseDamage: 30
   bonusDamage: 0
-  unitPrefab: {fileID: 8609258846547573388, guid: a63fea19dd3f7ea4e864620dafa7309c, type: 3}
+  unitPrefab: {fileID: 1596593811343993370, guid: 9ec4bee007d8cec41ab190ca27993543, type: 3}
   icon: {fileID: 976370702, guid: 6ea51d1fc31d7784cbabe9552f0ef51f, type: 3}

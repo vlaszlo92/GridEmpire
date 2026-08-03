@@ -449,6 +449,7 @@ namespace GridEmpire.Core
                                || unit.OwnerId == forPlayerId
                                || (unit.CurrentCell != null && visibleCells.Contains(unit.CurrentCell));
                 unit.SetVisible(visible);
+                unit.SetAudioVisible(visible);
             }
         }
     }
