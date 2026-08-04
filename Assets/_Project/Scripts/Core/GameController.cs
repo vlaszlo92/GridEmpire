@@ -67,6 +67,7 @@ namespace GridEmpire.Core
             {
                 _networkPlayers.OnListChanged += HandleNetworkListChanged;
                 GlobalNetworkSettings.Instance.PlayerMappings.OnListChanged += HandleMappingsChanged;
+                HandleMappingsChanged(default);
             }
         }
 
@@ -203,30 +204,37 @@ namespace GridEmpire.Core
                 gridManager.RefreshCell(cell);
                 Debug.Log($"[GameController] BaseCell: player={player.Id}, cell={cell.Id}");
             }
+            Debug.Log($"[Server] SyncBaseCellsClientRpc hívás előtt, t={Time.realtimeSinceStartup}");
             SyncBaseCellsClientRpc(_players.Select(p => p.Id).ToArray(), _players.Select(p => p.BaseCell?.Id ?? -1).ToArray());
         }
 
         [ClientRpc]
         private void SyncBaseCellsClientRpc(int[] playerIds, int[] cellIds)
         {
+            StartCoroutine(ApplyBaseCellsWhenGridReady(playerIds, cellIds));
+        }
+
+        private IEnumerator ApplyBaseCellsWhenGridReady(int[] playerIds, int[] cellIds)
+        {
+            yield return new WaitUntil(() => GridManager.Instance != null && GridManager.Instance.IsReady);
+
             for (int i = 0; i < playerIds.Length; i++)
             {
                 var player = GetPlayerById(playerIds[i]);
-                var cell = GridManager.Instance?.GetCellById(cellIds[i]);
-                if (player != null && cell != null)
-                {
-                    cell.OwnerId = player.Id;
-                    cell.IsBase = true;
-                    cell.SetInfluence(player.Id, 1.0f);
-                    player.BaseCell = cell;
-                    GridManager.Instance?.RefreshCell(cell);
-                    Debug.Log($"[Client] BaseCell szinkronizálva: player={player.Id}, cell={cell.Id}");
-                }
+                var cell = GridManager.Instance.GetCellById(cellIds[i]);
+                if (player == null || cell == null) continue;
+
+                cell.OwnerId = player.Id;
+                cell.IsBase = true;
+                cell.SetInfluence(player.Id, 1.0f);
+                player.BaseCell = cell;
+                GridManager.Instance.RefreshCell(cell);
+                Debug.Log($"[Client] BaseCell szinkronizálva: player={player.Id}, cell={cell.Id}");
             }
 
             var localPlayer = GetLocalPlayer();
             if (localPlayer != null)
-                GridManager.Instance?.UpdateFogOfWar(localPlayer.Id);
+                GridManager.Instance.UpdateFogOfWar(localPlayer.Id);
         }
 
         private void SetupSpawners()
@@ -307,6 +315,7 @@ namespace GridEmpire.Core
 
         private void OnClientConnected(ulong clientId)
         {
+            Debug.Log($"[Server] OnClientConnected: clientId={clientId}, t={Time.realtimeSinceStartup}");
             StartCoroutine(RegisterClientWhenReady(clientId));
         }
 

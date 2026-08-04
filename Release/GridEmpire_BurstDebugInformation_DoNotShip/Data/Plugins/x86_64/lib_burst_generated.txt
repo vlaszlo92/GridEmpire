@@ -11,6 +11,7 @@ Library: E:\Programok\Unity_Projekts\Projects\GridEmpire\Temp\BurstOutput\Data\P
 --linker-options=PdbAltPath="GridEmpire_Data/Plugins/x86_64/lib_burst_generated.pdb"
 --generate-link-xml=Temp\burst.link.xml
 --temp-folder=E:\Programok\Unity_Projekts\Projects\GridEmpire\Temp\Burst
+--debug=Full
 --key-folder=C:/Program Files/Unity/Hub/Editor/6000.3.9f1/Editor/Data/PlaybackEngines/WindowsStandaloneSupport
 --decode-folder=E:\Programok\Unity_Projekts\Projects\GridEmpire\Library\Burst
 --output=E:\Programok\Unity_Projekts\Projects\GridEmpire\Temp\BurstOutput\Data\Plugins\x86_64\lib_burst_generated
@@ -128,6 +129,7 @@ Library: E:\Programok\Unity_Projekts\Projects\GridEmpire\Temp\BurstOutput\Data\P
 --linker-options=PdbAltPath="GridEmpire_Data/Plugins/x86_64/lib_burst_generated.pdb"
 --generate-link-xml=Temp\burst.link.xml
 --temp-folder=E:\Programok\Unity_Projekts\Projects\GridEmpire\Temp\Burst
+--debug=Full
 --key-folder=C:/Program Files/Unity/Hub/Editor/6000.3.9f1/Editor/Data/PlaybackEngines/WindowsStandaloneSupport
 --decode-folder=E:\Programok\Unity_Projekts\Projects\GridEmpire\Library\Burst
 --output=E:\Programok\Unity_Projekts\Projects\GridEmpire\Temp\BurstOutput\Data\Plugins\x86_64\lib_burst_generated
@@ -245,6 +247,7 @@ Library: E:\Programok\Unity_Projekts\Projects\GridEmpire\Temp\BurstOutput\Data\P
 --linker-options=PdbAltPath="GridEmpire_Data/Plugins/x86_64/lib_burst_generated.pdb"
 --generate-link-xml=Temp\burst.link.xml
 --temp-folder=E:\Programok\Unity_Projekts\Projects\GridEmpire\Temp\Burst
+--debug=Full
 --key-folder=C:/Program Files/Unity/Hub/Editor/6000.3.9f1/Editor/Data/PlaybackEngines/WindowsStandaloneSupport
 --decode-folder=E:\Programok\Unity_Projekts\Projects\GridEmpire\Library\Burst
 --output=E:\Programok\Unity_Projekts\Projects\GridEmpire\Temp\BurstOutput\Data\Plugins\x86_64\lib_burst_generated
@@ -362,6 +365,7 @@ Library: E:\Programok\Unity_Projekts\Projects\GridEmpire\Temp\BurstOutput\Data\P
 --linker-options=PdbAltPath="GridEmpire_Data/Plugins/x86_64/lib_burst_generated.pdb"
 --generate-link-xml=Temp\burst.link.xml
 --temp-folder=E:\Programok\Unity_Projekts\Projects\GridEmpire\Temp\Burst
+--debug=Full
 --key-folder=C:/Program Files/Unity/Hub/Editor/6000.3.9f1/Editor/Data/PlaybackEngines/WindowsStandaloneSupport
 --decode-folder=E:\Programok\Unity_Projekts\Projects\GridEmpire\Library\Burst
 --output=E:\Programok\Unity_Projekts\Projects\GridEmpire\Temp\BurstOutput\Data\Plugins\x86_64\lib_burst_generated
@@ -479,6 +483,7 @@ Library: E:\Programok\Unity_Projekts\Projects\GridEmpire\Temp\BurstOutput\Data\P
 --linker-options=PdbAltPath="GridEmpire_Data/Plugins/x86_64/lib_burst_generated.pdb"
 --generate-link-xml=Temp\burst.link.xml
 --temp-folder=E:\Programok\Unity_Projekts\Projects\GridEmpire\Temp\Burst
+--debug=Full
 --key-folder=C:/Program Files/Unity/Hub/Editor/6000.3.9f1/Editor/Data/PlaybackEngines/WindowsStandaloneSupport
 --decode-folder=E:\Programok\Unity_Projekts\Projects\GridEmpire\Library\Burst
 --output=E:\Programok\Unity_Projekts\Projects\GridEmpire\Temp\BurstOutput\Data\Plugins\x86_64\lib_burst_generated
@@ -497,6 +502,7 @@ Library: E:\Programok\Unity_Projekts\Projects\GridEmpire\Temp\BurstOutput\Data\P
 --linker-options=PdbAltPath="GridEmpire_Data/Plugins/x86_64/lib_burst_generated.pdb"
 --generate-link-xml=Temp\burst.link.xml
 --temp-folder=E:\Programok\Unity_Projekts\Projects\GridEmpire\Temp\Burst
+--debug=Full
 --key-folder=C:/Program Files/Unity/Hub/Editor/6000.3.9f1/Editor/Data/PlaybackEngines/WindowsStandaloneSupport
 --decode-folder=E:\Programok\Unity_Projekts\Projects\GridEmpire\Library\Burst
 --output=E:\Programok\Unity_Projekts\Projects\GridEmpire\Temp\BurstOutput\Data\Plugins\x86_64\lib_burst_generated
@@ -516,6 +522,7 @@ Library: E:\Programok\Unity_Projekts\Projects\GridEmpire\Temp\BurstOutput\Data\P
 --linker-options=PdbAltPath="GridEmpire_Data/Plugins/x86_64/lib_burst_generated.pdb"
 --generate-link-xml=Temp\burst.link.xml
 --temp-folder=E:\Programok\Unity_Projekts\Projects\GridEmpire\Temp\Burst
+--debug=Full
 --key-folder=C:/Program Files/Unity/Hub/Editor/6000.3.9f1/Editor/Data/PlaybackEngines/WindowsStandaloneSupport
 --decode-folder=E:\Programok\Unity_Projekts\Projects\GridEmpire\Library\Burst
 --output=E:\Programok\Unity_Projekts\Projects\GridEmpire\Temp\BurstOutput\Data\Plugins\x86_64\lib_burst_generated
@@ -535,6 +542,7 @@ Library: E:\Programok\Unity_Projekts\Projects\GridEmpire\Temp\BurstOutput\Data\P
 --linker-options=PdbAltPath="GridEmpire_Data/Plugins/x86_64/lib_burst_generated.pdb"
 --generate-link-xml=Temp\burst.link.xml
 --temp-folder=E:\Programok\Unity_Projekts\Projects\GridEmpire\Temp\Burst
+--debug=Full
 --key-folder=C:/Program Files/Unity/Hub/Editor/6000.3.9f1/Editor/Data/PlaybackEngines/WindowsStandaloneSupport
 --decode-folder=E:\Programok\Unity_Projekts\Projects\GridEmpire\Library\Burst
 --output=E:\Programok\Unity_Projekts\Projects\GridEmpire\Temp\BurstOutput\Data\Plugins\x86_64\lib_burst_generated
@@ -553,6 +561,7 @@ Library: E:\Programok\Unity_Projekts\Projects\GridEmpire\Temp\BurstOutput\Data\P
 --linker-options=PdbAltPath="GridEmpire_Data/Plugins/x86_64/lib_burst_generated.pdb"
 --generate-link-xml=Temp\burst.link.xml
 --temp-folder=E:\Programok\Unity_Projekts\Projects\GridEmpire\Temp\Burst
+--debug=Full
 --key-folder=C:/Program Files/Unity/Hub/Editor/6000.3.9f1/Editor/Data/PlaybackEngines/WindowsStandaloneSupport
 --decode-folder=E:\Programok\Unity_Projekts\Projects\GridEmpire\Library\Burst
 --output=E:\Programok\Unity_Projekts\Projects\GridEmpire\Temp\BurstOutput\Data\Plugins\x86_64\lib_burst_generated
@@ -587,6 +596,7 @@ Library: E:\Programok\Unity_Projekts\Projects\GridEmpire\Temp\BurstOutput\Data\P
 --linker-options=PdbAltPath="GridEmpire_Data/Plugins/x86_64/lib_burst_generated.pdb"
 --generate-link-xml=Temp\burst.link.xml
 --temp-folder=E:\Programok\Unity_Projekts\Projects\GridEmpire\Temp\Burst
+--debug=Full
 --key-folder=C:/Program Files/Unity/Hub/Editor/6000.3.9f1/Editor/Data/PlaybackEngines/WindowsStandaloneSupport
 --decode-folder=E:\Programok\Unity_Projekts\Projects\GridEmpire\Library\Burst
 --output=E:\Programok\Unity_Projekts\Projects\GridEmpire\Temp\BurstOutput\Data\Plugins\x86_64\lib_burst_generated
@@ -621,6 +631,7 @@ Library: E:\Programok\Unity_Projekts\Projects\GridEmpire\Temp\BurstOutput\Data\P
 --linker-options=PdbAltPath="GridEmpire_Data/Plugins/x86_64/lib_burst_generated.pdb"
 --generate-link-xml=Temp\burst.link.xml
 --temp-folder=E:\Programok\Unity_Projekts\Projects\GridEmpire\Temp\Burst
+--debug=Full
 --key-folder=C:/Program Files/Unity/Hub/Editor/6000.3.9f1/Editor/Data/PlaybackEngines/WindowsStandaloneSupport
 --decode-folder=E:\Programok\Unity_Projekts\Projects\GridEmpire\Library\Burst
 --output=E:\Programok\Unity_Projekts\Projects\GridEmpire\Temp\BurstOutput\Data\Plugins\x86_64\lib_burst_generated
@@ -738,6 +749,7 @@ Library: E:\Programok\Unity_Projekts\Projects\GridEmpire\Temp\BurstOutput\Data\P
 --linker-options=PdbAltPath="GridEmpire_Data/Plugins/x86_64/lib_burst_generated.pdb"
 --generate-link-xml=Temp\burst.link.xml
 --temp-folder=E:\Programok\Unity_Projekts\Projects\GridEmpire\Temp\Burst
+--debug=Full
 --key-folder=C:/Program Files/Unity/Hub/Editor/6000.3.9f1/Editor/Data/PlaybackEngines/WindowsStandaloneSupport
 --decode-folder=E:\Programok\Unity_Projekts\Projects\GridEmpire\Library\Burst
 --output=E:\Programok\Unity_Projekts\Projects\GridEmpire\Temp\BurstOutput\Data\Plugins\x86_64\lib_burst_generated
@@ -856,6 +868,7 @@ Library: E:\Programok\Unity_Projekts\Projects\GridEmpire\Temp\BurstOutput\Data\P
 --linker-options=PdbAltPath="GridEmpire_Data/Plugins/x86_64/lib_burst_generated.pdb"
 --generate-link-xml=Temp\burst.link.xml
 --temp-folder=E:\Programok\Unity_Projekts\Projects\GridEmpire\Temp\Burst
+--debug=Full
 --key-folder=C:/Program Files/Unity/Hub/Editor/6000.3.9f1/Editor/Data/PlaybackEngines/WindowsStandaloneSupport
 --decode-folder=E:\Programok\Unity_Projekts\Projects\GridEmpire\Library\Burst
 --output=E:\Programok\Unity_Projekts\Projects\GridEmpire\Temp\BurstOutput\Data\Plugins\x86_64\lib_burst_generated
@@ -934,6 +947,7 @@ Library: E:\Programok\Unity_Projekts\Projects\GridEmpire\Temp\BurstOutput\Data\P
 --linker-options=PdbAltPath="GridEmpire_Data/Plugins/x86_64/lib_burst_generated.pdb"
 --generate-link-xml=Temp\burst.link.xml
 --temp-folder=E:\Programok\Unity_Projekts\Projects\GridEmpire\Temp\Burst
+--debug=Full
 --key-folder=C:/Program Files/Unity/Hub/Editor/6000.3.9f1/Editor/Data/PlaybackEngines/WindowsStandaloneSupport
 --decode-folder=E:\Programok\Unity_Projekts\Projects\GridEmpire\Library\Burst
 --output=E:\Programok\Unity_Projekts\Projects\GridEmpire\Temp\BurstOutput\Data\Plugins\x86_64\lib_burst_generated

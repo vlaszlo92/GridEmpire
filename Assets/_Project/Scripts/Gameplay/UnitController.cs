@@ -34,7 +34,10 @@ namespace GridEmpire.Gameplay
         private float _pendingDamage;
         private UnitAction _nextAction;
         private CellData _previousCell;
+        private int _facingTargetId = -1;
         [SerializeField] private float _currentStamina;
+        private Coroutine _rotateCoroutine;
+
 
         private PlayerProfile _ownerProfile;
         private Renderer[] _renderers;
@@ -151,8 +154,18 @@ namespace GridEmpire.Gameplay
                 {
                     _currentCell.RegisterOccupier(this);
                     transform.position = _gridManager.GetWorldPosition(_currentCell.Q, _currentCell.R);
+                    FaceMapCenterInstant();
                 }
             }
+        }
+
+        private void FaceMapCenterInstant()
+        {
+            Vector3 centerPos = _gridManager.GetWorldPosition(0, 0);
+            Vector3 dir = centerPos - transform.position;
+            dir.y = 0;
+            if (dir.sqrMagnitude > 0.0001f)
+                transform.rotation = Quaternion.LookRotation(dir.normalized);
         }
 
         // ─── PLAN ACTION ────────────────────────────────────────────────────────────
@@ -304,20 +317,21 @@ namespace GridEmpire.Gameplay
             var target = GameController.Instance?.GetUnitById(_nextAction.TargetUnitId) as UnitController;
             if (target != null && !target.IsDead)
             {
-                FaceTarget(target.transform.position);
+                FaceCombatTarget(target.Id, target.transform.position);
 
                 float totalDamage = _data.baseDamage;
                 if (_data.strongAgainst == target.Data.type)
                     totalDamage += _data.bonusDamage;
 
                 target.RegisterPendingDamage(totalDamage);
+                target.FaceCombatTarget(_id, transform.position);
 
                 int targetCellId = target._currentCell?.Id ?? -1;
                 int myCellId = _currentCell?.Id ?? -1;
-                
+
                 _unitAnimator?.Play(ActionType.Attack);
-                AttackClientRpc(targetCellId);
-                target.BeAttackedClientRpc(myCellId);
+                AttackClientRpc(targetCellId, target.Id);
+                target.BeAttackedClientRpc(myCellId, _id);
             }
         }
 
@@ -342,31 +356,37 @@ namespace GridEmpire.Gameplay
                     enemy.RegisterPendingDamage(_data.baseDamage);
                     RegisterPendingDamage(enemy._data.baseDamage);
                     _unitAnimator?.Play(ActionType.Attack);
-                    AttackClientRpc(enemy._id);
+
+                    int enemyCellId = enemy._currentCell?.Id ?? -1;
+                    int myCellId = _currentCell?.Id ?? -1;
+
+                    FaceCombatTarget(enemy._id, enemy.transform.position);
+                    enemy.FaceCombatTarget(_id, transform.position);
+
+                    AttackClientRpc(enemyCellId, enemy._id);
+                    enemy.AttackClientRpc(myCellId, _id);
                 }
             }
         }
 
         [ClientRpc]
-        private void AttackClientRpc(int targetCellId)
+        private void AttackClientRpc(int targetCellId, int targetUnitId)
         {
             if (IsServer) return;
             var cell = _gridManager?.GetCellById(targetCellId);
             if (cell == null) return;
-            Vector3 targetPos = _gridManager.GetWorldPosition(cell.Q, cell.R);
-            FaceTarget(targetPos);
+            FaceCombatTarget(targetUnitId, _gridManager.GetWorldPosition(cell.Q, cell.R));
             _unitAnimator?.Play(ActionType.Attack);
         }
 
         [ClientRpc]
-        public void BeAttackedClientRpc(int attackerCellId)
+        public void BeAttackedClientRpc(int attackerCellId, int attackerUnitId)
         {
             if (IsServer) return;
             if (_gridManager == null) _gridManager = GridManager.Instance;
             var cell = _gridManager?.GetCellById(attackerCellId);
             if (cell == null) return;
-            Vector3 attackerPos = _gridManager.GetWorldPosition(cell.Q, cell.R);
-            FaceTarget(attackerPos);
+            FaceCombatTarget(attackerUnitId, _gridManager.GetWorldPosition(cell.Q, cell.R));
         }
 
         public void ApplyPendingDamage()
@@ -420,6 +440,7 @@ namespace GridEmpire.Gameplay
             Vector3 targetPos = _gridManager.GetWorldPosition(next.Q, next.R);
             FaceTarget(targetPos);
             StartCoroutine(MoveToCell(next));
+            _facingTargetId = -1;
             _unitAnimator?.Play(ActionType.Move);
             MoveClientRpc(next.Id);
         }
@@ -437,7 +458,10 @@ namespace GridEmpire.Gameplay
             _currentCell.RegisterOccupier(this);
 
             StopAllCoroutines();
+            Vector3 targetPos = _gridManager.GetWorldPosition(next.Q, next.R);
+            FaceTarget(targetPos);
             StartCoroutine(MoveToCell(next));
+            _facingTargetId = -1;
             _unitAnimator?.Play(ActionType.Move);
         }
 
@@ -448,9 +472,8 @@ namespace GridEmpire.Gameplay
             if (target == null) return;
 
             Vector3 targetPos = _gridManager.GetWorldPosition(target.Q, target.R);
-            FaceTarget(targetPos);
+            if (_facingTargetId < 0) FaceTarget(targetPos);
 
-            // Regisztráljuk hogy ezt a cellát foglaljuk (Contains check a duplikáció ellen)
             if (!target.CapturingUnitIds.Contains(_id))
                 target.CapturingUnitIds.Add(_id);
 
@@ -580,15 +603,16 @@ namespace GridEmpire.Gameplay
             transform.position = targetPos;
         }
 
-        //public void FaceTarget(Vector3 targetPos)
-        //{
-        //    Vector3 dir = (targetPos - transform.position).normalized;
-        //    dir.y = 0;
-        //    if (dir != Vector3.zero) transform.rotation = Quaternion.LookRotation(dir);
-        //}
-
-        private Coroutine _rotateCoroutine;
-
+        private void FaceCombatTarget(int sourceUnitId, Vector3 pos)
+        {
+            if (_facingTargetId >= 0 && _facingTargetId != sourceUnitId)
+            {
+                var current = GameController.Instance?.GetUnitById(_facingTargetId) as UnitController;
+                if (current != null && !current.IsDead) return;
+            }
+            _facingTargetId = sourceUnitId;
+            FaceTarget(pos);
+        }
         public void FaceTarget(Vector3 targetPos)
         {
             Vector3 dir = (targetPos - transform.position).normalized;

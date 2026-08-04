@@ -9,7 +9,8 @@ namespace GridEmpire.Gameplay
     {
         private Animator[] _animators;
         private const float _baseSpeed = 1f;
-        private CombatAudioPlayer _infantryAudio;
+        private CombatAudioPlayer _infantryAudio; 
+        private Coroutine _playCoroutine;
 
         private void Awake()
         {
@@ -36,7 +37,8 @@ namespace GridEmpire.Gameplay
 
             float delay = Random.Range(0f, 0.5f);
             float speed = _baseSpeed + Random.Range(-0.25f, 0.25f);
-            StartCoroutine(PlayDelayed(state, speed, delay));
+            if (_playCoroutine != null) StopCoroutine(_playCoroutine);
+            _playCoroutine = StartCoroutine(PlayDelayed(state, speed, delay));
         }
 
         private IEnumerator PlayDelayed(int state, float speed, float delay)
