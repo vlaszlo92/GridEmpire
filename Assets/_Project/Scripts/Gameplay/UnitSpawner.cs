@@ -144,7 +144,12 @@ namespace GridEmpire.Gameplay
                 _myQueue.RemoveAt(0);
                 if (_ownerProfile?.BaseCell != null && !_ownerProfile.BaseCell.IsOccupied)
                     FinalizeSpawn(itemToSpawn);
-                else { itemToSpawn.RemainingTicks = 1; _myQueue.Insert(0, itemToSpawn); }
+                else
+                {
+                    itemToSpawn.RemainingTicks = 1;
+                    itemToSpawn.IsWaitingToSpawn = true;
+                    _myQueue.Insert(0, itemToSpawn);
+                }
             }
             SyncQueueClientRpc(SerializeQueue());
         }
@@ -205,8 +210,13 @@ namespace GridEmpire.Gameplay
 
         private int[] SerializeQueue()
         {
-            var result = new int[_myQueue.Count * 2];
-            for (int i = 0; i < _myQueue.Count; i++) { result[i * 2] = _myQueue[i].Data.index; result[i * 2 + 1] = _myQueue[i].RemainingTicks; }
+            var result = new int[_myQueue.Count * 3];
+            for (int i = 0; i < _myQueue.Count; i++)
+            {
+                result[i * 3] = _myQueue[i].Data.index;
+                result[i * 3 + 1] = _myQueue[i].RemainingTicks;
+                result[i * 3 + 2] = _myQueue[i].IsWaitingToSpawn ? 1 : 0;
+            }
             return result;
         }
 
@@ -215,11 +225,15 @@ namespace GridEmpire.Gameplay
         {
             if (IsServer) return;
             _myQueue.Clear();
-            for (int i = 0; i < serialized.Length; i += 2)
+            for (int i = 0; i < serialized.Length; i += 3)
             {
                 var data = GameController.Instance.GetUnitDataByIndex(serialized[i]);
                 if (data == null) continue;
-                _myQueue.Add(new QueuedUnit(data, data.recruitmentTime, null) { RemainingTicks = serialized[i + 1] });
+                _myQueue.Add(new QueuedUnit(data, data.recruitmentTime, null)
+                {
+                    RemainingTicks = serialized[i + 1],
+                    IsWaitingToSpawn = serialized[i + 2] == 1
+                });
             }
         }
 

@@ -113,6 +113,16 @@ namespace GridEmpire.Input
             if (Keyboard.current.digit2Key.wasPressedThisFrame) RequestSpawn(1);
             if (Keyboard.current.digit3Key.wasPressedThisFrame) RequestSpawn(2);
             if (Keyboard.current.digit4Key.wasPressedThisFrame) RequestSpawn(3);
+
+            if (_controls.Player.DeleteUnit.WasPerformedThisFrame())
+                DeleteSelectedUnit();
+        }
+
+        private void DeleteSelectedUnit()
+        {
+            if (GameController.Instance?.SelectedUnit is not UnitController unit) return;
+            if (unit.OwnerId != localPlayer.Id) return;
+            unit.DestroyUnit();
         }
 
         private void ExecuteSelection(Vector2 screenPosition)

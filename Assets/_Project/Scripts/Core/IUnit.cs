@@ -14,7 +14,8 @@ namespace GridEmpire.Core
         void RequestMove(CellData target);
         void DestroyUnit();
         float GetCurrentHP();
-        void SyncFromSnapshot(float newHp, bool isDead);
+        float GetCurrentStamina();
+        void SyncFromSnapshot(float newHp, float newStamina, bool isDead);
         void SetVisible(bool visible);
         void SetAudioVisible(bool visible);
     }

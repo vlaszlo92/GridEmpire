@@ -45,8 +45,18 @@ namespace GridEmpire.Gameplay
         public int OwnerId => _ownerId;
         public UnitData Data => _data;
         public CellData CurrentCell => _currentCell;
-        public bool IsDead => _isDead;
-        public void DestroyUnit() => ExecuteDeath();
+        public bool IsDead => _isDead;         
+        public void DestroyUnit()
+        {
+            if (IsServer) ExecuteDeath();
+            else RequestDestroyServerRpc();
+        }
+
+        [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)]
+        private void RequestDestroyServerRpc()
+        {
+            ExecuteDeath();
+        }
 
         private void Awake()
         {
@@ -675,9 +685,10 @@ namespace GridEmpire.Gameplay
         public float GetCurrentHP() => _currentHP;
         public float GetCurrentStamina() => _currentStamina;
 
-        public void SyncFromSnapshot(float newHp, bool isDead)
+        public void SyncFromSnapshot(float newHp, float newStamina, bool isDead)
         {
             _currentHP = newHp;
+            _currentStamina = newStamina;
             if (isDead && !_isDead) ExecuteDeath();
         }
 

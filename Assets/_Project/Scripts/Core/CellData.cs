@@ -24,6 +24,9 @@ namespace GridEmpire.Core
         public int OwnerId = -1;
         public bool IsBase = false;
         public bool IsOccupied;
+        public override bool Equals(object obj) => obj is CellData other && Id == other.Id;
+        public override int GetHashCode() => Id;
+
         private VisibilityState _currentVisibility = VisibilityState.Hidden;
 
         public VisibilityState CurrentVisibility

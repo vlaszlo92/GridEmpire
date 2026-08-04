@@ -129,12 +129,24 @@ namespace GridEmpire.Core
             {
                 var snapshot = _resolver.BuildSnapshot(TurnCount);
                 string json = JsonUtility.ToJson(snapshot);
-                ApplySnapshotClientRpc(json);
+#if DEVELOPMENT_BUILD || UNITY_EDITOR
+                StartCoroutine(DelayedSnapshotSend(json));
+#else
+        ApplySnapshotClientRpc(json);
+#endif
             }
 
             CurrentPhase = TurnPhase.Idle;
             CalculationProgress = 0f;
         }
+
+#if DEVELOPMENT_BUILD || UNITY_EDITOR
+        private IEnumerator DelayedSnapshotSend(string json)
+        {
+            yield return new WaitForSeconds(UnityEngine.Random.Range(0.05f, 0.25f));
+            ApplySnapshotClientRpc(json);
+        }
+#endif
 
         [ClientRpc]
         private void ApplySnapshotClientRpc(string json)
@@ -155,7 +167,7 @@ namespace GridEmpire.Core
             foreach (var unitSync in snapshot.UnitActions)
             {
                 var unit = GameController.Instance.GetUnitById(unitSync.UnitId);
-                unit?.SyncFromSnapshot(unitSync.NewHP, unitSync.IsDead);
+                unit?.SyncFromSnapshot(unitSync.NewHP, unitSync.NewStamina, unitSync.IsDead);
             }
 
             foreach (var playerSync in snapshot.PlayerStats)

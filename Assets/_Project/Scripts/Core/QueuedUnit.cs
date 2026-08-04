@@ -8,6 +8,7 @@ namespace GridEmpire.Core
         public UnitData Data { get; }
         public CellData TargetCell { get; }
         public int RemainingTicks { get; set; }
+        public bool IsWaitingToSpawn { get; set; }
 
         public QueuedUnit(UnitData data, int ticks, CellData targetCell)
         {

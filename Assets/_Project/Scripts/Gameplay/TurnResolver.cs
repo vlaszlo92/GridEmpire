@@ -259,17 +259,17 @@ namespace GridEmpire.Gameplay
         {
             var snapshot = new TurnSnapshot { TurnIndex = turnIndex };
 
-            foreach (var action in _actionQueue)
+            foreach (var unit in _processingUnits)
             {
-                if (!_unitLookup.TryGetValue(action.PerformerUnitId, out UnitController unit)) continue;
-
+                if (unit == null) continue;
                 snapshot.UnitActions.Add(new UnitActionResult
                 {
-                    UnitId = action.PerformerUnitId,
-                    Type = action.Type,
-                    TargetCellId = action.TargetCellId,
-                    TargetUnitId = action.TargetUnitId,
+                    UnitId = unit.Id,
+                    Type = ActionType.Idle,
+                    TargetCellId = -1,
+                    TargetUnitId = -1,
                     NewHP = unit.GetCurrentHP(),
+                    NewStamina = unit.GetCurrentStamina(),
                     IsDead = unit._isDead
                 });
             }

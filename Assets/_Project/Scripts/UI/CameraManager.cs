@@ -114,7 +114,7 @@ namespace GridEmpire.UI
 
             Vector3 forward = Vector3.ProjectOnPlane(transform.up, Vector3.up).normalized;
             Vector3 right = Vector3.ProjectOnPlane(transform.right, Vector3.up).normalized;
-            Vector3 move = (right * -delta.x + forward * -delta.y) * moveSpeed * Time.deltaTime;
+            Vector3 move = (right * -delta.x + forward * -delta.y) * moveSpeed;
 
             transform.position += move;
             _lastMoveTime = Time.time;
@@ -128,7 +128,7 @@ namespace GridEmpire.UI
 
             float minScrollStep = breathAmplitude * 2f + 0.1f;
             float zoomDirection = scroll > 0 ? 1f : -1f;
-            Vector3 nextPos = transform.position + transform.forward * zoomDirection * zoomSpeed * Time.deltaTime;
+            Vector3 nextPos = transform.position + transform.forward * zoomDirection * zoomSpeed;
 
             // Minimum scroll lépés biztosítása
             if (Mathf.Abs(nextPos.y - transform.position.y) < minScrollStep)

@@ -262,11 +262,20 @@ namespace GridEmpire.UI
         private void HandleSmoothFill(IReadOnlyList<QueuedUnit> queue, float duration)
         {
             if (queue.Count == 0 || _iconRefs.Count == 0 || _iconRefs[0].fillImage == null) return;
-            float totalTicks = queue[0].Data.recruitmentTime;
-            float remainingTicks = queue[0].RemainingTicks + 1;
-            float baseFill = (totalTicks - remainingTicks) / totalTicks;
-            float tickProgress = _tickTimer / duration;
-            _iconRefs[0].fillImage.fillAmount = 1f - Mathf.Clamp01(baseFill + (tickProgress / totalTicks));
+
+            if (queue[0].IsWaitingToSpawn)
+            {
+                _iconRefs[0].fillImage.fillAmount = 0f; // kész, csak a spawn hely felszabadulására vár
+            }
+            else
+            {
+                float totalTicks = queue[0].Data.recruitmentTime;
+                float remainingTicks = queue[0].RemainingTicks;
+                float baseFill = (totalTicks - remainingTicks) / totalTicks;
+                float tickProgress = _tickTimer / duration;
+                _iconRefs[0].fillImage.fillAmount = 1f - Mathf.Clamp01(baseFill + (tickProgress / totalTicks));
+            }
+
             for (int i = 1; i < _iconRefs.Count; i++)
                 if (_iconRefs[i].fillImage != null) _iconRefs[i].fillImage.fillAmount = 0f;
         }
@@ -301,7 +310,7 @@ namespace GridEmpire.UI
             if (_selectedUnit == null) return;
             if (_localPlayer == null) return;
             if (_selectedUnit.OwnerId != _localPlayer.Id) return;
-            _selectedUnit.ExecuteDeath();
+            _selectedUnit.DestroyUnit();
         }
 
         public void ToggleSettings()

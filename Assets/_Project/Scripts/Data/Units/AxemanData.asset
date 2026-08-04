@@ -23,8 +23,8 @@ MonoBehaviour:
   staminaPerTurn: 0.5
   maxStamina: 1.5
   conquerSpeed: 0.5
-  exploreSpeed: 0.2
-  baseDamage: 20
+  exploreSpeed: 0.25
+  baseDamage: 60
   bonusDamage: 10
   unitPrefab: {fileID: 8566538709596655628, guid: b8fa004f9a98f124e97b21a515fd3c6c, type: 3}
   icon: {fileID: 1683058357, guid: 6ea51d1fc31d7784cbabe9552f0ef51f, type: 3}

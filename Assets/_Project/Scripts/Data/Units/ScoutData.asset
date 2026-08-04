@@ -19,12 +19,12 @@ MonoBehaviour:
   recruitmentTime: 1
   cost: 50
   costPerTurn: 1
-  maxHp: 400
+  maxHp: 200
   staminaPerTurn: 1
   maxStamina: 2
-  conquerSpeed: 1
-  exploreSpeed: 1
-  baseDamage: 30
+  conquerSpeed: 0.35
+  exploreSpeed: 0.6
+  baseDamage: 50
   bonusDamage: 0
   unitPrefab: {fileID: 1596593811343993370, guid: 9ec4bee007d8cec41ab190ca27993543, type: 3}
   icon: {fileID: 976370702, guid: 6ea51d1fc31d7784cbabe9552f0ef51f, type: 3}

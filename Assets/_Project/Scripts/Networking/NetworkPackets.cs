@@ -33,6 +33,7 @@ namespace GridEmpire.Networking
         public int TargetUnitId;
         public float NewHP;
         public bool IsDead;
+        public float NewStamina;
     }
 
     [Serializable]
