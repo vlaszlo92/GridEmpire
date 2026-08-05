@@ -9,11 +9,25 @@ using UnityEngine;
 
 namespace GridEmpire.Gameplay
 {
+
+    [System.Serializable]
+    public struct ColorizableTarget
+    {
+        public Renderer renderer;
+        public int materialIndex;
+    }
+
     public class UnitController : NetworkBehaviour, IUnit
     {
         public NetworkVariable<int> NetworkUnitId = new NetworkVariable<int>();
         public NetworkVariable<int> NetworkOwnerId = new NetworkVariable<int>();
         public NetworkVariable<int> NetworkUnitTypeIndex = new NetworkVariable<int>();
+
+        [Header("Colorization Setup")]
+        [SerializeField] private List<ColorizableTarget> _colorizableTargets;
+
+        private static readonly int BaseColorPropertyId = Shader.PropertyToID("_BaseColor");
+        private MaterialPropertyBlock _propBlock;
 
         [Header("Unit State")]
         [SerializeField] private int _id;
@@ -574,25 +588,21 @@ namespace GridEmpire.Gameplay
         // ─── HELPERS ─────────────────────────────────────────────────────────────────
         private void ApplyPlayerColor()
         {
-            return;
             var player = GameController.Instance?.GetPlayerById(_ownerId);
             if (player == null) return;
 
-            foreach (var r in _renderers)
-            {
-                //if (r.gameObject.name == "shield_wood" || r.gameObject.name == "sword_wood")
-                //{
-                //    foreach (var mat in r.materials)
-                //    {
-                //        mat.SetColor("_BaseColor", player.Color);
-                //    }
+            if (_colorizableTargets == null || _colorizableTargets.Count == 0) return;
 
-                //}                
-                //else 
-                if (r.gameObject.name == "body_head" || r.gameObject.name == "sword_wood")
-                {
-                    r.materials[1].SetColor("_BaseColor", player.Color);
-                }
+            if (_propBlock == null)
+                _propBlock = new MaterialPropertyBlock();
+
+            foreach (var target in _colorizableTargets)
+            {
+                if (target.renderer == null) continue;
+
+                target.renderer.GetPropertyBlock(_propBlock, target.materialIndex);
+                _propBlock.SetColor(BaseColorPropertyId, player.Color);
+                target.renderer.SetPropertyBlock(_propBlock, target.materialIndex);
             }
         }
 

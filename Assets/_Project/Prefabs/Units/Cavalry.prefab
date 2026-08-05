@@ -80,6 +80,17 @@ MonoBehaviour:
     m_InternalValue: 0
   NetworkUnitTypeIndex:
     m_InternalValue: 0
+  _colorizableTargets:
+  - renderer: {fileID: 880209302393620032}
+    materialIndex: 1
+  - renderer: {fileID: 8142201791362868249}
+    materialIndex: 0
+  - renderer: {fileID: 1543231019402246257}
+    materialIndex: 0
+  - renderer: {fileID: 1543231019402246257}
+    materialIndex: 1
+  - renderer: {fileID: 1543231019402246257}
+    materialIndex: 2
   _id: 0
   _data: {fileID: 11400000, guid: e78bddd7e010ea5448d29ae78cfdc2df, type: 2}
   _ownerId: 0
@@ -312,9 +323,24 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 777cda78da5c2634f8e4ea8c9197e14b, type: 3}
+--- !u!137 &880209302393620032 stripped
+SkinnedMeshRenderer:
+  m_CorrespondingSourceObject: {fileID: 3032130362682451531, guid: 777cda78da5c2634f8e4ea8c9197e14b, type: 3}
+  m_PrefabInstance: {fileID: 2748158728279138315}
+  m_PrefabAsset: {fileID: 0}
+--- !u!23 &1543231019402246257 stripped
+MeshRenderer:
+  m_CorrespondingSourceObject: {fileID: 3695700070266706042, guid: 777cda78da5c2634f8e4ea8c9197e14b, type: 3}
+  m_PrefabInstance: {fileID: 2748158728279138315}
+  m_PrefabAsset: {fileID: 0}
 --- !u!4 &6646449777069801359 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 8799898526622392196, guid: 777cda78da5c2634f8e4ea8c9197e14b, type: 3}
+  m_PrefabInstance: {fileID: 2748158728279138315}
+  m_PrefabAsset: {fileID: 0}
+--- !u!23 &8142201791362868249 stripped
+MeshRenderer:
+  m_CorrespondingSourceObject: {fileID: 6259302742138553362, guid: 777cda78da5c2634f8e4ea8c9197e14b, type: 3}
   m_PrefabInstance: {fileID: 2748158728279138315}
   m_PrefabAsset: {fileID: 0}
 --- !u!1001 &2947251762660917659

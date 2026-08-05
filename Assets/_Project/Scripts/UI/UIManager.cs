@@ -69,6 +69,7 @@ namespace GridEmpire.UI
             public TextMeshProUGUI tickText;
             public TextMeshProUGUI nameText;
             public Button iconButton;
+            public Outline borderOutline;
         }
 
         private void Start()
@@ -216,8 +217,7 @@ namespace GridEmpire.UI
         private void HandleClearQueue()
         {
             if (_localSpawner == null) return;
-            var queue = _localSpawner.GetQueue();
-            while (queue.Count > 1) _localSpawner.RemoveUnitFromQueue(1);
+            _localSpawner.ClearQueue();
         }
 
         private void SyncQueueIcons(IReadOnlyList<QueuedUnit> queue)
@@ -240,7 +240,8 @@ namespace GridEmpire.UI
                     fillImage = newIcon.transform.GetChild(0).GetComponent<Image>(),
                     tickText = newIcon.transform.GetChild(1).GetComponent<TextMeshProUGUI>(),
                     nameText = newIcon.transform.GetChild(2).GetComponent<TextMeshProUGUI>(),
-                    iconButton = newIcon.GetComponent<Button>()
+                    iconButton = newIcon.GetComponent<Button>(),
+                    borderOutline = newIcon.GetComponent<Outline>(),
                 };
                 _iconRefs.Add(refs);
             }
@@ -261,11 +262,17 @@ namespace GridEmpire.UI
 
         private void HandleSmoothFill(IReadOnlyList<QueuedUnit> queue, float duration)
         {
-            if (queue.Count == 0 || _iconRefs.Count == 0 || _iconRefs[0].fillImage == null) return;
+            if (queue.Count == 0 || _iconRefs.Count == 0) return;
 
-            if (queue[0].IsWaitingToSpawn)
+            bool isReadyToSpawn = queue[0].IsWaitingToSpawn || queue[0].RemainingTicks <= 0;
+
+            if (isReadyToSpawn)
             {
-                _iconRefs[0].fillImage.fillAmount = 0f; // kész, csak a spawn hely felszabadulására vár
+                if (_iconRefs[0].fillImage != null)
+                    _iconRefs[0].fillImage.fillAmount = 0f;
+
+                if (_iconRefs[0].borderOutline != null)
+                    _iconRefs[0].borderOutline.enabled = true;
             }
             else
             {
@@ -273,11 +280,22 @@ namespace GridEmpire.UI
                 float remainingTicks = queue[0].RemainingTicks;
                 float baseFill = (totalTicks - remainingTicks) / totalTicks;
                 float tickProgress = _tickTimer / duration;
-                _iconRefs[0].fillImage.fillAmount = 1f - Mathf.Clamp01(baseFill + (tickProgress / totalTicks));
+
+                if (_iconRefs[0].fillImage != null)
+                    _iconRefs[0].fillImage.fillAmount = 1f - Mathf.Clamp01(baseFill + (tickProgress / totalTicks));
+
+                if (_iconRefs[0].borderOutline != null)
+                    _iconRefs[0].borderOutline.enabled = false;
             }
 
             for (int i = 1; i < _iconRefs.Count; i++)
-                if (_iconRefs[i].fillImage != null) _iconRefs[i].fillImage.fillAmount = 0f;
+            {
+                if (_iconRefs[i].fillImage != null)
+                    _iconRefs[i].fillImage.fillAmount = 0f;
+
+                if (_iconRefs[i].borderOutline != null)
+                    _iconRefs[i].borderOutline.enabled = false;
+            }
         }
 
         public void ShowUnitInfo(UnitController unit)

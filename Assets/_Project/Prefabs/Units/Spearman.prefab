@@ -80,6 +80,11 @@ MonoBehaviour:
     m_InternalValue: 0
   NetworkUnitTypeIndex:
     m_InternalValue: 0
+  _colorizableTargets:
+  - renderer: {fileID: 6007888203821967102}
+    materialIndex: 1
+  - renderer: {fileID: 1902801879615021136}
+    materialIndex: 0
   _id: 0
   _data: {fileID: 11400000, guid: 2deced251b40d744fadbbbf25bec651a, type: 2}
   _ownerId: 0
@@ -331,5 +336,15 @@ PrefabInstance:
 --- !u!4 &246432529828273969 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 5637294183139949613, guid: a8b51a97925e9c44598a5b780618cde3, type: 3}
+  m_PrefabInstance: {fileID: 5571005677380133660}
+  m_PrefabAsset: {fileID: 0}
+--- !u!23 &1902801879615021136 stripped
+MeshRenderer:
+  m_CorrespondingSourceObject: {fileID: 6284821795032482636, guid: a8b51a97925e9c44598a5b780618cde3, type: 3}
+  m_PrefabInstance: {fileID: 5571005677380133660}
+  m_PrefabAsset: {fileID: 0}
+--- !u!137 &6007888203821967102 stripped
+SkinnedMeshRenderer:
+  m_CorrespondingSourceObject: {fileID: 2175377540049012194, guid: a8b51a97925e9c44598a5b780618cde3, type: 3}
   m_PrefabInstance: {fileID: 5571005677380133660}
   m_PrefabAsset: {fileID: 0}

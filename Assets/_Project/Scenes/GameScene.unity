@@ -922,8 +922,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 328f70c7489b3534699bb78f1cd0af59, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::GridEmpire.UI.CameraManager
-  moveSpeed: 12
-  zoomSpeed: 400
+  moveSpeed: 0.01
+  zoomSpeed: 1
   zoomLimits: {x: 2, y: 10}
   xLimits: {x: -80, y: 80}
   zLimits: {x: -80, y: 80}
@@ -2500,11 +2500,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: GridEmpire.Visuals::FogOfWarManager
   fogPrefab: {fileID: 4663679174155961175, guid: 9311617b76dd8d049b198314d66ddeb5, type: 3}
-  startSize: 1
-  startOpacity: 0.5
-  startSpeed: 0.1
-  maxParticles: 10
-  emissionRate: 2
 --- !u!1 &832575517
 GameObject:
   m_ObjectHideFlags: 0

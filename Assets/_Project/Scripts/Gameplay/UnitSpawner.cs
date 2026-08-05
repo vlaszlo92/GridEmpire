@@ -173,23 +173,6 @@ namespace GridEmpire.Gameplay
             controller.Initialize(newId, item.Data, path, gridManager, _ownerId);
         }
 
-        public void RemoveUnitFromQueue(int index)
-        {
-            if (IsServer) ExecuteRemoveFromQueue(index);
-            else RemoveFromQueueServerRpc(index);
-        }
-
-        [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)]
-        private void RemoveFromQueueServerRpc(int index) => ExecuteRemoveFromQueue(index);
-
-        private void ExecuteRemoveFromQueue(int index)
-        {
-            if (index <= 0 || index >= _myQueue.Count) return;
-            _ownerProfile?.AddGold(_myQueue[index].Data.cost);
-            _myQueue.RemoveAt(index);
-            SyncQueueClientRpc(SerializeQueue());
-        }
-
         public void SendSpawnRequest(int unitSlot, int targetCellId)
         {
             if (IsServer) ExecuteSpawnLogic(unitSlot, targetCellId);
@@ -238,6 +221,67 @@ namespace GridEmpire.Gameplay
         }
 
         public IReadOnlyList<QueuedUnit> GetQueue() => _myQueue.AsReadOnly();
+        public void RemoveUnitFromQueue(int index)
+        {
+            if (index <= 0 || index >= _myQueue.Count) return;
+
+            // 1. Optimista kliensoldali frissítés (azonnali UI visszajelzés)
+            if (!IsServer)
+            {
+                _myQueue.RemoveAt(index);
+                RemoveFromQueueServerRpc(index);
+            }
+            else
+            {
+                ExecuteRemoveFromQueue(index);
+            }
+        }
+
+        [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)]
+        private void RemoveFromQueueServerRpc(int index) => ExecuteRemoveFromQueue(index);
+
+        private void ExecuteRemoveFromQueue(int index)
+        {
+            if (index <= 0 || index >= _myQueue.Count) return;
+            _ownerProfile?.AddGold(_myQueue[index].Data.cost);
+            _myQueue.RemoveAt(index);
+            SyncQueueClientRpc(SerializeQueue());
+        }
+
+
+        public void ClearQueue()
+        {
+            if (_myQueue.Count <= 1) return;
+
+            if (!IsServer)
+            {
+                for (int i = _myQueue.Count - 1; i > 0; i--)
+                {
+                    _myQueue.RemoveAt(i);
+                }
+                ClearQueueServerRpc();
+            }
+            else
+            {
+                ExecuteClearQueue();
+            }
+        }
+
+        [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)]
+        private void ClearQueueServerRpc() => ExecuteClearQueue();
+
+        private void ExecuteClearQueue()
+        {
+            if (_myQueue.Count <= 1) return;
+
+            for (int i = _myQueue.Count - 1; i > 0; i--)
+            {
+                _ownerProfile?.AddGold(_myQueue[i].Data.cost);
+                _myQueue.RemoveAt(i);
+            }
+
+            SyncQueueClientRpc(SerializeQueue());
+        }
 
         private UnitData SlotToData(int slot) => slot switch
         {
