@@ -74,7 +74,7 @@ namespace GridEmpire.Gameplay
 
         private void Awake()
         {
-            _gridManager = FindFirstObjectByType<GridManager>();
+            _gridManager = GridManager.Instance;
             _resolver = FindFirstObjectByType<TurnResolver>();
 
             _renderers = GetComponentsInChildren<Renderer>();
@@ -110,7 +110,7 @@ namespace GridEmpire.Gameplay
             _data = GameController.Instance.GetUnitDataByIndex(NetworkUnitTypeIndex.Value);
             if (_data == null) yield break;
 
-            _gridManager = FindFirstObjectByType<GridManager>();
+            _gridManager = GridManager.Instance;
             GameController.Instance.RegisterUnit(this);
             SyncPositionToCurrentCell();
             ApplyPlayerColor();
@@ -150,7 +150,7 @@ namespace GridEmpire.Gameplay
         private void SyncPositionToCurrentCell()
         {
             if (_gridManager == null)
-                _gridManager = FindFirstObjectByType<GridManager>();
+                _gridManager = GridManager.Instance;
 
             if (_gridManager != null)
             {
