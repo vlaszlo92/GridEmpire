@@ -52,14 +52,17 @@ namespace GridEmpire.Gameplay
         [SerializeField] private float _currentStamina;
         private Coroutine _rotateCoroutine;
 
-
         private PlayerProfile _ownerProfile;
         private Renderer[] _renderers;
+
+        // ─── CLIENT INIT SYNC ─────────────────────────────────────────────────────
+        private bool _clientInitDone = false;
+        private bool _clientInitRetryPending = false;
 
         public int OwnerId => _ownerId;
         public UnitData Data => _data;
         public CellData CurrentCell => _currentCell;
-        public bool IsDead => _isDead;         
+        public bool IsDead => _isDead;
         public void DestroyUnit()
         {
             if (IsServer) ExecuteDeath();
@@ -74,14 +77,13 @@ namespace GridEmpire.Gameplay
 
         private void Awake()
         {
-            _gridManager = FindFirstObjectByType<GridManager>();
+            _gridManager = GridManager.Instance;
             _resolver = FindFirstObjectByType<TurnResolver>();
 
             _renderers = GetComponentsInChildren<Renderer>();
             foreach (var r in _renderers) r.enabled = false;
 
             _unitAnimator = GetComponent<UnitAnimator>();
-            //Debug.Log($"[UC] UnitAnimator found: {_unitAnimator != null} on {gameObject.name}");
         }
 
         public override void OnNetworkSpawn()
@@ -91,29 +93,76 @@ namespace GridEmpire.Gameplay
 
             if (!IsServer)
             {
-                StartCoroutine(ClientInitDeferred());
+                NetworkUnitId.OnValueChanged += OnClientInitRelevantValueChanged;
+                NetworkOwnerId.OnValueChanged += OnClientInitRelevantValueChanged;
+                NetworkUnitTypeIndex.OnValueChanged += OnClientInitRelevantValueChanged;
+
+                TryCompleteClientInit();
             }
         }
 
-        private IEnumerator ClientInitDeferred()
+        public override void OnNetworkDespawn()
         {
-            yield return new WaitUntil(() => NetworkUnitId.Value != 0);
+            UnsubscribeClientInitEvents();
+        }
+
+        private void OnClientInitRelevantValueChanged(int oldValue, int newValue)
+        {
+            TryCompleteClientInit();
+        }
+
+        private void TryCompleteClientInit()
+        {
+            if (_clientInitDone || IsServer) return;
+
+            bool coreValuesReady = NetworkUnitId.Value != 0;
+            bool managersReady = GameController.Instance != null && GridManager.Instance != null;
+            bool ownerKnown = managersReady && GameController.Instance.GetPlayerById(NetworkOwnerId.Value) != null;
+
+            if (!coreValuesReady || !managersReady || !ownerKnown)
+            {
+                ScheduleClientInitRetry();
+                return;
+            }
+
             _id = NetworkUnitId.Value;
             _ownerId = NetworkOwnerId.Value;
 
-            yield return new WaitUntil(() =>
-                GameController.Instance != null &&
-                GameController.Instance.GetPlayerById(_ownerId) != null &&
-                FindFirstObjectByType<GridManager>() != null
-            );
-
             _data = GameController.Instance.GetUnitDataByIndex(NetworkUnitTypeIndex.Value);
-            if (_data == null) yield break;
+            if (_data == null)
+            {
+                ScheduleClientInitRetry();
+                return;
+            }
 
-            _gridManager = FindFirstObjectByType<GridManager>();
+            _clientInitDone = true;
+            UnsubscribeClientInitEvents();
+
+            _gridManager = GridManager.Instance;
             GameController.Instance.RegisterUnit(this);
             SyncPositionToCurrentCell();
             ApplyPlayerColor();
+        }
+
+        private void ScheduleClientInitRetry()
+        {
+            if (_clientInitRetryPending || _clientInitDone) return;
+            _clientInitRetryPending = true;
+            StartCoroutine(RetryClientInitNextFrame());
+        }
+
+        private IEnumerator RetryClientInitNextFrame()
+        {
+            yield return null;
+            _clientInitRetryPending = false;
+            TryCompleteClientInit();
+        }
+
+        private void UnsubscribeClientInitEvents()
+        {
+            NetworkUnitId.OnValueChanged -= OnClientInitRelevantValueChanged;
+            NetworkOwnerId.OnValueChanged -= OnClientInitRelevantValueChanged;
+            NetworkUnitTypeIndex.OnValueChanged -= OnClientInitRelevantValueChanged;
         }
 
         public void Initialize(int uniqueId, UnitData data, List<CellData> path, GridManager gm, int ownerId)
@@ -150,7 +199,7 @@ namespace GridEmpire.Gameplay
         private void SyncPositionToCurrentCell()
         {
             if (_gridManager == null)
-                _gridManager = FindFirstObjectByType<GridManager>();
+                _gridManager = GridManager.Instance;
 
             if (_gridManager != null)
             {
@@ -213,7 +262,6 @@ namespace GridEmpire.Gameplay
             {
                 if (_currentTargetCell.OwnerId != _ownerId)
                 {
-                    // Foglalható: akkor is ha már mások is foglalják (capture conflict)
                     _nextAction.Type = ActionType.Capture;
                     _nextAction.TargetCellId = _currentTargetCell.Id;
                     _previousCell = _currentCell;
@@ -230,8 +278,8 @@ namespace GridEmpire.Gameplay
                         EnqueueAction();
                         return;
                     }
-                    else 
-                    { 
+                    else
+                    {
                         _currentTargetCell = null;
                     }
                 }
@@ -289,7 +337,6 @@ namespace GridEmpire.Gameplay
                 if (_gridManager.GetDistance(n, player.BaseCell) > currentDist)
                 {
                     preferredCount++;
-                    // Reservoir sampling: véletlenszerű választás allokáció nélkül
                     if (Random.Range(0, preferredCount) == 0) preferred = n;
                 }
                 else if (!n.IsBase)
@@ -340,8 +387,6 @@ namespace GridEmpire.Gameplay
             }
         }
 
-        // Capture konfliktus: ha ugyanazt a cellát foglalja ellenséges egység is, sebzik egymást.
-        // Csak a magasabb ID-jú egység számol, hogy minden pár pontosan egyszer legyen feldolgozva.
         public void CalculateCaptureConflict()
         {
             if (_isDead || _nextAction == null || _nextAction.Type != ActionType.Capture) return;
@@ -411,7 +456,6 @@ namespace GridEmpire.Gameplay
             if (isDead && !_isDead)
             {
                 _isDead = true;
-                // TODO: halál animáció
             }
         }
 
@@ -425,10 +469,10 @@ namespace GridEmpire.Gameplay
             _previousCell = _currentCell;
 
             if (_currentCell != null) _currentCell.UnregisterOccupier(this);
-            
+
             _currentCell = next;
             _currentCell.RegisterOccupier(this);
-            
+
             if (_previousCell != null && _previousCell.OwnerId == OwnerId)
             {
                 _previousCell.SetInfluence(OwnerId, 1f);
@@ -533,7 +577,6 @@ namespace GridEmpire.Gameplay
         {
             _isDead = true;
 
-            // Ha foglalt egy cellát, töröljük a hódítók listájából
             _currentTargetCell?.CapturingUnitIds.Remove(_id);
 
             _resolver?.UnregisterUnit(this);
@@ -688,14 +731,15 @@ namespace GridEmpire.Gameplay
 
         public override void OnDestroy()
         {
-            // Biztonsági takarítás halálkor vagy jelenetváltáskor
+            UnsubscribeClientInitEvents();
+
             _currentTargetCell?.CapturingUnitIds.Remove(_id);
 
             _resolver?.UnregisterUnit(this);
             if (GameController.Instance != null)
                 GameController.Instance.UnregisterUnit(_id);
             if (!_isDead)
-                GameController.Instance?.RemoveUnit(this);            
+                GameController.Instance?.RemoveUnit(this);
             base.OnDestroy();
         }
     }
