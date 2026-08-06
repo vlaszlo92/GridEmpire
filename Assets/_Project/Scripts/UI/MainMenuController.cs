@@ -380,21 +380,20 @@ namespace GridEmpire.UI
         ///   ○ Human 3               ← vár
         ///   ○ AI Bot 1              ← bot
         /// </summary>
-        private void RebuildPlayerList(
-            Transform container,
-            List<TextMeshProUGUI> items,
-            TextMeshProUGUI prefab,
-            int humanPlayers,
-            int aiBots,
-            int connected,
-            bool isHost)
+        private void RebuildPlayerList(Transform container,List<TextMeshProUGUI> items,TextMeshProUGUI prefab,int humanPlayers,int aiBots,int connected,bool isHost)
         {
+            Transform targetParent = container;
+            ScrollRect scrollRect = container.GetComponent<ScrollRect>();
+            if (scrollRect != null && scrollRect.content != null)
+            {
+                targetParent = scrollRect.content;
+            }
             int totalSlots = humanPlayers + aiBots;
 
             // Bővítés ha kell
             while (items.Count < totalSlots)
             {
-                var newItem = Instantiate(prefab, container);
+                var newItem = Instantiate(prefab, targetParent);
                 items.Add(newItem);
             }
 

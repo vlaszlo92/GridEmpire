@@ -54,6 +54,19 @@ namespace GridEmpire.UI
         private bool _settingsOpen = false;
         private float _targetHeight = 0f;
 
+        [Header("Unit Description Panel (Slide)")]
+        [SerializeField] private GameObject descPanelRoot;
+        [SerializeField] private RectTransform descPanelRect;
+        [SerializeField] private CanvasGroup descCanvasGroup;
+        [SerializeField] private float descPanelTargetWidth = 350f;
+        [SerializeField] private UnitDescriptionPanelUI descPanelUI; // ÚJ: Hivatkozás a külön komponensre
+
+        [SerializeField] private List<UnitData> availableUnitData;
+
+        private bool _descOpen = false;
+        private float _targetDescWidth = 0f;
+        private int _currentDisplayedUnitIndex = -1;
+
         private PlayerProfile _localPlayer;
         private UnitSpawner _localSpawner;
         private UnitController _selectedUnit;
@@ -74,10 +87,18 @@ namespace GridEmpire.UI
 
         private void Start()
         {
-            axemanBtn.onClick.AddListener(() => RequestSpawn(0));
-            spearmanBtn.onClick.AddListener(() => RequestSpawn(1));
-            cavalryBtn.onClick.AddListener(() => RequestSpawn(2));
-            scoutBtn.onClick.AddListener(() => RequestSpawn(3));
+            UnitSpawnButtonTrigger.OnSpawnRequested += RequestSpawn;
+            UnitSpawnButtonTrigger.OnUnitDescriptionRequested += ShowUnitDescription;
+
+            if (descPanelRect != null)
+                descPanelRect.sizeDelta = new Vector2(0f, descPanelRect.sizeDelta.y);
+
+            if (descCanvasGroup != null)
+            {
+                descCanvasGroup.alpha = 0f;
+                descCanvasGroup.interactable = false;
+                descCanvasGroup.blocksRaycasts = false;
+            }
             if (clearQueueBtn != null) clearQueueBtn.onClick.AddListener(HandleClearQueue);
 
             if (settingsDropdownRect != null)
@@ -92,6 +113,12 @@ namespace GridEmpire.UI
             InitSlider(masterSlider, AudioManager.MasterKey, v => AudioManager.Instance?.SetMasterVolume(v));
             InitSlider(musicSlider, AudioManager.MusicKey, v => AudioManager.Instance?.SetMusicVolume(v));
             InitSlider(effectsSlider, AudioManager.EffectsKey, v => AudioManager.Instance?.SetEffectsVolume(v));
+        }
+
+        private void OnDestroy()
+        {
+            UnitSpawnButtonTrigger.OnSpawnRequested -= RequestSpawn;
+            UnitSpawnButtonTrigger.OnUnitDescriptionRequested -= ShowUnitDescription;
         }
 
         private void OnEnable()
@@ -115,22 +142,10 @@ namespace GridEmpire.UI
             slider.SetValueWithoutNotify(AudioManager.Instance.GetVolume(key));
             slider.onValueChanged.AddListener(onValueChanged);
         }
+
         private void RefreshGoldDisplay()
         {
             goldText.text = "Gold: " + _localPlayer.Gold.ToString();
-            return;
-
-            var sb = new System.Text.StringBuilder();
-            foreach (var p in GameController.Instance.GetPlayers())
-            {
-                string sign = p.GoldIncome >= 0 ? "+" : "";
-                sb.AppendLine($"<color=#{ColorUtility.ToHtmlStringRGB(p.Color)}><b>Player {p.Id}</b></color>");
-                sb.AppendLine($"Gold: {(int)p.Gold} ({sign}{p.GoldIncome:F1})");
-                sb.AppendLine($"Units: {p.ActiveUnits.Count}");
-                sb.AppendLine($"Cells: {p.OwnedCellCount}");
-                sb.AppendLine("------------------");
-            }
-            goldText.text = sb.ToString();
         }
 
         private void HandleUnitSelectionChanged(IUnit unit)
@@ -185,12 +200,34 @@ namespace GridEmpire.UI
                 if (settingsCanvasGroup != null)
                 {
                     settingsCanvasGroup.alpha = progress;
-
                     bool isVisible = progress > 0.1f;
                     settingsCanvasGroup.interactable = isVisible;
                     settingsCanvasGroup.blocksRaycasts = isVisible;
                 }
                 settingsDropdown.SetActive(progress > 0.01f);
+            }
+
+            if (descPanelRect != null)
+            {
+                float currentWidth = descPanelRect.sizeDelta.x;
+                float nextWidth = Mathf.Lerp(currentWidth, _targetDescWidth, Time.deltaTime * animationSpeed);
+                descPanelRect.sizeDelta = new Vector2(nextWidth, descPanelRect.sizeDelta.y);
+
+                float progress = Mathf.Clamp01(nextWidth / descPanelTargetWidth);
+
+                if (descCanvasGroup != null)
+                {
+                    descCanvasGroup.alpha = progress;
+                    bool isVisible = progress > 0.1f;
+                    descCanvasGroup.interactable = isVisible;
+                    descCanvasGroup.blocksRaycasts = isVisible;
+                }
+                if (descPanelRoot != null) descPanelRoot.SetActive(progress > 0.01f);
+            }
+
+            if (_descOpen && (UnityEngine.Input.GetMouseButtonDown(0) || (UnityEngine.Input.touchCount > 0 && UnityEngine.Input.GetTouch(0).phase == TouchPhase.Began)))
+            {
+                CheckClickOutsideDescription();
             }
         }
 
@@ -336,6 +373,60 @@ namespace GridEmpire.UI
             _settingsOpen = !_settingsOpen;
             _targetHeight = _settingsOpen ? dropdownHeight : 0f;
             if (_settingsOpen) settingsDropdown.SetActive(true);
+        }
+
+        public void ShowUnitDescription(int unitIndex)
+        {
+            if (unitIndex < 0 || unitIndex >= availableUnitData.Count) return;
+
+            var data = availableUnitData[unitIndex];
+            _currentDisplayedUnitIndex = unitIndex;
+
+            // Frissítés delegálása az új UI komponens felé
+            if (descPanelUI != null)
+            {
+                // Egyelőre üres szintekkel/arannyal meghívjuk, amíg meg nincs az Upgrade Manager
+                descPanelUI.RefreshPanel(data, GetDefaultUpgrades(), _localPlayer != null ? (int)_localPlayer.Gold : 0);
+            }
+
+            Canvas.ForceUpdateCanvases();
+            if (descPanelRect != null)
+            {
+                LayoutRebuilder.ForceRebuildLayoutImmediate(descPanelRect);
+            }
+
+            _descOpen = true;
+            _targetDescWidth = descPanelTargetWidth;
+            if (descPanelRoot != null) descPanelRoot.SetActive(true);
+        }
+
+        public void HideUnitDescription()
+        {
+            _descOpen = false;
+            _targetDescWidth = 0f;
+            _currentDisplayedUnitIndex = -1;
+        }
+
+        private void CheckClickOutsideDescription()
+        {
+            Vector2 mousePos = UnityEngine.Input.mousePosition;
+            bool isOverPanel = descPanelRect != null && RectTransformUtility.RectangleContainsScreenPoint(descPanelRect, mousePos);
+
+            if (!isOverPanel)
+            {
+                HideUnitDescription();
+            }
+        }
+
+        // Ideiglenes segédmetódus az alapértelmezett 0-s szintű statoknak
+        private Dictionary<GridEmpire.Data.StatType, GridEmpire.Data.StatUpgradeState> GetDefaultUpgrades()
+        {
+            var dict = new Dictionary<GridEmpire.Data.StatType, GridEmpire.Data.StatUpgradeState>();
+            foreach (GridEmpire.Data.StatType type in System.Enum.GetValues(typeof(GridEmpire.Data.StatType)))
+            {
+                dict[type] = new GridEmpire.Data.StatUpgradeState { statType = type, level = 0 };
+            }
+            return dict;
         }
     }
 }
