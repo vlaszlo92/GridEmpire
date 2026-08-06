@@ -169,37 +169,17 @@ namespace GridEmpire.UI
                 localPlayer.BaseCell.R
             );
 
-            var allPlayers = GameController.Instance.Players;
-            int oppositeId = (localPlayer.Id + 3) % allPlayers.Count;
-            PlayerProfile oppositePlayer = null;
-            foreach (var p in allPlayers)
-                if (p.Id == oppositeId) { oppositePlayer = p; break; }
+            Vector3 mapCenter = _gridManager.GetMapCenterWorldPosition();
+            Vector3 directionToOpposite = (mapCenter - myBasePos).normalized;
 
-            Vector3 directionToOpposite;
-            if (oppositePlayer != null && oppositePlayer.BaseCell != null)
-            {
-                Vector3 oppositeBasePos = _gridManager.GetWorldPosition(
-                    oppositePlayer.BaseCell.Q,
-                    oppositePlayer.BaseCell.R
-                );
-                directionToOpposite = (oppositeBasePos - myBasePos).normalized;
-            }
-            else
-            {
-                directionToOpposite = (Vector3.zero - myBasePos).normalized;
-            }
-
-            // Célpozíció – egy picit közelebb mint a max zoom
             Vector3 targetPos = myBasePos - directionToOpposite * (cameraDistance - 2.5f);
             targetPos.y = cameraHeight;
 
-            // Startpozíció – távolabb és magasabb
             Vector3 startPos = myBasePos - directionToOpposite * (cameraDistance + introStartDistance);
             startPos.y = cameraHeight + introStartHeight;
 
             Quaternion targetRot = Quaternion.LookRotation(directionToOpposite) * Quaternion.Euler(cameraTilt, 0f, 0f);
 
-            // Kamera azonnal a startpozícióba ugrik
             transform.position = startPos;
             transform.rotation = targetRot;
 

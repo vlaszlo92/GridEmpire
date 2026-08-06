@@ -77,17 +77,12 @@ namespace GridEmpire.Gameplay
             _gridManager = FindFirstObjectByType<GridManager>();
             _resolver = FindFirstObjectByType<TurnResolver>();
 
-            var meshRenderers = GetComponentsInChildren<MeshRenderer>();
-            var skinnedRenderers = GetComponentsInChildren<SkinnedMeshRenderer>();
-
-            _renderers = meshRenderers.Cast<Renderer>().Concat(skinnedRenderers.Cast<Renderer>()).ToArray();
-
+            _renderers = GetComponentsInChildren<Renderer>();
             foreach (var r in _renderers) r.enabled = false;
 
             _unitAnimator = GetComponent<UnitAnimator>();
             //Debug.Log($"[UC] UnitAnimator found: {_unitAnimator != null} on {gameObject.name}");
         }
-
 
         public override void OnNetworkSpawn()
         {
@@ -149,21 +144,7 @@ namespace GridEmpire.Gameplay
 
             if (_currentCell != null) _currentCell.RegisterOccupier(this);
 
-            UpdateInitialFacing();
             ApplyPlayerColor();
-        }
-
-        private void UpdateInitialFacing()
-        {
-            CellData target = null;
-            if (_initialPath.Count > 0) target = _initialPath[0];
-            else target = FindExpansionCell();
-
-            if (target != null)
-            {
-                Vector3 targetPos = _gridManager.GetWorldPosition(target.Q, target.R);
-                FaceTarget(targetPos);
-            }
         }
 
         private void SyncPositionToCurrentCell()
@@ -550,6 +531,8 @@ namespace GridEmpire.Gameplay
 
         public void ExecuteDeath()
         {
+            _isDead = true;
+
             // Ha foglalt egy cellát, töröljük a hódítók listájából
             _currentTargetCell?.CapturingUnitIds.Remove(_id);
 
@@ -572,6 +555,7 @@ namespace GridEmpire.Gameplay
         private void DeathClientRpc()
         {
             if (IsServer) return;
+            _isDead = true;
             _currentTargetCell?.CapturingUnitIds.Remove(_id);
             if (_currentCell != null) _currentCell.UnregisterOccupier(this);
             GameController.Instance?.RemoveUnit(this);

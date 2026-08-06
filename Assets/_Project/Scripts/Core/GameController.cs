@@ -60,11 +60,13 @@ namespace GridEmpire.Core
         {
             if (IsServer)
             {
+                Debug.Log($"[HOST Side] Saját clientId: {NetworkManager.Singleton.LocalClientId}");
                 NetworkManager.Singleton.OnClientConnectedCallback += OnClientConnected;
                 StartCoroutine(ServerInitChain());
             }
             else
             {
+                Debug.Log($"[CLIENT Side] Saját clientId: {NetworkManager.Singleton.LocalClientId}");
                 _networkPlayers.OnListChanged += HandleNetworkListChanged;
                 GlobalNetworkSettings.Instance.PlayerMappings.OnListChanged += HandleMappingsChanged;
                 HandleMappingsChanged(default);
@@ -457,16 +459,7 @@ namespace GridEmpire.Core
                 bool visible = visibleCells == null
                                || unit.OwnerId == forPlayerId
                                || (unit.CurrentCell != null && visibleCells.Contains(unit.CurrentCell));
-                if (visibleCells != null)
-                {
-                    Debug.Log($"[Vis] unit={unit.Id} owner={unit.OwnerId} cell={unit.CurrentCell?.Id} cellRefHash={unit.CurrentCell?.GetHashCode()} visibleCellsContainsById=!!! visiblecell null!");
-                }
-
-                if(visibleCells.Any(c => c.Id == unit.CurrentCell?.Id))
-                {
-                    Debug.Log($"[Vis] unit={unit.Id} owner={unit.OwnerId} cell={unit.CurrentCell?.Id} cellRefHash={unit.CurrentCell?.GetHashCode()} visibleCellsContainsById={visibleCells != null && visibleCells.Any(c => c.Id == unit.CurrentCell?.Id)}");
-                }
-
+               
                 unit.SetVisible(visible);
                 unit.SetAudioVisible(visible);
             }

@@ -77,6 +77,10 @@ namespace GridEmpire.UI
         private bool _servicesInitialized = false;
         private ISession _currentSession;
         private bool _sessionExists = false;
+        private bool _isCreatingSession = false;
+        private bool _disconnectCallbackSubscribed = false;
+        private bool _isConnecting = false;
+        private bool _gameStarting = false;
 
         // Játékos lista cache – host oldalon frissítjük
         private readonly List<TextMeshProUGUI> _hostPlayerListItems = new List<TextMeshProUGUI>();
@@ -142,14 +146,28 @@ namespace GridEmpire.UI
 
             StartCoroutine(WatchNetworkSettings());
         }
+        private void HandleClientDisconnect(ulong clientId)
+        {
+            // Csak akkor érdekel minket, ha a HOST-tól szakadt le a mi kliens-oldali kapcsolatunk.
+            if (NetworkManager.Singleton.IsHost) return;
+            if (clientId != NetworkManager.Singleton.LocalClientId) return;
 
+            Debug.Log("[Client] Kapcsolat megszakadt a hosttal, visszaállás a menübe.");
+            OnClientBackToLobby();
+        }
+
+        private void OnDestroy()
+        {
+            if (NetworkManager.Singleton != null)
+                NetworkManager.Singleton.OnClientDisconnectCallback -= HandleClientDisconnect;
+        }
         // ─── SESSION GENERÁLÁS ────────────────────────────────────────────────────────
 
         private async System.Threading.Tasks.Task CreateHostSession()
         {
-            if (!_servicesInitialized) return;
+            if (!_servicesInitialized || _isCreatingSession) return;
+            _isCreatingSession = true;
 
-            // Ha már van session, zárjuk le
             if (_sessionExists && _currentSession != null)
             {
                 try { await _currentSession.LeaveAsync(); }
@@ -158,13 +176,16 @@ namespace GridEmpire.UI
                 _currentSession = null;
             }
 
+            if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening)
+                NetworkManager.Singleton.Shutdown();
+
             SetHostLoading(true);
             if (startHostFinalBtn != null) startHostFinalBtn.interactable = false;
             if (hostCodeDisplay != null) hostCodeDisplay.text = "...";
 
             try
             {
-                int maxPlayers = (int)totalPlayersSlider.value;
+                int maxPlayers = (int)totalPlayersSlider.maxValue;
                 var options = new SessionOptions { MaxPlayers = maxPlayers }.WithRelayNetwork();
 
                 _currentSession = await MultiplayerService.Instance.CreateSessionAsync(options);
@@ -178,16 +199,17 @@ namespace GridEmpire.UI
                     UpdateHostPlayerList();
                     UpdateStartButtonState();
                     UpdateAiBotSliderMax();
+                    UpdateTotalPlayersSliderMin();
                 };
 
                 // Kliens kilépésekor frissítés
                 _currentSession.PlayerLeaving += playerId =>
                 {
                     Debug.Log($"[Host] Játékos kilépett: {playerId}");
-                    // TODO: UI értesítés hogy ki lépett ki
                     UpdateHostPlayerList();
                     UpdateStartButtonState();
                     UpdateAiBotSliderMax();
+                    UpdateTotalPlayersSliderMin();
                 };
 
                 if (hostCodeDisplay != null)
@@ -206,6 +228,7 @@ namespace GridEmpire.UI
             finally
             {
                 SetHostLoading(false);
+                _isCreatingSession = false;
             }
         }
 
@@ -227,6 +250,7 @@ namespace GridEmpire.UI
             UpdateStartButtonState();
             UpdateHostPlayerList();
             UpdateAiBotSliderMax();
+            UpdateTotalPlayersSliderMin();
         }
 
         private void SyncSettingsToClients()
@@ -273,6 +297,19 @@ namespace GridEmpire.UI
         }
 
         // ─── JÁTÉKOS LISTA ────────────────────────────────────────────────────────────
+
+        private void UpdateTotalPlayersSliderMin()
+        {
+            int connected = _currentSession?.Players?.Count ?? 1;
+
+            totalPlayersSlider.minValue = connected;
+
+            if (totalPlayersSlider.value < connected)
+            {
+                totalPlayersSlider.value = connected;
+                totalPlayersInput.text = connected.ToString();
+            }
+        }
 
         private void UpdateHostPlayerList()
         {
@@ -448,6 +485,10 @@ namespace GridEmpire.UI
         private void StartHostGame()
         {
             if (_currentSession == null) { Debug.LogError("[Host] Nincs aktív session."); return; }
+            _gameStarting = true;
+
+            if (NetworkManager.Singleton != null)
+                NetworkManager.Singleton.ConnectionApprovalCallback = ApproveConnection;
 
             GameSettings settings = new GameSettings
             {
@@ -472,14 +513,23 @@ namespace GridEmpire.UI
             StartCoroutine(LoadGameSceneSafe());
         }
 
+        private void ApproveConnection(NetworkManager.ConnectionApprovalRequest request, NetworkManager.ConnectionApprovalResponse response)
+        {
+            response.Approved = !_gameStarting;
+            response.CreatePlayerObject = false;
+        }
+
         // ─── CLIENT ───────────────────────────────────────────────────────────────────
 
         private async void StartClientConnect()
         {
-            if (!_servicesInitialized) { SetClientStatus("Szolgáltatások nem elérhetők!", Color.red); return; }
+            if (!_servicesInitialized || _isConnecting) return;
+            _isConnecting = true;
+
             if (clientCodeInput == null || string.IsNullOrEmpty(clientCodeInput.text))
             {
                 SetClientStatus("Add meg a csatlakozási kódot!", Color.red);
+                _isConnecting = false;
                 return;
             }
 
@@ -503,6 +553,10 @@ namespace GridEmpire.UI
                 SetClientStatus($"Hiba: {e.Message}", Color.red);
                 if (startClientConnectBtn != null) startClientConnectBtn.interactable = true;
             }
+            finally
+            {
+                _isConnecting = false;
+            }
         }
 
         private void SetClientStatus(string msg, Color color)
@@ -518,6 +572,12 @@ namespace GridEmpire.UI
         {
             while (true)
             {
+                if (!_disconnectCallbackSubscribed && NetworkManager.Singleton != null)
+                {
+                    NetworkManager.Singleton.OnClientDisconnectCallback += HandleClientDisconnect;
+                    _disconnectCallbackSubscribed = true;
+                }
+
                 yield return new WaitForSeconds(0.5f);
 
                 if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsHost)
@@ -527,6 +587,7 @@ namespace GridEmpire.UI
                             NetworkManager.Singleton.ConnectedClientsIds.Count;
                     UpdateStartButtonState();
                     UpdateAiBotSliderMax();
+                    UpdateTotalPlayersSliderMin();
                 }
 
                 if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsClient &&
@@ -535,7 +596,7 @@ namespace GridEmpire.UI
                 {
                     UpdateClientLobbyInfo();
                     UpdateClientPlayerList();
-                }                
+                }
             }
         }
 

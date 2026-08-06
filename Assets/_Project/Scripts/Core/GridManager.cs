@@ -27,6 +27,7 @@ namespace GridEmpire.Core
         private Dictionary<int, CellData> _cellByIdLookup = new Dictionary<int, CellData>();
 
         private static readonly float Sqrt3 = Mathf.Sqrt(3f);
+        public Vector3 GetMapCenterWorldPosition() => GetWorldPosition(0, 0);
 
         private static readonly Vector2Int[] Directions = {
             new Vector2Int(0, -1), new Vector2Int(1, -1), new Vector2Int(1, 0),

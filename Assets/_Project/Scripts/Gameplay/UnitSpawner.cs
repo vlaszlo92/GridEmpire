@@ -160,12 +160,18 @@ namespace GridEmpire.Gameplay
             if (gridManager == null) { Debug.LogError($"[UnitSpawner] FinalizeSpawn: gridManager NULL! owner={_ownerId}"); return; }
             CellData spawnCell = _ownerProfile?.BaseCell;
             if (spawnCell == null) return;
+
             Vector3 spawnPos = gridManager.GetWorldPosition(spawnCell.Q, spawnCell.R);
+            Vector3 dir = gridManager.GetMapCenterWorldPosition() - spawnPos;
+            dir.y = 0;
+            Quaternion initialRot = dir.sqrMagnitude > 0.0001f ? Quaternion.LookRotation(dir.normalized) : Quaternion.identity;
+
             int newId = GameController.Instance.GetNextAvailableId();
-            GameObject go = Instantiate(item.Data.unitPrefab, spawnPos, Quaternion.identity);
+            GameObject go = Instantiate(item.Data.unitPrefab, spawnPos, initialRot);
             UnitController controller = go.GetComponent<UnitController>();
             if (!go.TryGetComponent<NetworkObject>(out var netObj)) { Debug.LogError("[UnitSpawner] NetworkObject hiányzik!"); return; }
             netObj.Spawn();
+
             controller.NetworkUnitId.Value = newId;
             controller.NetworkOwnerId.Value = _ownerId;
             controller.NetworkUnitTypeIndex.Value = item.Data.index;
