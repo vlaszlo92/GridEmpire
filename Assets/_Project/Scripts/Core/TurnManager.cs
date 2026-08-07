@@ -24,7 +24,7 @@ namespace GridEmpire.Core
         [SerializeField] private float minCalculationTimePerFrameMs = 0.5f;
         [Range(0.1f, 1.0f)][SerializeField] private float maxCalculationTimeCapFraction = 0.9f;
         [SerializeField] private float warningRateLimitSeconds = 1.0f;
-                
+
         public float TickDuration => tickDuration;
         public int TurnCount { get; private set; } = 0;
         public TurnPhase CurrentPhase { get; private set; } = TurnPhase.Idle;
@@ -69,7 +69,7 @@ namespace GridEmpire.Core
 
         void LoadSettings()
         {
-            GameSettings settings = GameSettings.Load();
+            GameSettings settings = GameSettingsStorage.Load();
             tickDuration = settings.turnSpeedMultiplier > 0f
                 ? 1.0f / settings.turnSpeedMultiplier
                 : tickDuration;
@@ -157,11 +157,11 @@ namespace GridEmpire.Core
         }
 
         private void ApplySnapshot(TurnSnapshot snapshot)
-        {            
+        {
             if (_gridManager == null)
             {
-                _gridManager = FindFirstObjectByType<GridManager>(); 
-                return; 
+                _gridManager = FindFirstObjectByType<GridManager>();
+                return;
             }
 
             foreach (var unitSync in snapshot.UnitActions)

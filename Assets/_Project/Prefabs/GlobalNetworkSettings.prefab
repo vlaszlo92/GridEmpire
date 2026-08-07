@@ -73,3 +73,13 @@ MonoBehaviour:
   ShowTopMostFoldoutHeaderGroup: 1
   NetworkMapRadius:
     m_InternalValue: 15
+  TotalPlayers:
+    m_InternalValue: 2
+  TotalAIBots:
+    m_InternalValue: 1
+  TurnSpeed:
+    m_InternalValue: 1
+  ConnectedPlayerCount:
+    m_InternalValue: 0
+  FogOfWarEnabled:
+    m_InternalValue: 1
