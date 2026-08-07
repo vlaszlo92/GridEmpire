@@ -1,0 +1,244 @@
+using System;
+using System.Collections;
+using GridEmpire.Shared;
+using Unity.Netcode;
+using Unity.Services.Authentication;
+using Unity.Services.Core;
+using Unity.Services.Multiplayer;
+using UnityEngine;
+using UnityEngine.SceneManagement;
+
+namespace GridEmpire.Networking
+{
+    /// <summary>
+    /// A lobby hálózati rétege: UGS session kezelés, NetworkManager Host/Client indítás,
+    /// connection approval, disconnect figyelés, GlobalNetworkSettings szinkronizálás.
+    /// A MainMenuController kizárólag ezen keresztül nyúl hálózati funkciókhoz.
+    /// </summary>
+    public class NetworkLobbyController : MonoBehaviour
+    {
+        public static NetworkLobbyController Instance { get; private set; }
+
+        public event Action OnServicesInitialized;
+        public event Action<string> OnHostSessionReady;      // join code
+        public event Action<string> OnHostSessionFailed;     // hibaüzenet
+        public event Action OnSessionPlayersChanged;         // host: játékos csatlakozott/kilépett
+        public event Action<string, bool> OnClientConnectResult; // (üzenet, siker)
+        public event Action OnHostConnectionLost;             // kliens leszakadt a hosttól
+
+        public bool ServicesReady { get; private set; }
+        public bool IsHostSessionActive { get; private set; }
+        public int SessionPlayersCount => _currentSession?.Players?.Count ?? 0;
+
+        public bool IsListening => NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening;
+        public bool IsHost => NetworkManager.Singleton != null && NetworkManager.Singleton.IsHost;
+        public bool IsClient => NetworkManager.Singleton != null && NetworkManager.Singleton.IsClient;
+        public int ConnectedClientsCount => IsListening ? NetworkManager.Singleton.ConnectedClientsIds.Count : 0;
+
+        private ISession _currentSession;
+        private bool _isCreatingSession;
+        private bool _isConnecting;
+        private bool _gameStarting;
+        private bool _disconnectCallbackSubscribed;
+
+        private void Awake()
+        {
+            if (Instance != null && Instance != this) { Destroy(gameObject); return; }
+            Instance = this;
+        }
+
+        private async void Start()
+        {
+            try
+            {
+                await UnityServices.InitializeAsync();
+                if (!AuthenticationService.Instance.IsSignedIn)
+                    await AuthenticationService.Instance.SignInAnonymouslyAsync();
+                ServicesReady = true;
+                Debug.Log("[NetworkLobbyController] UGS inicializálva és bejelentkezve.");
+                OnServicesInitialized?.Invoke();
+            }
+            catch (Exception e)
+            {
+                Debug.LogError($"[NetworkLobbyController] UGS inicializálás sikertelen: {e.Message}");
+            }
+
+            StartCoroutine(WatchClientDisconnect());
+        }
+
+        private IEnumerator WatchClientDisconnect()
+        {
+            while (!_disconnectCallbackSubscribed)
+            {
+                if (NetworkManager.Singleton != null)
+                {
+                    NetworkManager.Singleton.OnClientDisconnectCallback += HandleClientDisconnect;
+                    _disconnectCallbackSubscribed = true;
+                }
+                yield return null;
+            }
+        }
+
+        private void OnDestroy()
+        {
+            if (NetworkManager.Singleton != null)
+                NetworkManager.Singleton.OnClientDisconnectCallback -= HandleClientDisconnect;
+        }
+
+        private void HandleClientDisconnect(ulong clientId)
+        {
+            if (NetworkManager.Singleton.IsHost) return;
+            if (clientId != NetworkManager.Singleton.LocalClientId) return;
+
+            Debug.Log("[NetworkLobbyController] Kapcsolat megszakadt a hosttal.");
+            OnHostConnectionLost?.Invoke();
+        }
+
+        // ─── HOST SESSION ───────────────────────────────────────────────────
+
+        public async void CreateHostSession(int maxPlayers)
+        {
+            if (!ServicesReady || _isCreatingSession) return;
+            _isCreatingSession = true;
+
+            if (IsHostSessionActive)
+                await LeaveCurrentSession();
+
+            if (IsListening)
+                NetworkManager.Singleton.Shutdown();
+
+            try
+            {
+                var options = new SessionOptions { MaxPlayers = maxPlayers }.WithRelayNetwork();
+                _currentSession = await MultiplayerService.Instance.CreateSessionAsync(options);
+                IsHostSessionActive = true;
+
+                _currentSession.PlayerJoined += _ => OnSessionPlayersChanged?.Invoke();
+                _currentSession.PlayerLeaving += _ => OnSessionPlayersChanged?.Invoke();
+
+                Debug.Log($"[NetworkLobbyController] Session kész. Kód: {_currentSession.Code}");
+                OnHostSessionReady?.Invoke(_currentSession.Code);
+            }
+            catch (Exception e)
+            {
+                Debug.LogError($"[NetworkLobbyController] Session hiba: {e.Message}");
+                OnHostSessionFailed?.Invoke(e.Message);
+            }
+            finally
+            {
+                _isCreatingSession = false;
+            }
+        }
+
+        public void SyncSettingsToClients(int totalPlayers, int aiBots, int mapRadius, float turnSpeed)
+        {
+            if (IsHost && GlobalNetworkSettings.Instance != null)
+                GlobalNetworkSettings.Instance.UpdateSettings(totalPlayers, aiBots, mapRadius, turnSpeed);
+        }
+
+        public void SetFogOfWar(bool enabled)
+        {
+            if (GlobalNetworkSettings.Instance != null)
+                GlobalNetworkSettings.Instance.FogOfWarEnabled.Value = enabled;
+        }
+
+        public void UpdateHostConnectedPlayerCount()
+        {
+            if (IsHost && GlobalNetworkSettings.Instance != null)
+                GlobalNetworkSettings.Instance.ConnectedPlayerCount.Value = ConnectedClientsCount;
+        }
+
+        public void StartHostGame(GameSettings settings, string sceneName, int expectedHumans)
+        {
+            _gameStarting = true;
+
+            if (NetworkManager.Singleton != null)
+                NetworkManager.Singleton.ConnectionApprovalCallback = ApproveConnection;
+
+            if (GlobalNetworkSettings.Instance != null)
+                GlobalNetworkSettings.Instance.InitializeFromSettings(settings);
+            else
+                Debug.LogError("[NetworkLobbyController] GlobalNetworkSettings nem található a jelenetben!");
+
+            if (NetworkManager.Singleton != null && !NetworkManager.Singleton.IsListening)
+                NetworkManager.Singleton.StartHost();
+
+            ConnectionManager.Instance?.RegisterLocalPlayer();
+
+            StartCoroutine(LoadGameSceneRoutine(sceneName, expectedHumans));
+        }
+
+        private void ApproveConnection(NetworkManager.ConnectionApprovalRequest request, NetworkManager.ConnectionApprovalResponse response)
+        {
+            response.Approved = true;
+            response.CreatePlayerObject = false;
+        }
+
+        private IEnumerator LoadGameSceneRoutine(string sceneName, int expectedHumans)
+        {
+            while (NetworkManager.Singleton == null || !NetworkManager.Singleton.IsHost)
+                yield return null;
+
+            while (NetworkManager.Singleton.ConnectedClientsIds.Count < expectedHumans)
+                yield return new WaitForSeconds(0.5f);
+
+            Debug.Log("[NetworkLobbyController] Minden kliens csatlakozott, scene load indul.");
+            NetworkManager.Singleton.SceneManager.LoadScene(sceneName, LoadSceneMode.Single);
+        }
+
+        public async void LeaveHostSession()
+        {
+            await LeaveCurrentSession();
+            if (IsListening)
+                NetworkManager.Singleton.Shutdown();
+        }
+
+        // ─── CLIENT ─────────────────────────────────────────────────────────
+
+        public async void JoinSession(string joinCode)
+        {
+            if (!ServicesReady || _isConnecting) return;
+            _isConnecting = true;
+
+            try
+            {
+                _currentSession = await MultiplayerService.Instance.JoinSessionByCodeAsync(joinCode);
+                Debug.Log("[NetworkLobbyController] Session OK.");
+
+                if (!NetworkManager.Singleton.IsListening)
+                    NetworkManager.Singleton.StartClient();
+
+                OnClientConnectResult?.Invoke("Csatlakozva! Várakozás a hostra...", true);
+            }
+            catch (Exception e)
+            {
+                Debug.LogError($"[NetworkLobbyController] Session hiba: {e.Message}");
+                OnClientConnectResult?.Invoke($"Hiba: {e.Message}", false);
+            }
+            finally
+            {
+                _isConnecting = false;
+            }
+        }
+
+        public async void LeaveClientSession()
+        {
+            await LeaveCurrentSession();
+            if (IsListening)
+                NetworkManager.Singleton.Shutdown();
+        }
+
+        // ─── COMMON ─────────────────────────────────────────────────────────
+
+        private async System.Threading.Tasks.Task LeaveCurrentSession()
+        {
+            if (_currentSession != null)
+            {
+                try { await _currentSession.LeaveAsync(); }
+                catch (Exception e) { Debug.LogWarning($"[NetworkLobbyController] Session elhagyás: {e.Message}"); }
+                _currentSession = null;
+            }
+            IsHostSessionActive = false;
+        }
+    }
+}

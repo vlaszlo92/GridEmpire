@@ -402,7 +402,7 @@ namespace GridEmpire.Core
 
         private void LoadSettings()
         {
-            GameSettings settings = GameSettings.Load();
+            GameSettings settings = GameSettingsStorage.Load();
             playerCount = settings.totalPlayers;
             aiCount = settings.aiBots;
         }
@@ -445,7 +445,7 @@ namespace GridEmpire.Core
             if (unit == null) return;
             UnregisterUnit(unit.Id);
             if (_selectedUnit?.Id == unit.Id) SelectedUnit = null;
-            OnUnitRemoved?.Invoke();            
+            OnUnitRemoved?.Invoke();
         }
 
         public void RefreshPlayerIncome(PlayerProfile player) => player?.RecalculateIncome();
@@ -459,7 +459,7 @@ namespace GridEmpire.Core
                 bool visible = visibleCells == null
                                || unit.OwnerId == forPlayerId
                                || (unit.CurrentCell != null && visibleCells.Contains(unit.CurrentCell));
-               
+
                 unit.SetVisible(visible);
                 unit.SetAudioVisible(visible);
             }

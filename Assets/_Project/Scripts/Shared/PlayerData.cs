@@ -1,6 +1,6 @@
+using Unity.Collections;
 using Unity.Netcode;
 using UnityEngine;
-using Unity.Collections;
 
 public struct PlayerData : INetworkSerializable, System.IEquatable<PlayerData>
 {
@@ -21,11 +21,13 @@ public struct PlayerClientMapping : INetworkSerializable, System.IEquatable<Play
 {
     public ulong ClientId;
     public int PlayerId;
+    public FixedString64Bytes AuthId;
 
     public void NetworkSerialize<T>(BufferSerializer<T> serializer) where T : IReaderWriter
     {
         serializer.SerializeValue(ref ClientId);
         serializer.SerializeValue(ref PlayerId);
+        serializer.SerializeValue(ref AuthId);
     }
 
     public bool Equals(PlayerClientMapping other) => ClientId == other.ClientId;

@@ -3854,6 +3854,77 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 303248915}
   m_CullTransparentMesh: 1
+--- !u!1 &307747673
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 307747676}
+  - component: {fileID: 307747674}
+  - component: {fileID: 307747675}
+  m_Layer: 0
+  m_Name: ConnectionManager
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &307747674
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 307747673}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
+  GlobalObjectIdHash: 4142386537
+  InScenePlacedSourceGlobalObjectIdHash: 0
+  DeferredDespawnTick: 0
+  Ownership: 1
+  AlwaysReplicateAsRoot: 0
+  SynchronizeTransform: 1
+  ActiveSceneSynchronization: 0
+  SceneMigrationSynchronization: 0
+  SpawnWithObservers: 1
+  DontDestroyWithOwner: 0
+  AutoObjectParentSync: 1
+  SyncOwnerTransformWhenParented: 1
+  AllowOwnerToParent: 0
+--- !u!114 &307747675
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 307747673}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d79e209954d339943b8c587314ce1756, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: GridEmpire.Networking::GridEmpire.Networking.ConnectionManager
+  ShowTopMostFoldoutHeaderGroup: 1
+--- !u!4 &307747676
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 307747673}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &331370841
 GameObject:
   m_ObjectHideFlags: 0
@@ -10329,8 +10400,6 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 2deced251b40d744fadbbbf25bec651a, type: 2}
   - {fileID: 11400000, guid: e78bddd7e010ea5448d29ae78cfdc2df, type: 2}
   - {fileID: 11400000, guid: 30c1cdef021324748aa10c50609241b0, type: 2}
-  globalSettingsPrefab: {fileID: 4801742924384069083, guid: 3e5677c588e32a044afd616fd5d6e02b, type: 3}
-  gameControllerPrefab: {fileID: 1086776250928131385, guid: c761ba41138de294481cfcc3593ebbaa, type: 3}
 --- !u!1 &956715995
 GameObject:
   m_ObjectHideFlags: 0
@@ -12569,6 +12638,7 @@ GameObject:
   - component: {fileID: 1184530789}
   - component: {fileID: 1184530790}
   - component: {fileID: 1184530791}
+  - component: {fileID: 1184530792}
   m_Layer: 0
   m_Name: NetworkManager
   m_TagString: Untagged
@@ -12663,6 +12733,18 @@ MonoBehaviour:
     PacketDelayMS: 0
     PacketJitterMS: 0
     PacketDropRate: 0
+--- !u!114 &1184530792
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1184530788}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5c64a61cac1d1564dad875641abf4625, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: GridEmpire.Networking::GridEmpire.Networking.NetworkLobbyController
 --- !u!1001 &1189484405
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -21017,9 +21099,10 @@ CanvasRenderer:
 SceneRoots:
   m_ObjectHideFlags: 0
   m_Roots:
+  - {fileID: 187230536}
+  - {fileID: 307747676}
   - {fileID: 1306142831}
   - {fileID: 700346501}
   - {fileID: 956493489}
   - {fileID: 1109453715}
   - {fileID: 1184530789}
-  - {fileID: 187230536}
