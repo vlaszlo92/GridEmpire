@@ -86,33 +86,61 @@ namespace GridEmpire.Gameplay
 
         public override void OnNetworkSpawn()
         {
+            base.OnNetworkSpawn();
+            NetworkOwnerId.OnValueChanged += OnOwnerIdChanged;
+
             _id = NetworkUnitId.Value;
             _ownerId = NetworkOwnerId.Value;
 
             if (!IsServer)
-            {
-                StartCoroutine(ClientInitDeferred());
-            }
+                StartCoroutine(ClientSyncWhenReady());
         }
 
-        private IEnumerator ClientInitDeferred()
+        private IEnumerator ClientSyncWhenReady()
         {
-            yield return new WaitUntil(() => NetworkUnitId.Value != 0);
+            yield return new WaitUntil(() => GridManager.Instance != null && GridManager.Instance.IsReady);
+
+            float t = 0f;
+            while ((GameController.Instance == null || !GameController.Instance.HasUnitData(NetworkUnitTypeIndex.Value)) && t < 5f)
+            {
+                t += Time.deltaTime;
+                yield return null;
+            }
+
+            SyncToAuthoritativeState();
+        }
+
+        public override void OnNetworkDespawn()
+        {
+            base.OnNetworkDespawn();
+            NetworkOwnerId.OnValueChanged -= OnOwnerIdChanged;
+        }
+
+        private void OnOwnerIdChanged(int previousValue, int newValue)
+        {
+            _ownerId = newValue;
+            ApplyPlayerColor();
+        }
+
+        public void SyncToAuthoritativeState()
+        {
             _id = NetworkUnitId.Value;
             _ownerId = NetworkOwnerId.Value;
+            _data = GameController.Instance?.GetUnitDataByIndex(NetworkUnitTypeIndex.Value);
 
-            yield return new WaitUntil(() =>
-                GameController.Instance != null &&
-                GameController.Instance.GetPlayerById(_ownerId) != null &&
-                FindFirstObjectByType<GridManager>() != null
-            );
+            if (_gridManager == null) _gridManager = GridManager.Instance;
 
-            _data = GameController.Instance.GetUnitDataByIndex(NetworkUnitTypeIndex.Value);
-            if (_data == null) yield break;
+            if (_gridManager != null && _gridManager.IsReady)
+            {
+                _currentCell = _gridManager.GetCellAtPosition(transform.position);
+                if (_currentCell != null)
+                {
+                    _currentCell.RegisterOccupier(this);
+                    transform.position = _gridManager.GetWorldPosition(_currentCell.Q, _currentCell.R);
+                }
+            }
 
-            _gridManager = GridManager.Instance;
-            GameController.Instance.RegisterUnit(this);
-            SyncPositionToCurrentCell();
+            GameController.Instance?.RegisterUnit(this);
             ApplyPlayerColor();
         }
 
@@ -145,32 +173,6 @@ namespace GridEmpire.Gameplay
             if (_currentCell != null) _currentCell.RegisterOccupier(this);
 
             ApplyPlayerColor();
-        }
-
-        private void SyncPositionToCurrentCell()
-        {
-            if (_gridManager == null)
-                _gridManager = GridManager.Instance;
-
-            if (_gridManager != null)
-            {
-                _currentCell = _gridManager.GetCellAtPosition(transform.position);
-                if (_currentCell != null)
-                {
-                    _currentCell.RegisterOccupier(this);
-                    transform.position = _gridManager.GetWorldPosition(_currentCell.Q, _currentCell.R);
-                    FaceMapCenterInstant();
-                }
-            }
-        }
-
-        private void FaceMapCenterInstant()
-        {
-            Vector3 centerPos = _gridManager.GetWorldPosition(0, 0);
-            Vector3 dir = centerPos - transform.position;
-            dir.y = 0;
-            if (dir.sqrMagnitude > 0.0001f)
-                transform.rotation = Quaternion.LookRotation(dir.normalized);
         }
 
         // ─── PLAN ACTION ────────────────────────────────────────────────────────────
@@ -455,6 +457,9 @@ namespace GridEmpire.Gameplay
         {
             if (IsServer) return;
 
+            if (_gridManager == null) _gridManager = GridManager.Instance;
+            if (_gridManager == null || !_gridManager.IsReady) return;
+
             CellData next = _gridManager.GetCellById(targetCellId);
             if (next == null) return;
 
@@ -498,11 +503,13 @@ namespace GridEmpire.Gameplay
             _unitAnimator?.Play(ActionType.Capture);
             CaptureClientRpc(target.Id, target.OwnerId, speed, captured, _ownerId);
         }
-
         [ClientRpc]
         private void CaptureClientRpc(int cellId, int currentOwnerId, float speed, bool captured, int attackerId)
         {
             if (IsServer) return;
+
+            if (_gridManager == null) _gridManager = GridManager.Instance;
+            if (_gridManager == null || !_gridManager.IsReady) return;
 
             CellData cell = _gridManager.GetCellById(cellId);
             if (cell == null) return;

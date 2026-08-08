@@ -29,6 +29,13 @@ namespace GridEmpire.Gameplay
 
         public int OwnerId => _ownerId;
 
+        private PlayerProfile GetProfile()
+        {
+            if (_ownerProfile == null && _ownerId != -1)
+                _ownerProfile = GameController.Instance?.GetPlayerById(_ownerId);
+            return _ownerProfile;
+        }
+
         private void Start()
         {
             _resolver = FindFirstObjectByType<TurnResolver>();
@@ -49,13 +56,38 @@ namespace GridEmpire.Gameplay
 
         public override void OnNetworkSpawn()
         {
-            if (axeman != null) GameController.Instance.RegisterUnitData(axeman);
-            if (spearman != null) GameController.Instance.RegisterUnitData(spearman);
-            if (cavalry != null) GameController.Instance.RegisterUnitData(cavalry);
-            if (scout != null) GameController.Instance.RegisterUnitData(scout);
+            base.OnNetworkSpawn();
+
+            NetworkOwnerId.OnValueChanged += OnNetworkOwnerIdChanged;
+
+            if (axeman != null) GameController.Instance?.RegisterUnitData(axeman);
+            if (spearman != null) GameController.Instance?.RegisterUnitData(spearman);
+            if (cavalry != null) GameController.Instance?.RegisterUnitData(cavalry);
+            if (scout != null) GameController.Instance?.RegisterUnitData(scout);
 
             if (IsServer && _pendingOwnerId != -1)
+            {
                 NetworkOwnerId.Value = _pendingOwnerId;
+            }
+
+            if (NetworkOwnerId.Value != -1)
+            {
+                Initialize(NetworkOwnerId.Value);
+            }
+        }
+
+        public override void OnNetworkDespawn()
+        {
+            base.OnNetworkDespawn();
+            NetworkOwnerId.OnValueChanged -= OnNetworkOwnerIdChanged;
+        }
+
+        private void OnNetworkOwnerIdChanged(int previousValue, int newValue)
+        {
+            if (newValue != -1)
+            {
+                Initialize(newValue);
+            }
         }
 
         public void SetNetworkOwnerId(int playerId) => _pendingOwnerId = playerId;
@@ -78,7 +110,7 @@ namespace GridEmpire.Gameplay
             if (cavalry != null) GameController.Instance?.RegisterUnitData(cavalry);
             if (scout != null) GameController.Instance?.RegisterUnitData(scout);
 
-            Debug.Log($"[UnitSpawner] Initialize: owner={_ownerId}, profile={_ownerProfile?.Id.ToString() ?? "NULL"}, grid={gridManager != null}");
+            Debug.Log($"[UnitSpawner] Initialize: owner={_ownerId}, profile={GetProfile()?.Name ?? "NULL"}, grid={gridManager != null}");
         }
 
         private void HandleLocalPlayerReady()
@@ -118,17 +150,35 @@ namespace GridEmpire.Gameplay
         private void HandleSpawnRequest(int playerId, int unitSlot, CellData targetCell)
         {
             if (_ownerId == -1 || playerId != _ownerId) return;
-            if (targetCell == null) targetCell = _ownerProfile?.BaseCell;
-            if (IsServer) { UnitData data = SlotToData(unitSlot); if (data != null) RequestUnit(data, targetCell); }
-            else SendSpawnRequest(unitSlot, targetCell?.Id ?? -1);
+            var profile = GetProfile();
+            if (targetCell == null) targetCell = profile?.BaseCell;
+
+            if (IsServer)
+            {
+                UnitData data = SlotToData(unitSlot);
+                if (data != null) RequestUnit(data, targetCell);
+            }
+            else
+            {
+                SendSpawnRequest(unitSlot, targetCell?.Id ?? -1);
+            }
         }
 
         public bool RequestUnit(UnitData data, CellData targetCell)
         {
-            if (_ownerProfile == null) _ownerProfile = GameController.Instance?.GetPlayerById(_ownerId);
-            if (_ownerProfile == null || !_ownerProfile.IsAlive) return false;
+            var profile = GetProfile();
+            if (profile == null || !profile.IsAlive)
+            {
+                Debug.LogWarning($"[UnitSpawner] RequestUnit meghiúsult: profile null vagy nem él! owner={_ownerId}");
+                return false;
+            }
             if (_myQueue.Count >= MaxQueueSize) return false;
-            if (!_ownerProfile.SpendGold(data.cost)) return false;
+            if (!profile.SpendGold(data.cost))
+            {
+                Debug.LogWarning($"[UnitSpawner] RequestUnit meghiúsult: nincs elég arany! owner={_ownerId}, cost={data.cost}, gold={profile.Gold}");
+                return false;
+            }
+
             _myQueue.Add(new QueuedUnit(data, data.recruitmentTime, targetCell));
             SyncQueueClientRpc(SerializeQueue());
             return true;
@@ -142,7 +192,8 @@ namespace GridEmpire.Gameplay
             {
                 QueuedUnit itemToSpawn = _myQueue[0];
                 _myQueue.RemoveAt(0);
-                if (_ownerProfile?.BaseCell != null && !_ownerProfile.BaseCell.IsOccupied)
+                var profile = GetProfile();
+                if (profile?.BaseCell != null && !profile.BaseCell.IsOccupied)
                     FinalizeSpawn(itemToSpawn);
                 else
                 {
@@ -158,7 +209,9 @@ namespace GridEmpire.Gameplay
         {
             if (!IsServer) return;
             if (gridManager == null) { Debug.LogError($"[UnitSpawner] FinalizeSpawn: gridManager NULL! owner={_ownerId}"); return; }
-            CellData spawnCell = _ownerProfile?.BaseCell;
+
+            var profile = GetProfile();
+            CellData spawnCell = profile?.BaseCell;
             if (spawnCell == null) return;
 
             Vector3 spawnPos = gridManager.GetWorldPosition(spawnCell.Q, spawnCell.R);
@@ -190,10 +243,10 @@ namespace GridEmpire.Gameplay
 
         private void ExecuteSpawnLogic(int unitSlot, int targetCellId)
         {
-            if (_ownerProfile == null) _ownerProfile = GameController.Instance?.GetPlayerById(_ownerId);
+            var profile = GetProfile();
             if (gridManager == null) gridManager = GridManager.Instance;
             UnitData data = SlotToData(unitSlot);
-            CellData target = (targetCellId == -1) ? _ownerProfile?.BaseCell : gridManager?.GetCellById(targetCellId);
+            CellData target = (targetCellId == -1) ? profile?.BaseCell : gridManager?.GetCellById(targetCellId);
             if (data != null) RequestUnit(data, target);
         }
 
@@ -227,11 +280,11 @@ namespace GridEmpire.Gameplay
         }
 
         public IReadOnlyList<QueuedUnit> GetQueue() => _myQueue.AsReadOnly();
+
         public void RemoveUnitFromQueue(int index)
         {
             if (index <= 0 || index >= _myQueue.Count) return;
 
-            // 1. Optimista kliensoldali frissítés (azonnali UI visszajelzés)
             if (!IsServer)
             {
                 _myQueue.RemoveAt(index);
@@ -249,11 +302,10 @@ namespace GridEmpire.Gameplay
         private void ExecuteRemoveFromQueue(int index)
         {
             if (index <= 0 || index >= _myQueue.Count) return;
-            _ownerProfile?.AddGold(_myQueue[index].Data.cost);
+            GetProfile()?.AddGold(_myQueue[index].Data.cost);
             _myQueue.RemoveAt(index);
             SyncQueueClientRpc(SerializeQueue());
         }
-
 
         public void ClearQueue()
         {
@@ -282,7 +334,7 @@ namespace GridEmpire.Gameplay
 
             for (int i = _myQueue.Count - 1; i > 0; i--)
             {
-                _ownerProfile?.AddGold(_myQueue[i].Data.cost);
+                GetProfile()?.AddGold(_myQueue[i].Data.cost);
                 _myQueue.RemoveAt(i);
             }
 

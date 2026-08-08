@@ -39,6 +39,7 @@ namespace GridEmpire.Core
         internal void SyncIncome(float amount) => goldIncome = amount;
         public CellData BaseCell { get => baseCell; set => baseCell = value; }
         public CellData SelectedCell { get => selectedCell; set => selectedCell = value; }
+        internal void SetLocal(bool isLocal) => isLocalPlayer = isLocal;
 
         public PlayerProfile(int id, string name, Color color, bool isAi, bool isLocal, CellData selectedCell)
         {

@@ -163,7 +163,9 @@ namespace GridEmpire.Networking
             if (NetworkManager.Singleton != null && !NetworkManager.Singleton.IsListening)
                 NetworkManager.Singleton.StartHost();
 
-            ConnectionManager.Instance?.RegisterLocalPlayer();
+
+            NetworkDebugDump.DumpServerState(settings, sceneName, expectedHumans);
+            GlobalNetworkSettings.Instance?.TriggerDebugDumpClientRpc();
 
             StartCoroutine(LoadGameSceneRoutine(sceneName, expectedHumans));
         }
@@ -202,7 +204,17 @@ namespace GridEmpire.Networking
 
             try
             {
-                _currentSession = await MultiplayerService.Instance.JoinSessionByCodeAsync(joinCode);
+                try
+                {
+                    _currentSession = await MultiplayerService.Instance.JoinSessionByCodeAsync(joinCode);
+                }
+                catch (Exception joinEx) when (joinEx.Message.Contains("already a member"))
+                {
+                    var joinedIds = await MultiplayerService.Instance.GetJoinedSessionIdsAsync();
+                    if (joinedIds.Count == 0) throw;
+                    _currentSession = await MultiplayerService.Instance.ReconnectToSessionAsync(joinedIds[0]);
+                }
+
                 Debug.Log("[NetworkLobbyController] Session OK.");
 
                 if (!NetworkManager.Singleton.IsListening)

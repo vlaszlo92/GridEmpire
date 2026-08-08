@@ -1,6 +1,4 @@
-﻿using GridEmpire.Networking;
-using GridEmpire.Shared;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
 using Unity.Netcode;
 using UnityEngine;
@@ -11,6 +9,9 @@ namespace GridEmpire.Core
     {
         public static GridManager Instance { get; private set; }
         public bool IsReady { get; private set; } = false;
+
+        /// <summary>A Networking réteg állítja be, mielőtt GenerateGrid-et hív.</summary>
+        public bool FogOfWarEnabled { get; set; } = true;
 
         public static event System.Action OnVisibilityUpdated;
 
@@ -42,25 +43,18 @@ namespace GridEmpire.Core
 
         public override void OnNetworkSpawn()
         {
-            Debug.Log($"[GridManager] OnNetworkSpawn. IsServer={IsServer}");
-            // Kliens oldalon a grid már szerver által lett generálva és spawnolva
-            // Csak generálni kell kliens oldalon is a vizuált
-            if (!IsServer)
-            {
-                if (GlobalNetworkSettings.Instance != null)
-                    GenerateGrid(GlobalNetworkSettings.Instance.NetworkMapRadius.Value);
-                else
-                    Debug.LogError("[GridManager] GlobalNetworkSettings NULL kliens oldalon!");
-            }
-
-            IsReady = true;
-            Debug.Log("[GridManager] IsReady = true.");
+            // Szerveren a grid már kész (GameController.ServerInitChain hívta GenerateGrid-et
+            // a Spawn() előtt, ami IsReady=true-t is beállított).
+            // Klienseken a Networking réteg (GameNetworkBridge) hívja meg a GenerateGrid-et,
+            // amint megkapta a szükséges beállításokat.
+            Debug.Log($"[GridManager] OnNetworkSpawn. IsServer={IsServer}, IsReady={IsReady}");
         }
 
         public void GenerateGrid(int radius)
         {
             this.radius = radius;
             GenerateHexGrid();
+            IsReady = true;
             Debug.Log($"[GridManager] Grid generálva: radius={radius}, cellák={_presenterMap.Count}");
         }
 
@@ -110,7 +104,7 @@ namespace GridEmpire.Core
         public void UpdateFogOfWar(int forPlayerId)
         {
             // Debug / FoW kikapcsolva
-            if (IsDebugMode || !GlobalNetworkSettings.Instance.FogOfWarEnabled.Value)
+            if (IsDebugMode || !FogOfWarEnabled)
             {
                 foreach (var (cell, presenter) in _presenterMap)
                 {
