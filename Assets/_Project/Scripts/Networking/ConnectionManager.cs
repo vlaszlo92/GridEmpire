@@ -7,9 +7,7 @@ namespace GridEmpire.Networking
 {
     public class ConnectionManager : NetworkBehaviour
     {
-        public static ConnectionManager Instance { get; private set; }
-
-        private int _assignedHumanCount = 0;
+        public static ConnectionManager Instance { get; private set; }        
 
         private void Awake()
         {
@@ -57,33 +55,40 @@ namespace GridEmpire.Networking
             var mappings = GlobalNetworkSettings.Instance.PlayerMappings;
             var authIdFixed = new FixedString64Bytes(authId);
 
-            // 1. Kifagyott/Újracsatlakozó játékos azonosítása (Reconnection):
+            // 1. Visszacsatlakozó játékos azonosítása
             for (int i = 0; i < mappings.Count; i++)
             {
                 if (mappings[i].AuthId.Equals(authIdFixed))
                 {
                     var updated = mappings[i];
-                    updated.ClientId = clientId; // Frissítjük az új csatlakozási ClientId-t
+                    updated.ClientId = clientId;
                     mappings[i] = updated;
                     Debug.Log($"[ConnectionManager] Játékos visszacsatlakozott! AuthId={authId}, PlayerId={updated.PlayerId}, Új ClientId={clientId}");
                     return updated.PlayerId;
                 }
             }
 
-            // 2. Új játékos regisztrálása
+            // 2. Új játékos: legkisebb szabad PlayerId
             int humanCount = GlobalNetworkSettings.Instance.TotalPlayers.Value
                            - GlobalNetworkSettings.Instance.TotalAIBots.Value;
 
-            if (_assignedHumanCount >= humanCount)
+            for (int playerId = 0; playerId < humanCount; playerId++)
             {
-                Debug.LogError($"[ConnectionManager] Nincs szabad PlayerId slot! authId={authId}, clientId={clientId}");
-                return -1;
+                bool taken = false;
+                for (int i = 0; i < mappings.Count; i++)
+                {
+                    if (mappings[i].PlayerId == playerId) { taken = true; break; }
+                }
+                if (!taken)
+                {
+                    Debug.Log($"[ConnectionManager] Új játékos csatlakozott! Mapping feltöltve: AuthId={authId}, PlayerId={playerId}, ClientId={clientId}");
+                    mappings.Add(new PlayerClientMapping { ClientId = clientId, PlayerId = playerId, AuthId = authIdFixed });
+                    return playerId;
+                }
             }
 
-            int playerId = _assignedHumanCount;
-            _assignedHumanCount++;
-            mappings.Add(new PlayerClientMapping { ClientId = clientId, PlayerId = playerId, AuthId = authIdFixed });
-            return playerId;
+            Debug.LogError($"[ConnectionManager] Nincs szabad PlayerId slot! authId={authId}, clientId={clientId}");
+            return -1;
         }
 
         private void HandleClientDisconnect(ulong clientId)

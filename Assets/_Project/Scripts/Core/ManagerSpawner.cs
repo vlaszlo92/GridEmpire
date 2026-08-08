@@ -22,6 +22,6 @@ public class ManagerSpawner : MonoBehaviour
             rs.GetComponent<NetworkObject>().Spawn();
         }
 
-        Destroy(gameObject);
+        Destroy(this);
     }
 }
