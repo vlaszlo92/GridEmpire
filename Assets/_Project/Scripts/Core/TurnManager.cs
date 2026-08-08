@@ -1,6 +1,4 @@
-﻿// TurnManager.cs - GridEmpire.Core namespace, Core mappa
-using GridEmpire.Networking;
-using GridEmpire.Shared;
+﻿using GridEmpire.Shared;
 using System;
 using System.Collections;
 using System.Linq;
@@ -49,24 +47,6 @@ namespace GridEmpire.Core
             LoadSettings();
         }
 
-        private void OnEnable()
-        {
-            ReadySystem.OnGameStart += OnGameStart;
-        }
-
-        private void OnDisable()
-        {
-            ReadySystem.OnGameStart -= OnGameStart;
-        }
-
-        private void OnGameStart()
-        {
-            _gameStarted = true;
-            _cachedAiCount = Mathf.Max(1,
-                GameController.Instance?.Players.Count(p => p.IsAI) ?? 1);
-            UnityEngine.Debug.Log("[TurnManager] Játék elindult.");
-        }
-
         void LoadSettings()
         {
             GameSettings settings = GameSettingsStorage.Load();
@@ -76,6 +56,15 @@ namespace GridEmpire.Core
         }
 
         public void RegisterResolver(ITurnResolver resolver) => _resolver = resolver;
+
+        /// <summary>A Networking réteg hívja (ReadySystem.OnGameStart-ból), amikor mindenki ready.</summary>
+        public void StartGame()
+        {
+            _gameStarted = true;
+            _cachedAiCount = Mathf.Max(1,
+                GameController.Instance?.Players.Count(p => p.IsAI) ?? 1);
+            Debug.Log("[TurnManager] Játék elindult.");
+        }
 
         private void Update()
         {
@@ -180,13 +169,12 @@ namespace GridEmpire.Core
             TurnCount = snapshot.TurnIndex;
             OnTurnCompleted?.Invoke();
 
-            // Egy frame késleltetés hogy a ClientRpc-k (Move, Capture) mind megérkezzenek
             StartCoroutine(DelayedFogUpdate(_gridManager));
         }
 
         private IEnumerator DelayedFogUpdate(GridManager gridManager)
         {
-            yield return null; // egy frame várakozás
+            yield return null;
             var localPlayer = GameController.Instance.GetLocalPlayer();
             if (localPlayer != null) gridManager.UpdateFogOfWar(localPlayer.Id);
         }

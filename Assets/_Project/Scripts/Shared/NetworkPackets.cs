@@ -2,7 +2,7 @@ using GridEmpire.Shared;
 using System;
 using System.Collections.Generic;
 
-namespace GridEmpire.Networking
+namespace GridEmpire.Shared
 {
     /*  
         Adatcsoport,    Tartalom

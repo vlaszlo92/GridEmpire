@@ -30,15 +30,17 @@ namespace GridEmpire.Networking
         public void InitializeFromSettings(GameSettings settings)
         {
             if (!IsServer) return;
+            PlayerMappings.Clear();
 
             NetworkMapRadius.Value = settings.mapRadius;
-            // FIX: Nem MaxPlayersLimit-re állítjuk, hanem a beállításokban szereplő játékosszámra!
             TotalPlayers.Value = Mathf.Min(settings.totalPlayers, MaxPlayersLimit);
             TotalAIBots.Value = settings.aiBots;
             TurnSpeed.Value = settings.turnSpeedMultiplier;
             FogOfWarEnabled.Value = settings.fogOfWarEnabled;
 
             Debug.Log($"[GlobalNetworkSettings] Beállítások frissítve a Szerveren: MapRadius={NetworkMapRadius.Value}, TotalPlayers={TotalPlayers.Value}, AIBots={TotalAIBots.Value}");
+
+            RequestReRegisterClientRpc();
         }
 
         private void Awake()
@@ -55,6 +57,12 @@ namespace GridEmpire.Networking
         public override void OnNetworkSpawn()
         {
             Debug.Log($"[GlobalNetworkSettings] OnNetworkSpawn. InstanceID={GetInstanceID()}, IsServer={IsServer}, TotalPlayers={TotalPlayers.Value}");
+        }
+
+        [ClientRpc]
+        private void RequestReRegisterClientRpc()
+        {
+            ConnectionManager.Instance?.RegisterLocalPlayer();
         }
 
         public int GetPlayerIdForClient(ulong clientId)
@@ -75,6 +83,12 @@ namespace GridEmpire.Networking
         {
             if (!IsServer) return;
             PlayerMappings.Add(new PlayerClientMapping { ClientId = clientId, PlayerId = playerId });
+        }
+
+        [ClientRpc]
+        public void TriggerDebugDumpClientRpc()
+        {
+            NetworkDebugDump.DumpClientState();
         }
     }
 }

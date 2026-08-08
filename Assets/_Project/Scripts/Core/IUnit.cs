@@ -18,5 +18,6 @@ namespace GridEmpire.Core
         void SyncFromSnapshot(float newHp, float newStamina, bool isDead);
         void SetVisible(bool visible);
         void SetAudioVisible(bool visible);
+        void SyncToAuthoritativeState();
     }
 }

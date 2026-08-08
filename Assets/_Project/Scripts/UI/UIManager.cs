@@ -145,6 +145,7 @@ namespace GridEmpire.UI
 
         private void RefreshGoldDisplay()
         {
+            if (this == null || goldText == null || _localSpawner == null) return;
             goldText.text = "Gold: " + _localPlayer.Gold.ToString();
         }
 
