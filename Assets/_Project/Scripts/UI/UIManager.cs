@@ -59,7 +59,8 @@ namespace GridEmpire.UI
         [SerializeField] private RectTransform descPanelRect;
         [SerializeField] private CanvasGroup descCanvasGroup;
         [SerializeField] private float descPanelTargetWidth = 350f;
-        [SerializeField] private UnitDescriptionPanelUI descPanelUI; // ÚJ: Hivatkozás a külön komponensre
+        [SerializeField] private UnitDescriptionPanelUI descPanelUI;
+        [SerializeField] private Button closeDescBtn;
 
         [SerializeField] private List<UnitData> availableUnitData;
 
@@ -89,6 +90,9 @@ namespace GridEmpire.UI
         {
             UnitSpawnButtonTrigger.OnSpawnRequested += RequestSpawn;
             UnitSpawnButtonTrigger.OnUnitDescriptionRequested += ShowUnitDescription;
+            
+            if (closeDescBtn != null)
+                closeDescBtn.onClick.AddListener(HideUnitDescription);
 
             if (descPanelRect != null)
                 descPanelRect.sizeDelta = new Vector2(0f, descPanelRect.sizeDelta.y);
@@ -224,11 +228,6 @@ namespace GridEmpire.UI
                     descCanvasGroup.blocksRaycasts = isVisible;
                 }
                 if (descPanelRoot != null) descPanelRoot.SetActive(progress > 0.01f);
-            }
-
-            if (_descOpen && (UnityEngine.Input.GetMouseButtonDown(0) || (UnityEngine.Input.touchCount > 0 && UnityEngine.Input.GetTouch(0).phase == TouchPhase.Began)))
-            {
-                CheckClickOutsideDescription();
             }
         }
 

@@ -106,7 +106,7 @@ MonoBehaviour:
     InfluenceDisplay: []
     CapturingUnitIds: 
   _combatTarget: {fileID: 0}
-  _unitAnimator: {fileID: 0}
+  _unitAnimator: {fileID: 1950075019228502892}
   _currentStamina: 0
 --- !u!114 &1950075019228502892
 MonoBehaviour:
@@ -212,7 +212,30 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: f0d31e64c1c231746b3f28b051274def, type: 3}
       insertIndex: -1
       addedObject: {fileID: 2395573042546468148}
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: f0d31e64c1c231746b3f28b051274def, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 406985248776289296}
   m_SourcePrefab: {fileID: 100100000, guid: f0d31e64c1c231746b3f28b051274def, type: 3}
+--- !u!4 &486554663117677129 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: -1437535814495400702, guid: f0d31e64c1c231746b3f28b051274def, type: 3}
+  m_PrefabInstance: {fileID: 7695611798785486667}
+  m_PrefabAsset: {fileID: 0}
+--- !u!4 &888148937851205932 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: -1828715535896209817, guid: f0d31e64c1c231746b3f28b051274def, type: 3}
+  m_PrefabInstance: {fileID: 7695611798785486667}
+  m_PrefabAsset: {fileID: 0}
+--- !u!4 &2376587569684607692 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: -3875598280087757433, guid: f0d31e64c1c231746b3f28b051274def, type: 3}
+  m_PrefabInstance: {fileID: 7695611798785486667}
+  m_PrefabAsset: {fileID: 0}
+--- !u!4 &2578888600342044610 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 5261967624154706057, guid: f0d31e64c1c231746b3f28b051274def, type: 3}
+  m_PrefabInstance: {fileID: 7695611798785486667}
+  m_PrefabAsset: {fileID: 0}
 --- !u!4 &6748081579566631737 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 3993090167845217394, guid: f0d31e64c1c231746b3f28b051274def, type: 3}
@@ -383,9 +406,37 @@ AudioSource:
     m_PreInfinity: 2
     m_PostInfinity: 2
     m_RotationOrder: 4
+--- !u!114 &406985248776289296
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7353577719380365850}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f0c3ba65fbf8c1d459122da76aae38d0, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::GridEmpire.Gameplay.CombatVFXPlayer
+  _hitEffectPrefab: {fileID: 5610010966355794069, guid: 803ecf87f61d9fb4f84ba6319ba95c9c, type: 3}
+  _footstepDustPrefab: {fileID: 4809171458859421548, guid: 4e91ed1a8efe7044785b9bd97a47d87f, type: 3}
+  _deathEffectPrefab: {fileID: 5610010966355794069, guid: 803ecf87f61d9fb4f84ba6319ba95c9c, type: 3}
+  _conquerHitEffectPrefab: {fileID: 0}
+  _weaponPoint: {fileID: 486554663117677129}
+  _footPoints:
+  - {fileID: 2578888600342044610}
+  - {fileID: 486554663117677129}
+  - {fileID: 8868781069997577128}
+  - {fileID: 2376587569684607692}
+  _chestPoint: {fileID: 888148937851205932}
 --- !u!4 &7874252943306033312 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: f0d31e64c1c231746b3f28b051274def, type: 3}
+  m_PrefabInstance: {fileID: 7695611798785486667}
+  m_PrefabAsset: {fileID: 0}
+--- !u!4 &8868781069997577128 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: -7937467570435392285, guid: f0d31e64c1c231746b3f28b051274def, type: 3}
   m_PrefabInstance: {fileID: 7695611798785486667}
   m_PrefabAsset: {fileID: 0}
 --- !u!1001 &8813200209087962728
@@ -498,7 +549,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5800611680354118364, guid: 33e39cceec8edac4caa5ad71db9dee3c, type: 3}
       propertyPath: m_VersionIndex
-      value: 26
+      value: 32
       objectReference: {fileID: 0}
     - target: {fileID: 7786720916821410199, guid: 33e39cceec8edac4caa5ad71db9dee3c, type: 3}
       propertyPath: _deathClips.Array.size

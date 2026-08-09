@@ -98,7 +98,7 @@ MonoBehaviour:
     InfluenceDisplay: []
     CapturingUnitIds: 
   _combatTarget: {fileID: 0}
-  _unitAnimator: {fileID: 0}
+  _unitAnimator: {fileID: 5361149512134811821}
   _currentStamina: 0
 --- !u!114 &5361149512134811821
 MonoBehaviour:
@@ -328,14 +328,24 @@ PrefabInstance:
       propertyPath: m_Name
       value: Spearman
       objectReference: {fileID: 0}
-    m_RemovedComponents: []
-    m_RemovedGameObjects: []
+    m_RemovedComponents:
+    - {fileID: 4713744307670055650, guid: a8b51a97925e9c44598a5b780618cde3, type: 3}
+    m_RemovedGameObjects:
+    - {fileID: 807230815274890538, guid: a8b51a97925e9c44598a5b780618cde3, type: 3}
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 8931954383412059935, guid: a8b51a97925e9c44598a5b780618cde3, type: 3}
+      insertIndex: 4
+      addedObject: {fileID: 2622584867757865019}
   m_SourcePrefab: {fileID: 100100000, guid: a8b51a97925e9c44598a5b780618cde3, type: 3}
 --- !u!4 &246432529828273969 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 5637294183139949613, guid: a8b51a97925e9c44598a5b780618cde3, type: 3}
+  m_PrefabInstance: {fileID: 5571005677380133660}
+  m_PrefabAsset: {fileID: 0}
+--- !u!4 &265500857734879267 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 5692285746383436607, guid: a8b51a97925e9c44598a5b780618cde3, type: 3}
   m_PrefabInstance: {fileID: 5571005677380133660}
   m_PrefabAsset: {fileID: 0}
 --- !u!23 &1902801879615021136 stripped
@@ -343,8 +353,49 @@ MeshRenderer:
   m_CorrespondingSourceObject: {fileID: 6284821795032482636, guid: a8b51a97925e9c44598a5b780618cde3, type: 3}
   m_PrefabInstance: {fileID: 5571005677380133660}
   m_PrefabAsset: {fileID: 0}
+--- !u!4 &2015753739870512454 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 6244616354126153306, guid: a8b51a97925e9c44598a5b780618cde3, type: 3}
+  m_PrefabInstance: {fileID: 5571005677380133660}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1 &3937444689974246403 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 8931954383412059935, guid: a8b51a97925e9c44598a5b780618cde3, type: 3}
+  m_PrefabInstance: {fileID: 5571005677380133660}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &2622584867757865019
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3937444689974246403}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f0c3ba65fbf8c1d459122da76aae38d0, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::GridEmpire.Gameplay.CombatVFXPlayer
+  _hitEffectPrefab: {fileID: 6982263153641847612, guid: 36a3ddd9e9258474aa29a08939eeda45, type: 3}
+  _footstepDustPrefab: {fileID: 4809171458859421548, guid: 4e91ed1a8efe7044785b9bd97a47d87f, type: 3}
+  _deathEffectPrefab: {fileID: 5610010966355794069, guid: 803ecf87f61d9fb4f84ba6319ba95c9c, type: 3}
+  _conquerHitEffectPrefab: {fileID: 5238538877814813142, guid: 47096eff328e11a418ace7db2d72aa97, type: 3}
+  _weaponPoint: {fileID: 6674755183729159911}
+  _footPoints:
+  - {fileID: 265500857734879267}
+  - {fileID: 4085037699531532861}
+  _chestPoint: {fileID: 2015753739870512454}
+--- !u!4 &4085037699531532861 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 8494008805037345057, guid: a8b51a97925e9c44598a5b780618cde3, type: 3}
+  m_PrefabInstance: {fileID: 5571005677380133660}
+  m_PrefabAsset: {fileID: 0}
 --- !u!137 &6007888203821967102 stripped
 SkinnedMeshRenderer:
   m_CorrespondingSourceObject: {fileID: 2175377540049012194, guid: a8b51a97925e9c44598a5b780618cde3, type: 3}
+  m_PrefabInstance: {fileID: 5571005677380133660}
+  m_PrefabAsset: {fileID: 0}
+--- !u!4 &6674755183729159911 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 1292900725096107515, guid: a8b51a97925e9c44598a5b780618cde3, type: 3}
   m_PrefabInstance: {fileID: 5571005677380133660}
   m_PrefabAsset: {fileID: 0}

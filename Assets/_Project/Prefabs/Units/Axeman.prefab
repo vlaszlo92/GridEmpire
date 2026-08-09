@@ -104,7 +104,7 @@ MonoBehaviour:
     InfluenceDisplay: []
     CapturingUnitIds: 
   _combatTarget: {fileID: 0}
-  _unitAnimator: {fileID: 0}
+  _unitAnimator: {fileID: 5361149512134811821}
   _currentStamina: 0
 --- !u!114 &5361149512134811821
 MonoBehaviour:
@@ -333,11 +333,19 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 5751265048347933878, guid: 3aa3ee232c91a9a4ba284e1d6afe61a9, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 8433379919651284640}
   m_SourcePrefab: {fileID: 100100000, guid: 3aa3ee232c91a9a4ba284e1d6afe61a9, type: 3}
 --- !u!23 &2504542272460803552 stripped
 MeshRenderer:
   m_CorrespondingSourceObject: {fileID: 3695700070266706042, guid: 3aa3ee232c91a9a4ba284e1d6afe61a9, type: 3}
+  m_PrefabInstance: {fileID: 1263304016425375130}
+  m_PrefabAsset: {fileID: 0}
+--- !u!4 &2766155006547252983 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 4029440863639765869, guid: 3aa3ee232c91a9a4ba284e1d6afe61a9, type: 3}
   m_PrefabInstance: {fileID: 1263304016425375130}
   m_PrefabAsset: {fileID: 0}
 --- !u!137 &4295416106023580625 stripped
@@ -350,8 +358,49 @@ MeshRenderer:
   m_CorrespondingSourceObject: {fileID: 6259302742138553362, guid: 3aa3ee232c91a9a4ba284e1d6afe61a9, type: 3}
   m_PrefabInstance: {fileID: 1263304016425375130}
   m_PrefabAsset: {fileID: 0}
+--- !u!4 &5786233169433886482 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 4739189949883722376, guid: 3aa3ee232c91a9a4ba284e1d6afe61a9, type: 3}
+  m_PrefabInstance: {fileID: 1263304016425375130}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1 &6798378630133983532 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 5751265048347933878, guid: 3aa3ee232c91a9a4ba284e1d6afe61a9, type: 3}
+  m_PrefabInstance: {fileID: 1263304016425375130}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &8433379919651284640
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6798378630133983532}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f0c3ba65fbf8c1d459122da76aae38d0, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::GridEmpire.Gameplay.CombatVFXPlayer
+  _hitEffectPrefab: {fileID: 6982263153641847612, guid: 36a3ddd9e9258474aa29a08939eeda45, type: 3}
+  _footstepDustPrefab: {fileID: 4809171458859421548, guid: 4e91ed1a8efe7044785b9bd97a47d87f, type: 3}
+  _deathEffectPrefab: {fileID: 5610010966355794069, guid: 803ecf87f61d9fb4f84ba6319ba95c9c, type: 3}
+  _conquerHitEffectPrefab: {fileID: 5238538877814813142, guid: 47096eff328e11a418ace7db2d72aa97, type: 3}
+  _weaponPoint: {fileID: 2766155006547252983}
+  _footPoints:
+  - {fileID: 7733546779363167500}
+  - {fileID: 5786233169433886482}
+  _chestPoint: {fileID: 8288111045779796073}
+--- !u!4 &7733546779363167500 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 8852735038485502102, guid: 3aa3ee232c91a9a4ba284e1d6afe61a9, type: 3}
+  m_PrefabInstance: {fileID: 1263304016425375130}
+  m_PrefabAsset: {fileID: 0}
 --- !u!4 &7752855882590079518 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 8799898526622392196, guid: 3aa3ee232c91a9a4ba284e1d6afe61a9, type: 3}
+  m_PrefabInstance: {fileID: 1263304016425375130}
+  m_PrefabAsset: {fileID: 0}
+--- !u!4 &8288111045779796073 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 7101439227428726259, guid: 3aa3ee232c91a9a4ba284e1d6afe61a9, type: 3}
   m_PrefabInstance: {fileID: 1263304016425375130}
   m_PrefabAsset: {fileID: 0}

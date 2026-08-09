@@ -1,7 +1,10 @@
 ﻿<Solution>
   <Project Path="GridEmpire.Core.csproj" />
+  <Project Path="NaughtyAttributes.Test.csproj" />
   <Project Path="GridEmpire.Networking.csproj" />
   <Project Path="Assembly-CSharp.csproj" />
+  <Project Path="NaughtyAttributes.Core.csproj" />
+  <Project Path="NaughtyAttributes.Editor.csproj" />
   <Project Path="GridEmpire.Visuals.csproj" />
   <Project Path="GridEmpire.Shared.csproj" />
   <Project Path="Assembly-CSharp-Editor.csproj" />

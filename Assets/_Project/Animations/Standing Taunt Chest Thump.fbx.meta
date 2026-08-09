@@ -55,8 +55,29 @@ ModelImporter:
       bodyMask: 01000000010000000100000001000000010000000100000001000000010000000100000001000000010000000100000001000000
       curves: []
       events:
-      - time: 0.0021006968
+      - time: 0.048458308
         functionName: PlayConquering
+        data: 
+        objectReferenceParameter: {instanceID: 0}
+        floatParameter: 0
+        intParameter: 0
+        messageOptions: 0
+      - time: 0.2815344
+        functionName: PlayConquerHitEffect
+        data: 
+        objectReferenceParameter: {instanceID: 0}
+        floatParameter: 0
+        intParameter: 0
+        messageOptions: 0
+      - time: 0.48245612
+        functionName: PlayConquerHitEffect
+        data: 
+        objectReferenceParameter: {instanceID: 0}
+        floatParameter: 0
+        intParameter: 0
+        messageOptions: 0
+      - time: 0.6374269
+        functionName: PlayConquerHitEffect
         data: 
         objectReferenceParameter: {instanceID: 0}
         floatParameter: 0

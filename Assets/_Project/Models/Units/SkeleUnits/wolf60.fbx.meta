@@ -141,7 +141,14 @@ ModelImporter:
       mirror: 0
       bodyMask: 01000000010000000100000001000000010000000100000001000000010000000100000001000000010000000100000001000000
       curves: []
-      events: []
+      events:
+      - time: 0.6798867
+        functionName: PlayHitEffect
+        data: 
+        objectReferenceParameter: {instanceID: 0}
+        floatParameter: 0
+        intParameter: 0
+        messageOptions: 0
       transformMask: []
       maskType: 3
       maskSource: {instanceID: 0}
@@ -207,26 +214,54 @@ ModelImporter:
         floatParameter: 0
         intParameter: 0
         messageOptions: 0
-      - time: 0.44844127
-        functionName: PlayFootstep
+      - time: 0.21955404
+        functionName: PlayFootstepDust
         data: 
         objectReferenceParameter: {instanceID: 0}
         floatParameter: 0
         intParameter: 0
+        messageOptions: 0
+      - time: 0.44844127
+        functionName: PlayFootstep
+        data: 
+        objectReferenceParameter: {instanceID: 0}
+        floatParameter: 1
+        intParameter: 1
+        messageOptions: 0
+      - time: 0.45797598
+        functionName: PlayFootstepDust
+        data: 
+        objectReferenceParameter: {instanceID: 0}
+        floatParameter: 1
+        intParameter: 1
         messageOptions: 0
       - time: 0.64508396
         functionName: PlayFootstep
         data: 
         objectReferenceParameter: {instanceID: 0}
-        floatParameter: 0
-        intParameter: 0
+        floatParameter: 2
+        intParameter: 2
+        messageOptions: 0
+      - time: 0.65180105
+        functionName: PlayFootstepDust
+        data: 
+        objectReferenceParameter: {instanceID: 0}
+        floatParameter: 2
+        intParameter: 2
         messageOptions: 0
       - time: 0.92300254
         functionName: PlayFootstep
         data: 
         objectReferenceParameter: {instanceID: 0}
-        floatParameter: 0
-        intParameter: 0
+        floatParameter: 3
+        intParameter: 3
+        messageOptions: 0
+      - time: 0.9296741
+        functionName: PlayFootstepDust
+        data: 
+        objectReferenceParameter: {instanceID: 0}
+        floatParameter: 3
+        intParameter: 3
         messageOptions: 0
       transformMask: []
       maskType: 3

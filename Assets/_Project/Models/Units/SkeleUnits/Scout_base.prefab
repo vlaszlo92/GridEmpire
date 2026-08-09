@@ -6432,7 +6432,7 @@ MonoBehaviour:
   m_PreserveMeshAssetOnDestroy: 0
   assetGuid: 
   m_Mesh: {fileID: 0}
-  m_VersionIndex: 23
+  m_VersionIndex: 26
   m_IsSelectable: 1
   m_SelectedFaces: 
   m_SelectedEdges: []
@@ -6619,6 +6619,11 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: a8cc610235c43164cb7d9665673d0322, type: 3}
+--- !u!4 &4029440863639765869 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 8430087802118631228, guid: a8cc610235c43164cb7d9665673d0322, type: 3}
+  m_PrefabInstance: {fileID: 4834265847500598353}
+  m_PrefabAsset: {fileID: 0}
 --- !u!4 &4754417074938068820 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 211060118000718597, guid: a8cc610235c43164cb7d9665673d0322, type: 3}
@@ -6882,6 +6887,9 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 1696834749189059949, guid: 4a46e821c58b5cd42b14eaab6d197266, type: 3}
       insertIndex: -1
       addedObject: {fileID: 7786720916821410199}
+    - targetCorrespondingSourceObject: {fileID: 1696834749189059949, guid: 4a46e821c58b5cd42b14eaab6d197266, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 2335915985347148178}
   m_SourcePrefab: {fileID: 100100000, guid: 4a46e821c58b5cd42b14eaab6d197266, type: 3}
 --- !u!4 &353857485731552365 stripped
 Transform:
@@ -7090,6 +7098,30 @@ MonoBehaviour:
   _deathClips: []
   _conqueringClips: []
   _isMount: 0
+--- !u!114 &2335915985347148178
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5751265048347933878}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f0c3ba65fbf8c1d459122da76aae38d0, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::GridEmpire.Gameplay.CombatVFXPlayer
+  _hitEffectPrefab: {fileID: 6982263153641847612, guid: 36a3ddd9e9258474aa29a08939eeda45, type: 3}
+  _footstepDustPrefab: {fileID: 0}
+  _deathEffectPrefab: {fileID: 0}
+  _conquerHitEffectPrefab: {fileID: 5238538877814813142, guid: 47096eff328e11a418ace7db2d72aa97, type: 3}
+  _weaponPoint: {fileID: 4029440863639765869}
+  _footPoints: []
+  _chestPoint: {fileID: 7101439227428726259}
+--- !u!4 &7101439227428726259 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 4238351775385513000, guid: 4a46e821c58b5cd42b14eaab6d197266, type: 3}
+  m_PrefabInstance: {fileID: 6367182921301101019}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1001 &6938038757127112830
 PrefabInstance:
   m_ObjectHideFlags: 0
