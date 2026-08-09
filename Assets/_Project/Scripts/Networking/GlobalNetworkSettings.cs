@@ -1,4 +1,7 @@
+using GridEmpire.Core;
 using GridEmpire.Shared;
+using System.Collections.Generic;
+using Unity.Collections;
 using Unity.Netcode;
 using UnityEngine;
 
@@ -8,15 +11,25 @@ namespace GridEmpire.Networking
     {
         public static GlobalNetworkSettings Instance { get; private set; }
 
+        public const int MaxPlayersLimit = 6;
+
+        [Header("Unit Stats")]
+        [SerializeField] private List<UnitData> trackedUnitData;
+
+        public static event System.Action<List<(int unitIndex, string fieldName)>> OnUnitStatsFieldsChanged;
+        public static event System.Action OnUnitStatsSynced;
+        public NetworkVariable<FixedString4096Bytes> UnitStatsJson =
+    new NetworkVariable<FixedString4096Bytes>(default, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
+
+
         public NetworkVariable<int> NetworkMapRadius = new NetworkVariable<int>(9);
-        public NetworkVariable<int> TotalPlayers = new NetworkVariable<int>(6);
+        public NetworkVariable<int> TotalPlayers = new NetworkVariable<int>(MaxPlayersLimit);
         public NetworkVariable<int> TotalAIBots = new NetworkVariable<int>(0);
         public NetworkVariable<float> TurnSpeed = new NetworkVariable<float>(1.0f);
         public NetworkList<PlayerClientMapping> PlayerMappings;
         public NetworkVariable<int> ConnectedPlayerCount = new NetworkVariable<int>(0);
         public NetworkVariable<bool> FogOfWarEnabled = new NetworkVariable<bool>(true);
 
-        public const int MaxPlayersLimit = 6;
 
         public void UpdateSettings(int totalPlayers, int aiBots, int mapRadius, float turnSpeed)
         {
@@ -57,6 +70,29 @@ namespace GridEmpire.Networking
         public override void OnNetworkSpawn()
         {
             Debug.Log($"[GlobalNetworkSettings] OnNetworkSpawn. InstanceID={GetInstanceID()}, IsServer={IsServer}, TotalPlayers={TotalPlayers.Value}");
+
+            UnitStatsJson.OnValueChanged += OnUnitStatsJsonChanged;
+            if (!IsServer && !string.IsNullOrEmpty(UnitStatsJson.Value.ToString()))
+                ApplyUnitStats(null, UnitStatsJson.Value.ToString());
+        }
+
+        public override void OnNetworkDespawn()
+        {
+            UnitStatsJson.OnValueChanged -= OnUnitStatsJsonChanged;
+        }
+
+        public void SyncUnitStatsToClients(IEnumerable<UnitData> unitDataList)
+        {
+            if (!IsServer) return;
+            string json = JsonUtility.ToJson(UnitStatsSnapshotUtil.Collect(unitDataList));
+            UnitStatsJson.Value = json;
+        }
+
+
+        private void OnUnitStatsJsonChanged(FixedString4096Bytes previous, FixedString4096Bytes current)
+        {
+            if (IsServer) return;
+            ApplyUnitStats(previous.ToString(), current.ToString());
         }
 
         [ClientRpc]
@@ -89,6 +125,21 @@ namespace GridEmpire.Networking
         public void TriggerDebugDumpClientRpc()
         {
             NetworkDebugDump.DumpClientState();
+        }
+
+        private void ApplyUnitStats(string previousJson, string currentJson)
+        {
+            var collection = JsonUtility.FromJson<UnitStatsCollection>(currentJson);
+            UnitStatsSnapshotUtil.Apply(trackedUnitData, collection);
+            OnUnitStatsSynced?.Invoke();
+
+            if (!string.IsNullOrEmpty(previousJson))
+            {
+                var previousCollection = JsonUtility.FromJson<UnitStatsCollection>(previousJson);
+                var changed = UnitStatsSnapshotUtil.Diff(previousCollection, collection);
+                if (changed.Count > 0)
+                    OnUnitStatsFieldsChanged?.Invoke(changed);
+            }
         }
     }
 }

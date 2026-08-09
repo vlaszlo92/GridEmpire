@@ -71,14 +71,19 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::GridEmpire.Networking.GlobalNetworkSettings
   ShowTopMostFoldoutHeaderGroup: 1
+  trackedUnitData:
+  - {fileID: 11400000, guid: 89ebc9411440b9f4f996929d4849d5d2, type: 2}
+  - {fileID: 11400000, guid: 2deced251b40d744fadbbbf25bec651a, type: 2}
+  - {fileID: 11400000, guid: e78bddd7e010ea5448d29ae78cfdc2df, type: 2}
+  - {fileID: 11400000, guid: 30c1cdef021324748aa10c50609241b0, type: 2}
   NetworkMapRadius:
-    m_InternalValue: 15
+    m_InternalValue: 0
   TotalPlayers:
-    m_InternalValue: 2
+    m_InternalValue: 0
   TotalAIBots:
-    m_InternalValue: 1
+    m_InternalValue: 0
   TurnSpeed:
-    m_InternalValue: 1
+    m_InternalValue: 0
   ConnectedPlayerCount:
     m_InternalValue: 0
   FogOfWarEnabled:

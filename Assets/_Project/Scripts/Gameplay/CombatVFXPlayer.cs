@@ -17,7 +17,6 @@ namespace GridEmpire.Gameplay
         public void PlayHitEffect() => Spawn(_hitEffectPrefab, _weaponPoint);
         public void PlayFootstepDust(int footIndex)
         {
-            Debug.Log($"PlayFootstepDust called with footIndex: {footIndex}");
             if (_footPoints == null || footIndex < 0 || footIndex >= _footPoints.Length) return;
             Spawn(_footstepDustPrefab, _footPoints[footIndex]);
         }

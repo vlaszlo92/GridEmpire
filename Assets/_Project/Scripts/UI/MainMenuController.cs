@@ -3,6 +3,7 @@ using GridEmpire.Networking;
 using GridEmpire.Shared;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using TMPro;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -62,12 +63,29 @@ namespace GridEmpire.UI
         [SerializeField] private Transform clientPlayerListContainer;
         [SerializeField] private TextMeshProUGUI clientPlayerListPrefab;
 
-        [Header("Unit Assets")]
-        [SerializeField] private List<UnitData> unitDataList;
+        [System.Serializable]
+        private class UnitStatsSection
+        {
+            public UnitData data;
+            public Transform hostContainer;
+            public Transform clientContainer;
+        }
+
+        [Header("Unit Stats UI (Dynamic)")]
+        [SerializeField] private GameObject statRowPrefab;
+        [SerializeField] private List<UnitStatsSection> unitStatsSections;
+
+        private IEnumerable<UnitData> AllUnitData =>
+            unitStatsSections.Where(s => s.data != null).Select(s => s.data);
+
+        private System.Action _onUnitStatsSyncedHandler;
+        private System.Action<List<(int, string)>> _onUnitStatsFieldsChangedHandler;
 
         // Játékos lista cache – host oldalon frissítjük
         private readonly List<TextMeshProUGUI> _hostPlayerListItems = new List<TextMeshProUGUI>();
         private readonly List<TextMeshProUGUI> _clientPlayerListItems = new List<TextMeshProUGUI>();
+
+        private readonly Dictionary<(int unitIndex, string fieldName), StatRowConnector> _clientRowLookup = new();
 
         private void Start()
         {
@@ -75,7 +93,16 @@ namespace GridEmpire.UI
 
             GameSettings savedSettings = GameSettingsStorage.Load();
             SetupGeneralUI(savedSettings);
-            InitializeUnitStatsUI();
+
+            var savedUnitStats = UnitStatsStorage.Load();
+            if (savedUnitStats != null) UnitStatsSnapshotUtil.Apply(AllUnitData, savedUnitStats);
+
+            BuildUnitStatsUI(interactable: true);
+
+            _onUnitStatsSyncedHandler = () => BuildUnitStatsUI(interactable: false);
+            _onUnitStatsFieldsChangedHandler = FlashChangedRows;
+            GlobalNetworkSettings.OnUnitStatsFieldsChanged += _onUnitStatsFieldsChangedHandler;
+            GlobalNetworkSettings.OnUnitStatsSynced += _onUnitStatsSyncedHandler;
 
             SetHostLoading(false);
             if (startHostFinalBtn != null) startHostFinalBtn.interactable = false;
@@ -121,6 +148,11 @@ namespace GridEmpire.UI
 
         private void OnDestroy()
         {
+            if (_onUnitStatsSyncedHandler != null)
+                GlobalNetworkSettings.OnUnitStatsSynced -= _onUnitStatsSyncedHandler;
+            if (_onUnitStatsFieldsChangedHandler != null)
+                GlobalNetworkSettings.OnUnitStatsFieldsChanged -= _onUnitStatsFieldsChangedHandler;
+
             var controller = NetworkLobbyController.Instance;
             if (controller == null) return;
 
@@ -151,6 +183,8 @@ namespace GridEmpire.UI
             SetHostLoading(false);
             UpdateHostPlayerList();
             UpdateStartButtonState();
+
+            GlobalNetworkSettings.Instance?.SyncUnitStatsToClients(AllUnitData);
         }
 
         private void HandleHostSessionFailed(string error)
@@ -308,14 +342,6 @@ namespace GridEmpire.UI
             }
         }
 
-        /// <summary>
-        /// Újraépíti a játékos listát.
-        /// Formátum:
-        ///   ● Human 1 (Te - Host)   ← ha host
-        ///   ● Human 2               ← csatlakozott
-        ///   ○ Human 3               ← vár
-        ///   ○ AI Bot 1              ← bot
-        /// </summary>
         private void RebuildPlayerList(Transform container, List<TextMeshProUGUI> items, TextMeshProUGUI prefab, int humanPlayers, int aiBots, int connected, bool isHost)
         {
             Transform targetParent = container;
@@ -326,14 +352,12 @@ namespace GridEmpire.UI
             }
             int totalSlots = humanPlayers + aiBots;
 
-            // Bővítés ha kell
             while (items.Count < totalSlots)
             {
                 var newItem = Instantiate(prefab, targetParent);
                 items.Add(newItem);
             }
 
-            // Elrejtés ha kevesebb kell
             for (int i = 0; i < items.Count; i++)
                 items[i].gameObject.SetActive(i < totalSlots);
 
@@ -398,6 +422,7 @@ namespace GridEmpire.UI
 
         private void StartHostGame()
         {
+            Debug.Log("[MMC] StartHostGame elindult.");
             GameSettings settings = new GameSettings
             {
                 totalPlayers = GlobalNetworkSettings.Instance.TotalPlayers.Value, //MINDEN SLOT OPEN
@@ -407,6 +432,15 @@ namespace GridEmpire.UI
                 fogOfWarEnabled = fogOfWarToggle != null ? fogOfWarToggle.isOn : true
             };
             GameSettingsStorage.Save(settings);
+
+            var unitStats = UnitStatsSnapshotUtil.Collect(AllUnitData);
+            Debug.Log($"[MMC] UnitStats collect kész, units={unitStats.units.Count}");
+
+            UnitStatsStorage.Save(unitStats);
+            Debug.Log("[MMC] UnitStatsStorage.Save kész.");
+
+            Debug.Log($"[MMC] GNS.Instance null? {GlobalNetworkSettings.Instance == null}");
+            GlobalNetworkSettings.Instance?.SyncUnitStatsToClients(AllUnitData);
 
             startHostFinalBtn.interactable = false;
             if (backToLobbyHostBtn != null) backToLobbyHostBtn.interactable = false;
@@ -513,54 +547,55 @@ namespace GridEmpire.UI
             clientWaitingPanel.SetActive(panelToShow == clientWaitingPanel);
         }
 
-        private void InitializeUnitStatsUI()
+        // ─── UNIT STATS UI ───────────────────────────────────────────────────────────
+
+        private void FlashChangedRows(List<(int unitIndex, string fieldName)> changed)
         {
-            StatRowConnector[] allRows = GetComponentsInChildren<StatRowConnector>(true);
-            foreach (var row in allRows)
+            foreach (var key in changed)
             {
-                UnitData targetData = unitDataList.Find(d => d.index == row.unitIndex);
-                if (targetData == null) continue;
-                row.Init(row.type.ToString(), GetAssetStatValue(targetData, row.type));
-                row.inputField.onEndEdit.RemoveAllListeners();
-                row.inputField.onEndEdit.AddListener(val =>
-                {
-                    if (float.TryParse(val, out float result))
-                        SetAssetStatValue(targetData, row.type, result);
-                });
+                if (_clientRowLookup.TryGetValue(key, out var row))
+                    row.Flash();
             }
         }
 
-        private float GetAssetStatValue(UnitData d, StatRowConnector.StatType t) => t switch
+        private void BuildUnitStatsUI(bool interactable)
         {
-            StatRowConnector.StatType.Cost => d.cost,
-            StatRowConnector.StatType.CostPerTurn => d.costPerTurn,
-            StatRowConnector.StatType.MaxHp => d.maxHp,
-            StatRowConnector.StatType.StaminaPerTurn => d.staminaPerTurn,
-            StatRowConnector.StatType.MaxStamina => d.maxStamina,
-            StatRowConnector.StatType.ConquerSpeed => d.conquerSpeed,
-            StatRowConnector.StatType.ExploreSpeed => d.exploreSpeed,
-            StatRowConnector.StatType.BaseDamage => d.baseDamage,
-            StatRowConnector.StatType.BonusDamage => d.bonusDamage,
-            _ => 0
-        };
+            if (!interactable) _clientRowLookup.Clear();
 
-        private void SetAssetStatValue(UnitData d, StatRowConnector.StatType t, float val)
-        {
-            switch (t)
+            foreach (var section in unitStatsSections)
             {
-                case StatRowConnector.StatType.Cost: d.cost = (int)val; break;
-                case StatRowConnector.StatType.CostPerTurn: d.costPerTurn = (int)val; break;
-                case StatRowConnector.StatType.MaxHp: d.maxHp = (int)val; break;
-                case StatRowConnector.StatType.StaminaPerTurn: d.staminaPerTurn = val; break;
-                case StatRowConnector.StatType.MaxStamina: d.maxStamina = val; break;
-                case StatRowConnector.StatType.ConquerSpeed: d.conquerSpeed = val; break;
-                case StatRowConnector.StatType.ExploreSpeed: d.exploreSpeed = val; break;
-                case StatRowConnector.StatType.BaseDamage: d.baseDamage = (int)val; break;
-                case StatRowConnector.StatType.BonusDamage: d.bonusDamage = (int)val; break;
+                Transform container = interactable ? section.hostContainer : section.clientContainer;
+                if (section.data == null || container == null) continue;
+
+                foreach (Transform child in container)
+                    Destroy(child.gameObject);
+
+                foreach (var field in UnitDataFieldUtil.GetEditableFields(section.data))
+                {
+                    var row = Instantiate(statRowPrefab, container).GetComponent<StatRowConnector>();
+                    var data = section.data;
+                    var f = field;
+
+                    row.Init(f.Name, UnitDataFieldUtil.GetValue(data, f), interactable);
+
+                    if (interactable)
+                    {
+                        row.inputField.onEndEdit.RemoveAllListeners();
+                        row.inputField.onEndEdit.AddListener(val =>
+                        {
+                            if (float.TryParse(val, out float result))
+                            {
+                                UnitDataFieldUtil.SetValue(data, f, result);
+                                GlobalNetworkSettings.Instance?.SyncUnitStatsToClients(AllUnitData);
+                            }
+                        });
+                    }
+                    else
+                    {
+                        _clientRowLookup[(data.index, f.Name)] = row;
+                    }
+                }
             }
-#if UNITY_EDITOR
-            UnityEditor.EditorUtility.SetDirty(d);
-#endif
         }
 
         public void OnStartButtonClick()
