@@ -98,7 +98,7 @@ namespace GridEmpire.Networking
             OnHostConnectionLost?.Invoke();
         }
 
-        // ─── HOST SESSION ───────────────────────────────────────────────────
+        // --- HOST SESSION ---------------------------------------------------
 
         public async Task CreateHostSession(int maxPlayers)
         {
@@ -203,7 +203,7 @@ namespace GridEmpire.Networking
             }
         }
 
-        // ─── CLIENT ─────────────────────────────────────────────────────────
+        // --- CLIENT ---------------------------------------------------------
 
         public async Task JoinSession(string joinCode)
         {
@@ -253,7 +253,7 @@ namespace GridEmpire.Networking
         }
 
 
-        // ─── COMMON ─────────────────────────────────────────────────────────
+        // --- COMMON ---------------------------------------------------------
 
         private async System.Threading.Tasks.Task LeaveCurrentSession()
         {

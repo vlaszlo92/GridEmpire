@@ -175,7 +175,7 @@ namespace GridEmpire.Gameplay
             ApplyPlayerColor();
         }
 
-        // ─── PLAN ACTION ────────────────────────────────────────────────────────────
+        // --- PLAN ACTION ------------------------------------------------------------
 
         public void PlanAction()
         {
@@ -315,7 +315,7 @@ namespace GridEmpire.Gameplay
                 source.mute = !visible;
         }
 
-        // ─── COMBAT ─────────────────────────────────────────────────────────────────
+        // --- COMBAT -----------------------------------------------------------------
 
         public void CalculateCombatLogic()
         {
@@ -417,7 +417,7 @@ namespace GridEmpire.Gameplay
             }
         }
 
-        // ─── MOVE ────────────────────────────────────────────────────────────────────
+        // --- MOVE --------------------------------------------------------------------
 
         public void ExecuteFinalMove(CellData next)
         {
@@ -477,7 +477,7 @@ namespace GridEmpire.Gameplay
             Debug.Log($"[UnitController] MoveClientRpc complete - Unit ID: {Id}, CurrentCell ID: {_currentCell?.Id}, Frame: {Time.frameCount}");
         }
 
-        // ─── CAPTURE ─────────────────────────────────────────────────────────────────
+        // --- CAPTURE -----------------------------------------------------------------
 
         public void ExecuteFinalCapture(CellData target)
         {
@@ -537,7 +537,7 @@ namespace GridEmpire.Gameplay
             Debug.Log($"[UnitController] CaptureClientRpc complete - Unit ID: {Id}, CurrentCell ID: {_currentCell?.Id}, Frame: {Time.frameCount}");
         }
 
-        // ─── DEATH ───────────────────────────────────────────────────────────────────
+        // --- DEATH -------------------------------------------------------------------
 
         public void ExecuteDeath()
         {
@@ -579,7 +579,7 @@ namespace GridEmpire.Gameplay
             _unitAnimator?.Play(ActionType.Idle);
         }
 
-        // ─── HELPERS ─────────────────────────────────────────────────────────────────
+        // --- HELPERS -----------------------------------------------------------------
         private void ApplyPlayerColor()
         {
             var player = GameController.Instance?.GetPlayerById(_ownerId);

@@ -93,7 +93,7 @@ namespace GridEmpire.Core
             CellData.OnCellOwnerChanged -= HandleCellOwnershipChange;
         }
 
-        // ─── SESSION CONFIG / LOCAL PLAYER ID (Networking rétegtől kapott adat) ───────
+        // --- SESSION CONFIG / LOCAL PLAYER ID (Networking rétegtől kapott adat) -------
 
         /// <summary>A Networking réteg hívja, amint a szerver oldali beállítások ismertek.</summary>
         public void SetSessionConfig(GameSessionConfig config) => _config = config;
@@ -109,7 +109,7 @@ namespace GridEmpire.Core
             StartCoroutine(ClientInitChain());
         }
 
-        // ─── SZERVER INIT LÁNC ───────────────────────────────────────────────────────
+        // --- SZERVER INIT LÁNC -------------------------------------------------------
 
         private IEnumerator ServerInitChain()
         {
@@ -218,7 +218,7 @@ namespace GridEmpire.Core
                 Debug.Log($"[GameController] BaseCell: player={player.Id}, cell={cell.Id}");
             }
         }
-        // ─── GRID STATE SYNC (első csatlakozás + reconnect egységesen) ───────────────
+        // --- GRID STATE SYNC (első csatlakozás + reconnect egységesen) ---------------
 
         [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)]
         public void RequestGridStateServerRpc(ulong clientId)
@@ -311,7 +311,7 @@ namespace GridEmpire.Core
             }
         }
 
-        // ─── KLIENS INIT LÁNC ────────────────────────────────────────────────────────
+        // --- KLIENS INIT LÁNC --------------------------------------------------------
 
         private IEnumerator ClientInitChain()
         {
@@ -335,7 +335,7 @@ namespace GridEmpire.Core
             OnLocalInitializationComplete?.Invoke();
         }
 
-        // ─── KLIENS SZINKRON ─────────────────────────────────────────────────────────
+        // --- KLIENS SZINKRON ---------------------------------------------------------
 
         public void ResyncAllUnitsLocal()
         {
@@ -381,7 +381,7 @@ namespace GridEmpire.Core
         }
 
 
-        // ─── GAZDASÁG ────────────────────────────────────────────────────────────────
+        // --- GAZDASÁG ----------------------------------------------------------------
         private void ProcessEconomy()
         {
             if (!IsServer) return;
@@ -415,7 +415,7 @@ namespace GridEmpire.Core
             GetPlayerById(toPlayer)?.ChangeOwnedCells(+1);
         }
 
-        // ─── REGISTRY ────────────────────────────────────────────────────────────────
+        // --- REGISTRY ----------------------------------------------------------------
 
         public int GetNextAvailableId() => _nextUnitId++;
         public void RegisterUnit(IUnit unit)

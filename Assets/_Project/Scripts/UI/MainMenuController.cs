@@ -172,7 +172,7 @@ namespace GridEmpire.UI
             controller.OnHostConnectionLost -= OnClientBackToLobby;
         }
 
-        // ─── NETWORK EVENT SUBSCRIPTION ────────────────────────────────────────────────
+        // --- NETWORK EVENT SUBSCRIPTION ------------------------------------------------
 
         private void SubscribeToNetworkEvents()
         {
@@ -226,7 +226,7 @@ namespace GridEmpire.UI
                 copyCodeBtn.gameObject.SetActive(!loading);
         }
 
-        // ─── BEÁLLÍTÁS VÁLTOZÁS ───────────────────────────────────────────────────────
+        // --- BEÁLLÍTÁS VÁLTOZÁS -------------------------------------------------------
 
         private void OnSettingsChanged()
         {
@@ -272,7 +272,7 @@ namespace GridEmpire.UI
             startHostFinalBtn.interactable = connected >= humanPlayers;
         }
 
-        // ─── JÁTÉKOS LISTA ────────────────────────────────────────────────────────────
+        // --- JÁTÉKOS LISTA ------------------------------------------------------------
 
         private void UpdateTotalPlayersSliderMin()
         {
@@ -397,7 +397,7 @@ namespace GridEmpire.UI
             }
         }
 
-        // ─── BACK TO LOBBY ────────────────────────────────────────────────────────────
+        // --- BACK TO LOBBY ------------------------------------------------------------
 
         private async void OnHostBackToLobby()
         {
@@ -435,7 +435,7 @@ namespace GridEmpire.UI
             items.Clear();
         }
 
-        // ─── HOST JÁTÉK INDÍTÁSA ──────────────────────────────────────────────────────
+        // --- HOST JÁTÉK INDÍTÁSA ------------------------------------------------------
 
         private void StartHostGame()
         {
@@ -466,7 +466,7 @@ namespace GridEmpire.UI
             NetworkLobbyController.Instance?.StartHostGame(settings, gameSceneName, expectedHumans);
         }
 
-        // ─── CLIENT ───────────────────────────────────────────────────────────────────
+        // --- CLIENT -------------------------------------------------------------------
 
         private async void StartClientConnect()
         {
@@ -495,7 +495,7 @@ namespace GridEmpire.UI
             clientStatusText.color = color;
         }
 
-        // ─── WATCH NETWORK SETTINGS ───────────────────────────────────────────────────
+        // --- WATCH NETWORK SETTINGS ---------------------------------------------------
 
         private IEnumerator WatchNetworkSettings()
         {
@@ -545,7 +545,7 @@ namespace GridEmpire.UI
                 clientTurnSpeedText.text = $"Körsebesség: {gns.TurnSpeed.Value:F1}";
         }
 
-        // ─── SETTINGS UI ─────────────────────────────────────────────────────────────
+        // --- SETTINGS UI -------------------------------------------------------------
         private void SetupGeneralUI(GameSettings settings)
         {
             BindElement(totalPlayersSlider, totalPlayersInput, settings.totalPlayers, 1, 6, true, (v) => { });
@@ -570,7 +570,7 @@ namespace GridEmpire.UI
             clientWaitingPanel.SetActive(panelToShow == clientWaitingPanel);
         }
 
-        // ─── UNIT STATS UI ───────────────────────────────────────────────────────────
+        // --- UNIT STATS UI -----------------------------------------------------------
 
         private void FlashChangedRows(List<(int unitIndex, string fieldName)> changed)
         {
