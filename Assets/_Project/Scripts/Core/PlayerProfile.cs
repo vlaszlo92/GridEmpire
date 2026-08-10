@@ -17,6 +17,7 @@ namespace GridEmpire.Core
         [SerializeField] private int ownedCellCount;
         [SerializeField] private float gold;
         [SerializeField] private float goldIncome;
+        [SerializeField] private float goldPerTurnPerCell = 0.1f;
 
         [SerializeField] private CellData baseCell;
         [SerializeField] private CellData selectedCell;
@@ -40,7 +41,7 @@ namespace GridEmpire.Core
         public CellData SelectedCell { get => selectedCell; set => selectedCell = value; }
         internal void SetLocal(bool isLocal) => isLocalPlayer = isLocal;
 
-        public PlayerProfile(int id, string name, Color color, bool isAi, bool isLocal, CellData selectedCell)
+        public PlayerProfile(int id, string name, Color color, bool isAi, bool isLocal, CellData selectedCell, float goldPerTurnPerCell = 0.1f)
         {
             this.id = id;
             this.name = name;
@@ -49,6 +50,7 @@ namespace GridEmpire.Core
             this.isLocalPlayer = isLocal;
             this.gold = 10000f;
             this.selectedCell = selectedCell;
+            this.goldPerTurnPerCell = goldPerTurnPerCell;
         }
 
         public void AddUnit(IUnit unit)
@@ -76,7 +78,7 @@ namespace GridEmpire.Core
             {
                 if (u?.Data != null) unitMaintenance += u.Data.costPerTurn;
             }
-            goldIncome = Mathf.Max(0f, 1f + (ownedCellCount * 0.1f) - unitMaintenance);
+            goldIncome = Mathf.Max(0f, 1f + (ownedCellCount * goldPerTurnPerCell) - unitMaintenance);
         }
 
         public void AddGold(float amount) => gold += amount;

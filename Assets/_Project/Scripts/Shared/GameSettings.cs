@@ -8,5 +8,6 @@ namespace GridEmpire.Shared
         public float turnSpeedMultiplier = 1.0f;
         public int mapRadius = 15;
         public bool fogOfWarEnabled = true;
+        public float goldPerTurnPerCell = 0.1f;
     }
 }

@@ -131,10 +131,10 @@ namespace GridEmpire.Networking
             }
         }
 
-        public void SyncSettingsToClients(int totalPlayers, int aiBots, int mapRadius, float turnSpeed)
+        public void SyncSettingsToClients(int totalPlayers, int aiBots, int mapRadius, float turnSpeed, float goldPerTurnPerCell)
         {
             if (IsHost && GlobalNetworkSettings.Instance != null)
-                GlobalNetworkSettings.Instance.UpdateSettings(totalPlayers, aiBots, mapRadius, turnSpeed);
+                GlobalNetworkSettings.Instance.UpdateSettings(totalPlayers, aiBots, mapRadius, turnSpeed, goldPerTurnPerCell);
         }
 
         public void SetFogOfWar(bool enabled)

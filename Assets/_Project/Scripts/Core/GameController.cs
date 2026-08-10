@@ -160,16 +160,23 @@ namespace GridEmpire.Core
 
             int pCount = _config.TotalPlayers;
             int aCount = _config.TotalAIBots;
+            int humanCount = pCount - aCount;
 
             for (int i = 0; i < pCount; i++)
             {
-                bool isAi = i >= (pCount - aCount);
+                bool isAi = i >= humanCount;
                 bool isLocal = (i == 0 && !isAi);
-                string pName = isAi ? $"AI {i}" : $"Player {i}";
-                Color pColor = i < playerColors.Length ? playerColors[i] : Color.white;
+
+                string pName = (!isAi && _config.PlayerNames != null && i < _config.PlayerNames.Length && !string.IsNullOrEmpty(_config.PlayerNames[i]))
+                    ? _config.PlayerNames[i]
+                    : (isAi ? $"AI {i}" : $"Player {i}");
+
+                Color pColor = (!isAi && _config.PlayerColors != null && i < _config.PlayerColors.Length)
+                    ? _config.PlayerColors[i]
+                    : (i < playerColors.Length ? playerColors[i] : Color.white);
 
                 _networkPlayers.Add(new PlayerData { Id = i, Color = pColor, IsAi = isAi });
-                _players.Add(new PlayerProfile(i, pName, pColor, isAi, isLocal, null));
+                _players.Add(new PlayerProfile(i, pName, pColor, isAi, isLocal, null, _config.GoldPerTurnPerCell));
             }
 
             Debug.Log($"[GameController] InitializePlayers: {_players.Count} jatekos.");

@@ -5,6 +5,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using TMPro;
+using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
@@ -43,14 +44,16 @@ namespace GridEmpire.UI
         public Slider mapSizeSlider;
         public TMP_InputField mapSizeInput;
         public Toggle fogOfWarToggle;
+        public Slider goldPerTurnPerCellSlider;
+        public TMP_InputField goldPerTurnPerCellInput;
 
         [Header("Host Network UI")]
         [SerializeField] private TMP_InputField hostCodeDisplay;
         [SerializeField] private Button copyCodeBtn;
         [SerializeField] private TextMeshProUGUI hostPlayerCountText;
-        [SerializeField] private TextMeshProUGUI hostLoadingText;      // "Lobby generalasa..."
-        [SerializeField] private Transform hostPlayerListContainer;    // ScrollView Content
-        [SerializeField] private TextMeshProUGUI hostPlayerListPrefab; // Prefab egy sorhoz
+        [SerializeField] private TextMeshProUGUI hostLoadingText;
+        [SerializeField] private Transform hostPlayerListContainer;
+        [SerializeField] private TextMeshProUGUI hostPlayerListPrefab;
 
         [Header("Client Network UI")]
         [SerializeField] private TMP_InputField clientCodeInput;
@@ -62,6 +65,27 @@ namespace GridEmpire.UI
         [SerializeField] private TextMeshProUGUI clientTurnSpeedText;
         [SerializeField] private Transform clientPlayerListContainer;
         [SerializeField] private TextMeshProUGUI clientPlayerListPrefab;
+        [SerializeField] private TextMeshProUGUI clientGoldPerCellText;
+
+        [Header("Player Identity UI - Host")]
+        [SerializeField] private TMP_InputField hostPlayerNameInput;
+        [SerializeField] private Transform hostColorSwatchContainer;
+        [SerializeField] private Image hostSelectedColorPreview;
+        [SerializeField] private TextMeshProUGUI hostColorPickStatusText;
+
+        [Header("Player Identity UI - Client")]
+        [SerializeField] private TMP_InputField clientPlayerNameInput;
+        [SerializeField] private Transform clientColorSwatchContainer;
+        [SerializeField] private Image clientSelectedColorPreview;
+        [SerializeField] private TextMeshProUGUI clientColorPickStatusText;
+
+        [SerializeField] private Button colorSwatchButtonPrefab;
+
+        private readonly List<Button> _hostColorSwatchButtons = new List<Button>();
+        private readonly List<Button> _clientColorSwatchButtons = new List<Button>();
+        private string _pendingPlayerName = null;
+        private int _pendingColorIndex = -1;
+        private bool _identityFlushQueued = false;
 
         [System.Serializable]
         private class UnitStatsSection
@@ -81,7 +105,7 @@ namespace GridEmpire.UI
         private System.Action _onUnitStatsSyncedHandler;
         private System.Action<List<(int, string)>> _onUnitStatsFieldsChangedHandler;
 
-        // Jatekos lista cache – host oldalon frissitjuk
+        // Jatekos lista cache
         private readonly List<TextMeshProUGUI> _hostPlayerListItems = new List<TextMeshProUGUI>();
         private readonly List<TextMeshProUGUI> _clientPlayerListItems = new List<TextMeshProUGUI>();
 
@@ -147,10 +171,22 @@ namespace GridEmpire.UI
             if (backToLobbyClientBtn != null)
                 backToLobbyClientBtn.onClick.AddListener(OnClientBackToLobby);
 
+            BuildColorSwatches(hostColorSwatchContainer, _hostColorSwatchButtons);
+            BuildColorSwatches(clientColorSwatchContainer, _clientColorSwatchButtons);
+
+            if (hostPlayerNameInput != null)
+                hostPlayerNameInput.onEndEdit.AddListener(RequestNameChange);
+            if (clientPlayerNameInput != null)
+                clientPlayerNameInput.onEndEdit.AddListener(RequestNameChange);
+
+            GlobalNetworkSettings.OnColorRejected += HandleColorRejected;
+            GlobalNetworkSettings.OnPlayerLobbyInfosChanged += HandleLobbyInfoChanged;
+
             totalPlayersSlider?.onValueChanged.AddListener(_ => OnSettingsChanged());
             aiBotsSlider?.onValueChanged.AddListener(_ => OnSettingsChanged());
             mapSizeSlider?.onValueChanged.AddListener(_ => OnSettingsChanged());
             turnSpeedSlider?.onValueChanged.AddListener(_ => OnSettingsChanged());
+            goldPerTurnPerCellSlider?.onValueChanged.AddListener(_ => OnSettingsChanged());
 
             StartCoroutine(WatchNetworkSettings());
         }
@@ -161,6 +197,9 @@ namespace GridEmpire.UI
                 GlobalNetworkSettings.OnUnitStatsSynced -= _onUnitStatsSyncedHandler;
             if (_onUnitStatsFieldsChangedHandler != null)
                 GlobalNetworkSettings.OnUnitStatsFieldsChanged -= _onUnitStatsFieldsChangedHandler;
+
+            GlobalNetworkSettings.OnColorRejected -= HandleColorRejected;
+            GlobalNetworkSettings.OnPlayerLobbyInfosChanged -= HandleLobbyInfoChanged;
 
             var controller = NetworkLobbyController.Instance;
             if (controller == null) return;
@@ -226,7 +265,7 @@ namespace GridEmpire.UI
                 copyCodeBtn.gameObject.SetActive(!loading);
         }
 
-        // --- BEaLLiTaS VaLTOZaS -------------------------------------------------------
+        // --- BEALLITAS VALTOZAS -------------------------------------------------------
 
         private void OnSettingsChanged()
         {
@@ -234,7 +273,8 @@ namespace GridEmpire.UI
                 (int)totalPlayersSlider.value,
                 (int)aiBotsSlider.value,
                 (int)mapSizeSlider.value,
-                turnSpeedSlider.value
+                turnSpeedSlider.value,
+                goldPerTurnPerCellSlider != null ? goldPerTurnPerCellSlider.value : 0.1f
             );
             UpdateStartButtonState();
             UpdateHostPlayerList();
@@ -272,7 +312,7 @@ namespace GridEmpire.UI
             startHostFinalBtn.interactable = connected >= humanPlayers;
         }
 
-        // --- JaTeKOS LISTA ------------------------------------------------------------
+        // --- JATEKOS LISTA -------------------------------------------------------------
 
         private void UpdateTotalPlayersSliderMin()
         {
@@ -292,22 +332,12 @@ namespace GridEmpire.UI
         private void UpdateHostPlayerList()
         {
             if (hostPlayerListContainer == null || hostPlayerListPrefab == null) return;
-            var controller = NetworkLobbyController.Instance;
 
             int totalPlayers = (int)totalPlayersSlider.value;
             int aiBots = (int)aiBotsSlider.value;
             int humanPlayers = totalPlayers - aiBots;
-            int connected = controller != null ? controller.ConnectedClientsCount : 0;
 
-            RebuildPlayerList(
-                hostPlayerListContainer,
-                _hostPlayerListItems,
-                hostPlayerListPrefab,
-                humanPlayers,
-                aiBots,
-                connected,
-                isHost: true
-            );
+            RebuildPlayerList(hostPlayerListContainer, _hostPlayerListItems, hostPlayerListPrefab, humanPlayers, aiBots);
         }
 
         private void UpdateClientPlayerList()
@@ -320,17 +350,8 @@ namespace GridEmpire.UI
             int totalPlayers = gns.TotalPlayers.Value;
             int aiBots = gns.TotalAIBots.Value;
             int humanPlayers = totalPlayers - aiBots;
-            int connected = gns.ConnectedPlayerCount.Value;
 
-            RebuildPlayerList(
-                clientPlayerListContainer,
-                _clientPlayerListItems,
-                clientPlayerListPrefab,
-                humanPlayers,
-                aiBots,
-                connected,
-                isHost: false
-            );
+            RebuildPlayerList(clientPlayerListContainer, _clientPlayerListItems, clientPlayerListPrefab, humanPlayers, aiBots);
         }
 
         private void UpdateAiBotSliderMax()
@@ -351,50 +372,71 @@ namespace GridEmpire.UI
             }
         }
 
-        private void RebuildPlayerList(Transform container, List<TextMeshProUGUI> items, TextMeshProUGUI prefab, int humanPlayers, int aiBots, int connected, bool isHost)
+        private void RebuildPlayerList(Transform container, List<TextMeshProUGUI> items, TextMeshProUGUI prefab, int humanPlayers, int aiBots)
         {
             Transform targetParent = container;
             ScrollRect scrollRect = container.GetComponent<ScrollRect>();
             if (scrollRect != null && scrollRect.content != null)
-            {
                 targetParent = scrollRect.content;
-            }
+
             int totalSlots = humanPlayers + aiBots;
 
             while (items.Count < totalSlots)
-            {
-                var newItem = Instantiate(prefab, targetParent);
-                items.Add(newItem);
-            }
+                items.Add(Instantiate(prefab, targetParent));
 
             for (int i = 0; i < items.Count; i++)
                 items[i].gameObject.SetActive(i < totalSlots);
 
-            // Human slotok
-            for (int i = 0; i < humanPlayers; i++)
+            var gns = GlobalNetworkSettings.Instance;
+            int myPlayerId = (gns != null && NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening)
+                ? gns.GetPlayerIdForClient(NetworkManager.Singleton.LocalClientId)
+                : -1;
+
+            var sortedInfos = new List<PlayerLobbyInfo>();
+            if (gns != null)
             {
-                bool isConnected = i < connected;
-                string dot = isConnected ? "●" : "○";
-                string label;
-
-                if (i == 0 && isHost)
-                    label = $"{dot} Human {i + 1} (Te - Host)";
-                else if (i == 0 && !isHost && isConnected)
-                    label = $"{dot} Human {i + 1} (Host)";
-                else
-                    label = isConnected ? $"{dot} Human {i + 1}" : $"{dot} Human {i + 1} (var...)";
-
-                items[i].text = label;
-                items[i].color = isConnected ? Color.white : Color.gray;
+                foreach (var info in gns.PlayerLobbyInfos)
+                    sortedInfos.Add(info);
+                sortedInfos.Sort((a, b) => a.PlayerId.CompareTo(b.PlayerId));
             }
 
-            // AI slotok
+            for (int i = 0; i < humanPlayers; i++)
+            {
+                if (i < sortedInfos.Count)
+                {
+                    var info = sortedInfos[i];
+                    string name = info.Name.IsEmpty ? $"Human {i + 1}" : info.Name.ToString();
+                    bool isMe = info.PlayerId == myPlayerId;
+                    string suffix = isMe ? " (Te)" : (i == 0 ? " (Host)" : "");
+
+                    items[i].text = $"● {name}{suffix}";
+                    items[i].color = info.ColorIndex >= 0 && info.ColorIndex < PredefinedColors.Colors.Length
+                        ? (Color)PredefinedColors.Colors[info.ColorIndex]
+                        : Color.white;
+                }
+                else
+                {
+                    items[i].text = $"○ Human {i + 1} (var...)";
+                    items[i].color = Color.gray;
+                }
+            }
+
             for (int i = 0; i < aiBots; i++)
             {
                 int slotIdx = humanPlayers + i;
                 items[slotIdx].text = $"● AI Bot {i + 1}";
-                items[slotIdx].color = new Color(0.6f, 0.8f, 1f); // vilagoskek
+                items[slotIdx].color = new Color(0.6f, 0.8f, 1f);
             }
+        }
+
+        private bool TryGetLobbyInfo(GlobalNetworkSettings gns, int playerId, out PlayerLobbyInfo info)
+        {
+            foreach (var i in gns.PlayerLobbyInfos)
+            {
+                if (i.PlayerId == playerId) { info = i; return true; }
+            }
+            info = default;
+            return false;
         }
 
         // --- BACK TO LOBBY ------------------------------------------------------------
@@ -435,7 +477,7 @@ namespace GridEmpire.UI
             items.Clear();
         }
 
-        // --- HOST JaTeK INDiTaSA ------------------------------------------------------
+        // --- HOST JATEK INDITASA ------------------------------------------------------
 
         private void StartHostGame()
         {
@@ -446,7 +488,8 @@ namespace GridEmpire.UI
                 aiBots = (int)aiBotsSlider.value,
                 mapRadius = (int)mapSizeSlider.value,
                 turnSpeedMultiplier = turnSpeedSlider.value,
-                fogOfWarEnabled = fogOfWarToggle != null ? fogOfWarToggle.isOn : true
+                fogOfWarEnabled = fogOfWarToggle != null ? fogOfWarToggle.isOn : true,
+                goldPerTurnPerCell = goldPerTurnPerCellSlider != null ? goldPerTurnPerCellSlider.value : 0.1f
             };
             GameSettingsStorage.Save(settings);
 
@@ -473,12 +516,12 @@ namespace GridEmpire.UI
             if (NetworkLobbyController.Instance == null || NetworkLobbyController.Instance.IsSessionOperationInProgress) return;
             if (clientCodeInput == null || string.IsNullOrEmpty(clientCodeInput.text))
             {
-                SetClientStatus("Add meg a csatlakozasi kodot!", Color.red);
+                SetClientStatus("Please enter the join code!", Color.red);
                 return;
             }
 
             string joinCode = clientCodeInput.text.Trim().ToUpper();
-            SetClientStatus("Csatlakozas...", Color.yellow);
+            SetClientStatus("Connecting...", Color.yellow);
             SetAllNavButtonsInteractable(false);
 
             await NetworkLobbyController.Instance.JoinSession(joinCode);
@@ -511,7 +554,7 @@ namespace GridEmpire.UI
                     controller.UpdateHostConnectedPlayerCount();
                     UpdateStartButtonState();
                     UpdateAiBotSliderMax();
-                    UpdateTotalPlayersSliderMin(); 
+                    UpdateTotalPlayersSliderMin();
                     UpdateHostPlayerList();
                 }
 
@@ -534,24 +577,29 @@ namespace GridEmpire.UI
             int humanPlayers = totalPlayers - aiBots;
 
             if (clientPlayerCountText != null)
-                clientPlayerCountText.text = $"{connected} / {humanPlayers} jatekos";
+                clientPlayerCountText.text = $"{connected} / {humanPlayers} players";
             if (clientTotalPlayersText != null)
-                clientTotalPlayersText.text = $"Jatekosok: {totalPlayers}";
+                clientTotalPlayersText.text = $"Players: {totalPlayers}";
             if (clientAiBotsText != null)
                 clientAiBotsText.text = $"AI: {aiBots}";
             if (clientMapSizeText != null)
-                clientMapSizeText.text = $"Palya meret: {gns.NetworkMapRadius.Value}";
+                clientMapSizeText.text = $"Map Size: {gns.NetworkMapRadius.Value}";
             if (clientTurnSpeedText != null)
-                clientTurnSpeedText.text = $"Korsebesseg: {gns.TurnSpeed.Value:F1}";
+                clientTurnSpeedText.text = $"Turn Speed: {gns.TurnSpeed.Value:F1}";
+            if (clientGoldPerCellText != null)
+                clientGoldPerCellText.text = $"Gold/Cell: {gns.GoldPerTurnPerCell.Value:F2}";
         }
 
         // --- SETTINGS UI -------------------------------------------------------------
+
         private void SetupGeneralUI(GameSettings settings)
         {
             BindElement(totalPlayersSlider, totalPlayersInput, settings.totalPlayers, 1, 6, true, (v) => { });
             BindElement(aiBotsSlider, aiBotsInput, settings.aiBots, 0, 6, true, (v) => { });
             BindElement(turnSpeedSlider, turnSpeedInput, settings.turnSpeedMultiplier, 0.5f, 250f, false, (v) => { });
             BindElement(mapSizeSlider, mapSizeInput, settings.mapRadius, 1, 25, true, (v) => { });
+            BindElement(goldPerTurnPerCellSlider, goldPerTurnPerCellInput, settings.goldPerTurnPerCell, 0f, 1f, false, (v) => { });
+
             if (fogOfWarToggle != null)
             {
                 fogOfWarToggle.isOn = settings.fogOfWarEnabled;
@@ -568,6 +616,157 @@ namespace GridEmpire.UI
             modeSelectorPanel.SetActive(panelToShow == modeSelectorPanel);
             hostSettingsPanel.SetActive(panelToShow == hostSettingsPanel);
             clientWaitingPanel.SetActive(panelToShow == clientWaitingPanel);
+        }
+
+        // --- IDENTITY REQUEST QUEUE (biztosítja hogy a nev/szin valasztas mindig celba er) ---
+
+        private bool IsIdentityReady()
+        {
+            return GlobalNetworkSettings.Instance != null
+                && GlobalNetworkSettings.Instance.IsSpawned
+                && NetworkManager.Singleton != null
+                && NetworkManager.Singleton.IsListening;
+        }
+
+        private void RequestNameChange(string name)
+        {
+            _pendingPlayerName = name;
+
+            if (IsIdentityReady())
+                GlobalNetworkSettings.Instance.RequestNameServerRpc(name);
+            else
+                EnsureIdentityFlushQueued();
+        }
+
+        private void RequestColorChange(int colorIndex)
+        {
+            _pendingColorIndex = colorIndex;
+
+            if (IsIdentityReady())
+            {
+                Debug.Log($"[MMC] Szin kuldese azonnal: {colorIndex}");
+                GlobalNetworkSettings.Instance.RequestColorServerRpc(colorIndex);
+            }
+            else
+            {
+                Debug.Log($"[MMC] Szin sorba allitva, halozat meg nem kesz: {colorIndex}");
+                EnsureIdentityFlushQueued();
+            }
+        }
+
+        private void EnsureIdentityFlushQueued()
+        {
+            if (_identityFlushQueued) return;
+            _identityFlushQueued = true;
+            StartCoroutine(FlushPendingIdentityWhenReady());
+        }
+
+        private IEnumerator FlushPendingIdentityWhenReady()
+        {
+            yield return new WaitUntil(IsIdentityReady);
+
+            if (_pendingPlayerName != null)
+                GlobalNetworkSettings.Instance.RequestNameServerRpc(_pendingPlayerName);
+            if (_pendingColorIndex != -1)
+                GlobalNetworkSettings.Instance.RequestColorServerRpc(_pendingColorIndex);
+
+            _identityFlushQueued = false;
+        }
+
+        // --- PLAYER IDENTITY (NAME + COLOR SWATCH) ------------------------------------
+
+        private void BuildColorSwatches(Transform container, List<Button> buttonList)
+        {
+            if (container == null || colorSwatchButtonPrefab == null) return;
+
+            for (int i = 0; i < PredefinedColors.Colors.Length; i++)
+            {
+                var btn = Instantiate(colorSwatchButtonPrefab, container);
+                var img = btn.GetComponent<Image>();
+                if (img != null) img.color = PredefinedColors.Colors[i];
+
+                int colorIndex = i;
+                btn.onClick.AddListener(() => RequestColorChange(colorIndex));
+                buttonList.Add(btn);
+            }
+        }
+
+        /// <summary>A PlayerLobbyInfos NetworkList barmilyen valtozasara lefut - mindkét panelt es a jatekos listakat frissiti.</summary>
+        private void HandleLobbyInfoChanged()
+        {
+            RefreshColorSwatchInteractivity(_hostColorSwatchButtons);
+            RefreshColorSwatchInteractivity(_clientColorSwatchButtons);
+            UpdateSelectedColorPreview();
+            UpdateHostPlayerList();
+            UpdateClientPlayerList();
+        }
+
+        private void RefreshColorSwatchInteractivity(List<Button> buttons)
+        {
+            var gns = GlobalNetworkSettings.Instance;
+            if (gns == null || NetworkManager.Singleton == null || !NetworkManager.Singleton.IsListening) return;
+
+            int myPlayerId = gns.GetPlayerIdForClient(NetworkManager.Singleton.LocalClientId);
+            int mySelected = -1;
+
+            foreach (var info in gns.PlayerLobbyInfos)
+            {
+                if (info.PlayerId == myPlayerId && info.ColorIndex >= 0)
+                {
+                    mySelected = info.ColorIndex;
+                    break;
+                }
+            }
+
+            for (int i = 0; i < buttons.Count; i++)
+            {
+                var outline = buttons[i].GetComponent<Outline>();
+                if (outline != null) outline.enabled = (i == mySelected);
+            }
+        }
+
+        private void UpdateSelectedColorPreview()
+        {
+            var gns = GlobalNetworkSettings.Instance;
+            if (gns == null || NetworkManager.Singleton == null || !NetworkManager.Singleton.IsListening) return;
+
+            int myPlayerId = gns.GetPlayerIdForClient(NetworkManager.Singleton.LocalClientId);
+            Color myColor = Color.gray;
+            bool found = false;
+
+            foreach (var info in gns.PlayerLobbyInfos)
+            {
+                if (info.PlayerId == myPlayerId && info.ColorIndex >= 0)
+                {
+                    myColor = PredefinedColors.Colors[info.ColorIndex];
+                    found = true;
+                    break;
+                }
+            }
+
+            if (hostSelectedColorPreview != null) hostSelectedColorPreview.color = myColor;
+            if (clientSelectedColorPreview != null) clientSelectedColorPreview.color = myColor;
+
+            if (found)
+            {
+                if (hostColorPickStatusText != null) hostColorPickStatusText.gameObject.SetActive(false);
+                if (clientColorPickStatusText != null) clientColorPickStatusText.gameObject.SetActive(false);
+            }
+        }
+
+        private void HandleColorRejected(int colorIndex)
+        {
+            const string msg = "Ezt a színt már elvitték – válassz másikat!";
+            if (hostColorPickStatusText != null)
+            {
+                hostColorPickStatusText.text = msg;
+                hostColorPickStatusText.gameObject.SetActive(true);
+            }
+            if (clientColorPickStatusText != null)
+            {
+                clientColorPickStatusText.text = msg;
+                clientColorPickStatusText.gameObject.SetActive(true);
+            }
         }
 
         // --- UNIT STATS UI -----------------------------------------------------------

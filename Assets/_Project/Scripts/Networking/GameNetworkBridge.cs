@@ -50,13 +50,38 @@ namespace GridEmpire.Networking
                 GlobalNetworkSettings.Instance.NetworkMapRadius.Value > 0);
 
             var settings = GlobalNetworkSettings.Instance;
+            int totalPlayers = settings.TotalPlayers.Value;
+            int aiBots = settings.TotalAIBots.Value;
+            int humanCount = totalPlayers - aiBots;
+
+            yield return new WaitUntil(() => settings.PlayerMappings.Count >= humanCount);
+
+            settings.AssignMissingRandomColors();
+
+            var names = new string[totalPlayers];
+            var colors = new Color[totalPlayers];
+
+            for (int playerId = 0; playerId < humanCount; playerId++)
+            {
+                ulong clientId = ulong.MaxValue;
+                foreach (var mapping in settings.PlayerMappings)
+                {
+                    if (mapping.PlayerId == playerId) { clientId = mapping.ClientId; break; }
+                }
+                names[playerId] = settings.GetPlayerName(playerId);
+                colors[playerId] = settings.GetPlayerColor(playerId);
+            }
+
             var config = new GameSessionConfig
             {
                 MapRadius = settings.NetworkMapRadius.Value,
-                TotalPlayers = settings.TotalPlayers.Value,
-                TotalAIBots = settings.TotalAIBots.Value,
+                TotalPlayers = totalPlayers,
+                TotalAIBots = aiBots,
                 TurnSpeedMultiplier = settings.TurnSpeed.Value,
-                FogOfWarEnabled = settings.FogOfWarEnabled.Value
+                FogOfWarEnabled = settings.FogOfWarEnabled.Value,
+                GoldPerTurnPerCell = settings.GoldPerTurnPerCell.Value,
+                PlayerNames = names,
+                PlayerColors = colors
             };
 
             GameController.Instance.SetSessionConfig(config);

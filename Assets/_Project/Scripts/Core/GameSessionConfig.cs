@@ -1,9 +1,7 @@
+using UnityEngine;
+
 namespace GridEmpire.Core
 {
-    /// <summary>
-    /// Sima, netcode-mentes adatatado. A Networking reteg tolti fel
-    /// (GlobalNetworkSettings alapjan), a Core csak ezt ismeri.
-    /// </summary>
     public class GameSessionConfig
     {
         public int MapRadius;
@@ -11,5 +9,8 @@ namespace GridEmpire.Core
         public int TotalAIBots;
         public float TurnSpeedMultiplier;
         public bool FogOfWarEnabled;
+        public float GoldPerTurnPerCell;
+        public string[] PlayerNames;
+        public Color[] PlayerColors;
     }
 }
