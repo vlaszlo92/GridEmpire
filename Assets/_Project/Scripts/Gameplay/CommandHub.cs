@@ -15,11 +15,8 @@ namespace GridEmpire.Gameplay
             else Destroy(gameObject);
         }
 
-        // Ezt hívja az UI és az Input
         public void SubmitCommand(GameCommand cmd)
         {
-            // EGYELÕRE: Azonnal végrehajtjuk lokálisan
-            // KÉSÕBB: Itt küldjük el a szervernek: NetworkSend(cmd);
             ExecuteLocally(cmd);
         }
 

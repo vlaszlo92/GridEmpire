@@ -9,7 +9,6 @@ namespace GridEmpire.Visuals
     {
         [Header("Settings")]
         [SerializeField] private GameObject selectionEffect;
-        // Ezzel a kapcsolóval a szerkesztõben (Inspector) is tudsz váltani
         public static bool IsDebugMode = GameController.IsDebugMode;
 
         [SerializeReference] private CellData _data;
@@ -18,7 +17,6 @@ namespace GridEmpire.Visuals
 
         private static readonly int ColorProperty = Shader.PropertyToID("_BaseColor");
 
-        // Statikus cache a teljesítményért
         private static Dictionary<int, Color> _playerColorCache;
         private static readonly Color NeutralColor = new Color(0.3f, 0.3f, 0.3f);
 
@@ -67,11 +65,9 @@ namespace GridEmpire.Visuals
 
             if (_data.OwnerId != -1)
             {
-                // Van owner – de nézzük meg csökken-e az influence
                 if (_playerColorCache.TryGetValue(_data.OwnerId, out Color ownerColor))
                 {
                     float progress = _data.GetCaptureProgress(_data.OwnerId);
-                    // Ha az influence csökken, halványítjuk a színt
                     baseColor = Color.Lerp(NeutralColor, ownerColor, progress);
                 }
             }
@@ -116,11 +112,9 @@ namespace GridEmpire.Visuals
             }
         }
 
-        // Segédfüggvény a Debug Mode váltásához kódból
         public static void SetDebugMode(bool enabled)
         {
             IsDebugMode = enabled;
-            // Frissíteni kell minden látható mezõt a váltáskor
             var allVisuals = Object.FindObjectsByType<CellVisual>(FindObjectsSortMode.None);
             foreach (var v in allVisuals) v.UpdateVisual();
         }

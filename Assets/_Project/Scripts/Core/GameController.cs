@@ -356,23 +356,30 @@ namespace GridEmpire.Core
 
         private void SyncLocalPlayersFromNetwork()
         {
-            var oldPlayers = _players.ToDictionary(p => p.Id);
-            _players.Clear();
+            var existingById = _players.ToDictionary(p => p.Id);
+            var newList = new List<PlayerProfile>();
 
             foreach (var data in _networkPlayers)
             {
-                bool isLocal = !data.IsAi && data.Id == _localPlayerId;
-                string displayName = data.IsAi ? $"AI {data.Id}" : $"Player {data.Id}";
-                var newProfile = new PlayerProfile(data.Id, displayName, data.Color, data.IsAi, isLocal, null);
-
-                if (oldPlayers.TryGetValue(data.Id, out var old) && old.BaseCell != null)
-                    newProfile.BaseCell = old.BaseCell;
-
-                _players.Add(newProfile);
+                if (existingById.TryGetValue(data.Id, out var existing))
+                {
+                    existing.SetLocal(!data.IsAi && data.Id == _localPlayerId);
+                    newList.Add(existing);
+                }
+                else
+                {
+                    bool isLocal = !data.IsAi && data.Id == _localPlayerId;
+                    string displayName = data.IsAi ? $"AI {data.Id}" : $"Player {data.Id}";
+                    newList.Add(new PlayerProfile(data.Id, displayName, data.Color, data.IsAi, isLocal, null));
+                }
             }
+
+            _players.Clear();
+            _players.AddRange(newList);
 
             Debug.Log($"[GameController] SyncLocalPlayers: {_players.Count} játékos, localId={_localPlayerId}");
         }
+
 
         // ─── GAZDASÁG ────────────────────────────────────────────────────────────────
         private void ProcessEconomy()

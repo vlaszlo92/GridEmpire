@@ -222,12 +222,13 @@ namespace GridEmpire.Gameplay
             int newId = GameController.Instance.GetNextAvailableId();
             GameObject go = Instantiate(item.Data.unitPrefab, spawnPos, initialRot);
             UnitController controller = go.GetComponent<UnitController>();
-            if (!go.TryGetComponent<NetworkObject>(out var netObj)) { Debug.LogError("[UnitSpawner] NetworkObject hiányzik!"); return; }
-            netObj.Spawn();
+            if (!go.TryGetComponent<NetworkObject>(out var netObj)) { Debug.LogError("[UnitSpawner] NetworkObject hiányzik!"); return; }            
 
             controller.NetworkUnitId.Value = newId;
             controller.NetworkOwnerId.Value = _ownerId;
             controller.NetworkUnitTypeIndex.Value = item.Data.index;
+            netObj.Spawn();
+
             var path = item.TargetCell != null ? gridManager.FindPath(spawnCell, item.TargetCell) : null;
             controller.Initialize(newId, item.Data, path, gridManager, _ownerId);
         }

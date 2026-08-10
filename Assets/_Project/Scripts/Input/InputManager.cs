@@ -64,7 +64,6 @@ namespace GridEmpire.Input
 
         private void OnSelectStarted(InputAction.CallbackContext context)
         {
-            // IsPointerOverGameObject itt nem megbízható – az OnSelectCanceled-ben ellenõrzünk
             _startClickPosition = _controls.Player.PointerPosition.ReadValue<Vector2>();
             _isPotentialClick = true;
         }
@@ -93,18 +92,18 @@ namespace GridEmpire.Input
                 return;
             }
 
-            // Drag detektálás
+            // Drag detection
             if (_isPotentialClick && Vector2.Distance(_startClickPosition, _controls.Player.PointerPosition.ReadValue<Vector2>()) > _dragThreshold)
                 _isPotentialClick = false;
 
-            // Kattintás feldolgozása Update-bõl – itt már megbízható az IsPointerOverGameObject
+            // Click processing in Update – here the IsPointerOverGameObject is reliable
             if (_clickPending)
             {
                 _clickPending = false;
 
                 if (UnityEngine.EventSystems.EventSystem.current != null &&
                     UnityEngine.EventSystems.EventSystem.current.IsPointerOverGameObject())
-                    return; // UI felett volt – ne csináljunk semmit
+                    return;
 
                 ExecuteSelection(_controls.Player.PointerPosition.ReadValue<Vector2>());
             }
@@ -131,7 +130,6 @@ namespace GridEmpire.Input
 
             if (!Physics.Raycast(ray, out RaycastHit hit))
             {
-                // Sem UI, sem grid – ne csinálj semmit (törölt: RequestClearWithDelay)
                 return;
             }
 
@@ -166,7 +164,7 @@ namespace GridEmpire.Input
 
             // --- FIELD SELECTION MODE ---
                         
-            // A: Új mezõ kijelölése
+            // A: Select New Cell
             if (!ReferenceEquals(_lastSelectedPresenter, visual))
             {
                 ClearAllSelection();
@@ -176,7 +174,7 @@ namespace GridEmpire.Input
                 return;
             }
 
-            // B: Más mezõre kattintás -> törlés
+            // B: Click on different cell -> clear selection
             if (unit != null && unit.OwnerId == localPlayer.Id)
             {
                 HideCellSelection();

@@ -7,6 +7,7 @@ using Unity.Services.Core;
 using Unity.Services.Multiplayer;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using System.Threading.Tasks;
 
 namespace GridEmpire.Networking
 {
@@ -40,6 +41,9 @@ namespace GridEmpire.Networking
         private bool _isConnecting;
         private bool _gameStarting;
         private bool _disconnectCallbackSubscribed;
+
+        private bool _sessionOperationInProgress;
+        public bool IsSessionOperationInProgress => _sessionOperationInProgress;
 
         private void Awake()
         {
@@ -96,19 +100,17 @@ namespace GridEmpire.Networking
 
         // ─── HOST SESSION ───────────────────────────────────────────────────
 
-        public async void CreateHostSession(int maxPlayers)
+        public async Task CreateHostSession(int maxPlayers)
         {
-            if (!ServicesReady || _isCreatingSession) return;
-            _isCreatingSession = true;
-
-            if (IsHostSessionActive)
-                await LeaveCurrentSession();
-
-            if (IsListening)
-                NetworkManager.Singleton.Shutdown();
-
+            if (!ServicesReady || _sessionOperationInProgress) return;
+            _sessionOperationInProgress = true;
             try
             {
+                if (IsHostSessionActive)
+                    await LeaveCurrentSession();
+
+                await ShutdownNetworkManagerIfNeeded();
+
                 var options = new SessionOptions { MaxPlayers = maxPlayers }.WithRelayNetwork();
                 _currentSession = await MultiplayerService.Instance.CreateSessionAsync(options);
                 IsHostSessionActive = true;
@@ -116,7 +118,6 @@ namespace GridEmpire.Networking
                 _currentSession.PlayerJoined += _ => OnSessionPlayersChanged?.Invoke();
                 _currentSession.PlayerLeaving += _ => OnSessionPlayersChanged?.Invoke();
 
-                Debug.Log($"[NetworkLobbyController] Session kész. Kód: {_currentSession.Code}");
                 OnHostSessionReady?.Invoke(_currentSession.Code);
             }
             catch (Exception e)
@@ -126,7 +127,7 @@ namespace GridEmpire.Networking
             }
             finally
             {
-                _isCreatingSession = false;
+                _sessionOperationInProgress = false;
             }
         }
 
@@ -155,14 +156,13 @@ namespace GridEmpire.Networking
             if (NetworkManager.Singleton != null)
                 NetworkManager.Singleton.ConnectionApprovalCallback = ApproveConnection;
 
+            if (NetworkManager.Singleton != null && !NetworkManager.Singleton.IsListening)
+                NetworkManager.Singleton.StartHost();
+
             if (GlobalNetworkSettings.Instance != null)
                 GlobalNetworkSettings.Instance.InitializeFromSettings(settings);
             else
                 Debug.LogError("[NetworkLobbyController] GlobalNetworkSettings nem található a jelenetben!");
-
-            if (NetworkManager.Singleton != null && !NetworkManager.Singleton.IsListening)
-                NetworkManager.Singleton.StartHost();
-
 
             NetworkDebugDump.DumpServerState(settings, sceneName, expectedHumans);
             GlobalNetworkSettings.Instance?.TriggerDebugDumpClientRpc();
@@ -188,20 +188,27 @@ namespace GridEmpire.Networking
             NetworkManager.Singleton.SceneManager.LoadScene(sceneName, LoadSceneMode.Single);
         }
 
-        public async void LeaveHostSession()
+        public async Task LeaveHostSession()
         {
-            await LeaveCurrentSession();
-            if (IsListening)
-                NetworkManager.Singleton.Shutdown();
+            if (_sessionOperationInProgress) return;
+            _sessionOperationInProgress = true;
+            try
+            {
+                await LeaveCurrentSession();
+                await ShutdownNetworkManagerIfNeeded();
+            }
+            finally
+            {
+                _sessionOperationInProgress = false;
+            }
         }
 
         // ─── CLIENT ─────────────────────────────────────────────────────────
 
-        public async void JoinSession(string joinCode)
+        public async Task JoinSession(string joinCode)
         {
-            if (!ServicesReady || _isConnecting) return;
-            _isConnecting = true;
-
+            if (!ServicesReady || _sessionOperationInProgress) return;
+            _sessionOperationInProgress = true;
             try
             {
                 try
@@ -210,15 +217,12 @@ namespace GridEmpire.Networking
                 }
                 catch (Exception joinEx) when (joinEx.Message.Contains("already a member"))
                 {
-                    var joinedIds = await MultiplayerService.Instance.GetJoinedSessionIdsAsync();
-                    if (joinedIds.Count == 0) throw;
-                    _currentSession = await MultiplayerService.Instance.ReconnectToSessionAsync(joinedIds[0]);
+                    Debug.LogWarning($"[NetworkLobbyController] Már tagja egy session-nek. joinCode={joinCode}");
+                    throw;
                 }
 
-                Debug.Log("[NetworkLobbyController] Session OK.");
-
-                if (!NetworkManager.Singleton.IsListening)
-                    NetworkManager.Singleton.StartClient();
+                await ShutdownNetworkManagerIfNeeded();
+                NetworkManager.Singleton.StartClient();
 
                 OnClientConnectResult?.Invoke("Csatlakozva! Várakozás a hostra...", true);
             }
@@ -229,16 +233,25 @@ namespace GridEmpire.Networking
             }
             finally
             {
-                _isConnecting = false;
+                _sessionOperationInProgress = false;
             }
         }
 
-        public async void LeaveClientSession()
+        public async Task LeaveClientSession()
         {
-            await LeaveCurrentSession();
-            if (IsListening)
-                NetworkManager.Singleton.Shutdown();
+            if (_sessionOperationInProgress) return;
+            _sessionOperationInProgress = true;
+            try
+            {
+                await LeaveCurrentSession();
+                await ShutdownNetworkManagerIfNeeded();
+            }
+            finally
+            {
+                _sessionOperationInProgress = false;
+            }
         }
+
 
         // ─── COMMON ─────────────────────────────────────────────────────────
 
@@ -251,6 +264,14 @@ namespace GridEmpire.Networking
                 _currentSession = null;
             }
             IsHostSessionActive = false;
+        }
+
+        private async Task ShutdownNetworkManagerIfNeeded()
+        {
+            if (!IsListening) return;
+            NetworkManager.Singleton.Shutdown();
+            while (NetworkManager.Singleton.ShutdownInProgress)
+                await Task.Yield();
         }
     }
 }

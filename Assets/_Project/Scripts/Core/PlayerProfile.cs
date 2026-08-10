@@ -6,7 +6,6 @@ namespace GridEmpire.Core
     [System.Serializable]
     public class PlayerProfile
     {
-        // Serialized backing fields (Inspector számára)
         [SerializeField] private int id;
         [SerializeField] private string name;
         [SerializeField] private Color color; 
@@ -52,7 +51,6 @@ namespace GridEmpire.Core
             this.selectedCell = selectedCell;
         }
 
-        // API: runtime kezelés (megtartva a te logikádat)
         public void AddUnit(IUnit unit)
         {
             if (unit == null || !_activeUnits.Add(unit)) return;

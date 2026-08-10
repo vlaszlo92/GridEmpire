@@ -109,16 +109,25 @@ namespace GridEmpire.UI
 
             SubscribeToNetworkEvents();
 
-            goToHostBtn.onClick.AddListener(() =>
+            goToHostBtn.onClick.AddListener(async () =>
             {
+                if (NetworkLobbyController.Instance == null || NetworkLobbyController.Instance.IsSessionOperationInProgress) return;
+                SetAllNavButtonsInteractable(false);
+
                 ShowPanel(hostSettingsPanel);
                 SetHostLoading(true);
                 if (startHostFinalBtn != null) startHostFinalBtn.interactable = false;
                 if (hostCodeDisplay != null) hostCodeDisplay.text = "...";
-                NetworkLobbyController.Instance?.CreateHostSession((int)totalPlayersSlider.maxValue);
+                await NetworkLobbyController.Instance.CreateHostSession((int)totalPlayersSlider.maxValue);
+
+                SetAllNavButtonsInteractable(true);
             });
 
-            goToClientBtn.onClick.AddListener(() => ShowPanel(clientWaitingPanel));
+            goToClientBtn.onClick.AddListener(() =>
+            {
+                if (NetworkLobbyController.Instance != null && NetworkLobbyController.Instance.IsSessionOperationInProgress) return;
+                ShowPanel(clientWaitingPanel);
+            });
 
             startHostFinalBtn.onClick.AddListener(StartHostGame);
 
@@ -288,7 +297,7 @@ namespace GridEmpire.UI
             int totalPlayers = (int)totalPlayersSlider.value;
             int aiBots = (int)aiBotsSlider.value;
             int humanPlayers = totalPlayers - aiBots;
-            int connected = controller != null ? controller.SessionPlayersCount : 0;
+            int connected = controller != null ? controller.ConnectedClientsCount : 0;
 
             RebuildPlayerList(
                 hostPlayerListContainer,
@@ -390,9 +399,12 @@ namespace GridEmpire.UI
 
         // ─── BACK TO LOBBY ────────────────────────────────────────────────────────────
 
-        private void OnHostBackToLobby()
+        private async void OnHostBackToLobby()
         {
-            NetworkLobbyController.Instance?.LeaveHostSession();
+            if (NetworkLobbyController.Instance == null || NetworkLobbyController.Instance.IsSessionOperationInProgress) return;
+            SetAllNavButtonsInteractable(false);
+
+            await NetworkLobbyController.Instance.LeaveHostSession();
 
             if (startHostFinalBtn != null) startHostFinalBtn.interactable = false;
             if (hostCodeDisplay != null) hostCodeDisplay.text = "";
@@ -400,15 +412,20 @@ namespace GridEmpire.UI
 
             ClearPlayerList(_hostPlayerListItems);
             ShowPanel(modeSelectorPanel);
+            SetAllNavButtonsInteractable(true);
         }
 
-        private void OnClientBackToLobby()
+        private async void OnClientBackToLobby()
         {
-            NetworkLobbyController.Instance?.LeaveClientSession();
+            if (NetworkLobbyController.Instance == null || NetworkLobbyController.Instance.IsSessionOperationInProgress) return;
+            SetAllNavButtonsInteractable(false);
+
+            await NetworkLobbyController.Instance.LeaveClientSession();
 
             SetClientStatus("", Color.white);
             ClearPlayerList(_clientPlayerListItems);
             ShowPanel(modeSelectorPanel);
+            SetAllNavButtonsInteractable(true);
         }
 
         private void ClearPlayerList(List<TextMeshProUGUI> items)
@@ -451,8 +468,9 @@ namespace GridEmpire.UI
 
         // ─── CLIENT ───────────────────────────────────────────────────────────────────
 
-        private void StartClientConnect()
+        private async void StartClientConnect()
         {
+            if (NetworkLobbyController.Instance == null || NetworkLobbyController.Instance.IsSessionOperationInProgress) return;
             if (clientCodeInput == null || string.IsNullOrEmpty(clientCodeInput.text))
             {
                 SetClientStatus("Add meg a csatlakozási kódot!", Color.red);
@@ -461,9 +479,13 @@ namespace GridEmpire.UI
 
             string joinCode = clientCodeInput.text.Trim().ToUpper();
             SetClientStatus("Csatlakozás...", Color.yellow);
-            if (startClientConnectBtn != null) startClientConnectBtn.interactable = false;
+            SetAllNavButtonsInteractable(false);
 
-            NetworkLobbyController.Instance?.JoinSession(joinCode);
+            await NetworkLobbyController.Instance.JoinSession(joinCode);
+
+            SetAllNavButtonsInteractable(true);
+            if (startClientConnectBtn != null)
+                startClientConnectBtn.interactable = !NetworkLobbyController.Instance.IsClient;
         }
 
         private void SetClientStatus(string msg, Color color)
@@ -489,7 +511,8 @@ namespace GridEmpire.UI
                     controller.UpdateHostConnectedPlayerCount();
                     UpdateStartButtonState();
                     UpdateAiBotSliderMax();
-                    UpdateTotalPlayersSliderMin();
+                    UpdateTotalPlayersSliderMin(); 
+                    UpdateHostPlayerList();
                 }
 
                 if (controller.IsClient && !controller.IsHost && GlobalNetworkSettings.Instance != null)
@@ -626,6 +649,15 @@ namespace GridEmpire.UI
                     onUpdate(res);
                 }
             });
+        }
+
+        private void SetAllNavButtonsInteractable(bool value)
+        {
+            if (goToHostBtn != null) goToHostBtn.interactable = value;
+            if (goToClientBtn != null) goToClientBtn.interactable = value;
+            if (backToLobbyHostBtn != null) backToLobbyHostBtn.interactable = value;
+            if (backToLobbyClientBtn != null) backToLobbyClientBtn.interactable = value;
+            if (startClientConnectBtn != null) startClientConnectBtn.interactable = value;
         }
     }
 }

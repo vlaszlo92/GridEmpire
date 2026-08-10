@@ -473,6 +473,8 @@ namespace GridEmpire.Gameplay
             StartCoroutine(MoveToCell(next));
             _facingTargetId = -1;
             _unitAnimator?.Play(ActionType.Move);
+
+            Debug.Log($"[UnitController] MoveClientRpc complete - Unit ID: {Id}, CurrentCell ID: {_currentCell?.Id}, Frame: {Time.frameCount}");
         }
 
         // ─── CAPTURE ─────────────────────────────────────────────────────────────────
@@ -532,6 +534,7 @@ namespace GridEmpire.Gameplay
 
             cell.OnVisualUpdateRequired?.Invoke();
             _unitAnimator?.Play(ActionType.Capture);
+            Debug.Log($"[UnitController] CaptureClientRpc complete - Unit ID: {Id}, CurrentCell ID: {_currentCell?.Id}, Frame: {Time.frameCount}");
         }
 
         // ─── DEATH ───────────────────────────────────────────────────────────────────

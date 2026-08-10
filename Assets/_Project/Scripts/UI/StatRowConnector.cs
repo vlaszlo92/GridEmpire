@@ -7,11 +7,11 @@ namespace GridEmpire.UI
 {
     public class StatRowConnector : MonoBehaviour
     {
-        [Header("UI Referenciák")]
+        [Header("UI References")]
         public TextMeshProUGUI labelText;
         public TMP_InputField inputField;
 
-        [Header("Flash Beállítások")]
+        [Header("Flash Settings")]
         [SerializeField] private Image flashTargetImage;
         [SerializeField] private Color flashColor = Color.red;
         [SerializeField] private float flashDuration = 1f;

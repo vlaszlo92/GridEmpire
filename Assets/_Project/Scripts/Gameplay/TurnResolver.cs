@@ -38,7 +38,7 @@ namespace GridEmpire.Gameplay
             _gridManager = Object.FindFirstObjectByType<GridManager>();
         }
 
-        // --- Regisztrációs API ---
+        // --- Registration API ---
 
         public void RegisterUnit(IUnit unit)
         {
@@ -65,7 +65,7 @@ namespace GridEmpire.Gameplay
             _registeredSpawners.Remove(spawner);
         }
 
-        // --- ITurnResolver implementáció ---
+        // --- ITurnResolver implementation ---
 
         public void PrepareForNextTurn()
         {
@@ -133,16 +133,16 @@ namespace GridEmpire.Gameplay
 
         public void ApplyResults()
         {
-            // 1. Sebzések érvényesítése
+            // 1. Damage application
             foreach (var u in _processingUnits)
             {
                 if (u != null) u.ApplyPendingDamage();
             }
 
-            // 2. Mozgások és foglalások
+            // 2. Movement and Capture
             ResolveMovementAndCapture();
 
-            // 3. Halottak kezelése
+            // 3. Dead units handling
             foreach (var u in _processingUnits)
             {
                 if (u != null && u._isDead) u.ExecuteDeath();
@@ -160,13 +160,13 @@ namespace GridEmpire.Gameplay
                 }
             }
 
-            // 4. Fog of War frissítése – cacheit GridManager
+            // 4. Fog of War refresh – cacheit GridManager
             var localPlayer = GameController.Instance.GetLocalPlayer();
             if (localPlayer != null)
                 _gridManager?.UpdateFogOfWar(localPlayer.Id);
         }
 
-        // --- Feldolgozó lépések ---
+        // --- Processing Steps ---
 
         private void ProcessCombatStep()
         {

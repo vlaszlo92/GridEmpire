@@ -5,15 +5,15 @@ using System.Collections.Generic;
 namespace GridEmpire.Shared
 {
     /*  
-        Adatcsoport,    Tartalom
-        Header,         TurnNumber (pl. 42)
+        Data Package,    Content
+        Header,         TurnNumber (e.g., 42)
         Unit Actions,   "List: [UnitId, ActionType, TargetCellID, TargetUnitId, RemainingHP, IsDead]"
         New Units,      "List: [NewUnitId, PlayerId, UnitTypeId, CellID]"
         Economy,        "List: [PlayerId, CurrentGold]"
         Map Updates,    "List: [CellID, NewOwnerId]"
     */
 
-    // Ez a fõ csomag, amit a szerver broadcastol
+    // This is the main package that the server broadcasts
     [Serializable]
     public class TurnSnapshot
     {

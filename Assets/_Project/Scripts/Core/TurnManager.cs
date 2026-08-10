@@ -57,13 +57,13 @@ namespace GridEmpire.Core
 
         public void RegisterResolver(ITurnResolver resolver) => _resolver = resolver;
 
-        /// <summary>A Networking réteg hívja (ReadySystem.OnGameStart-ból), amikor mindenki ready.</summary>
+        /// <summary>It is called by the Networking layer (from ReadySystem.OnGameStart), when everyone is ready.</summary>
         public void StartGame()
         {
             _gameStarted = true;
             _cachedAiCount = Mathf.Max(1,
                 GameController.Instance?.Players.Count(p => p.IsAI) ?? 1);
-            Debug.Log("[TurnManager] Játék elindult.");
+            Debug.Log("[TurnManager] Game started.");
         }
 
         private void Update()
@@ -150,7 +150,11 @@ namespace GridEmpire.Core
             if (_gridManager == null)
             {
                 _gridManager = FindFirstObjectByType<GridManager>();
-                return;
+                if (_gridManager == null)
+                {
+                    StartCoroutine(RetryApplySnapshot(snapshot));
+                    return;
+                }
             }
 
             foreach (var unitSync in snapshot.UnitActions)
@@ -172,11 +176,26 @@ namespace GridEmpire.Core
             StartCoroutine(DelayedFogUpdate(_gridManager));
         }
 
+        private IEnumerator RetryApplySnapshot(TurnSnapshot snapshot)
+        {
+            yield return null;
+            ApplySnapshot(snapshot);
+        }
+
         private IEnumerator DelayedFogUpdate(GridManager gridManager)
         {
             yield return null;
             var localPlayer = GameController.Instance.GetLocalPlayer();
-            if (localPlayer != null) gridManager.UpdateFogOfWar(localPlayer.Id);
+            if (localPlayer != null)
+            {
+                string unitCellIds = localPlayer.ActiveUnits != null
+                    ? string.Join(", ", localPlayer.ActiveUnits.Select(u => u?.CurrentCell?.Id))
+                    : string.Empty;
+
+                Debug.Log($"[TurnManager] Updating fog of war for local player {localPlayer.Id}, Unit Cell IDs: [{unitCellIds}]");
+
+                gridManager.UpdateFogOfWar(localPlayer.Id);
+            }
         }
 
         public void SetPaused(bool paused) => _isPaused = paused;

@@ -85,29 +85,24 @@ namespace GridEmpire.Core
 
             if (OwnerId != -1)
             {
-                // Ellenséges terület hódítása (Conquer)
                 ModifyInfluence(OwnerId, -amount);
                 if (GetCaptureProgress(OwnerId) <= 0)
                 {
                     int oldOwner = OwnerId;
                     OwnerId = -1;
-                    // ESEMÉNY: Valaki elveszítette, mostantól senkié (-1)
                     OnCellOwnerChanged?.Invoke(oldOwner, -1);
                 }
             }
             else
             {
-                // Semleges terület felfedezése (Explore)
                 ModifyInfluence(playerId, amount);
                 if (GetCaptureProgress(playerId) >= 1.0f)
                 {
                     OwnerId = playerId;
                     SetInfluence(playerId);
-                    // ESEMÉNY: A semleges területnek lett új gazdája
                     OnCellOwnerChanged?.Invoke(-1, playerId);
                 }
             }
-            //Debug.Log($"[CellData] INVOKE !!! Cell:{Id} Player:{playerId} Capture updated. Owner:{OwnerId} Progress:{GetCaptureProgress(OwnerId):F2}");
             OnVisualUpdateRequired?.Invoke();
         }
 
@@ -125,7 +120,6 @@ namespace GridEmpire.Core
                 InfluenceDisplay.Add(entry);
             }
             entry.Influence = _playerInfluences[playerId];
-            //Debug.Log($"[CellData] Cell:{Id} Player:{playerId} Influence updated to {entry.Influence:F2}");
         }            
 
         public void SetInfluence(int playerId, float value = 1.0f)
