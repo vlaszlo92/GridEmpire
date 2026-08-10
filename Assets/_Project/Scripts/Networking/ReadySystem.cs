@@ -28,7 +28,7 @@ namespace GridEmpire.Networking
             if (_readyClients.Contains(clientId)) return;
 
             _readyClients.Add(clientId);
-            Debug.Log($"[ReadySystem] Kliens ready: {clientId}, összesen: {_readyClients.Count}");
+            Debug.Log($"[ReadySystem] Kliens ready: {clientId}, osszesen: {_readyClients.Count}");
 
             int expectedHumans = GlobalNetworkSettings.Instance.TotalPlayers.Value
                                - GlobalNetworkSettings.Instance.TotalAIBots.Value;
@@ -37,7 +37,7 @@ namespace GridEmpire.Networking
 
             if (_readyClients.Count >= expectedHumans)
             {
-                Debug.Log("[ReadySystem] Mindenki ready, játék indul 3mp múlva.");
+                Debug.Log("[ReadySystem] Mindenki ready, jatek indul 3mp mulva.");
                 StartCoroutine(DelayedGameStart());
             }
         }
@@ -57,7 +57,7 @@ namespace GridEmpire.Networking
         [ClientRpc]
         private void StartGameClientRpc()
         {
-            Debug.Log("[ReadySystem] Game Start jel megérkezett!");
+            Debug.Log("[ReadySystem] Game Start jel megerkezett!");
             OnGameStart?.Invoke();
         }
     }

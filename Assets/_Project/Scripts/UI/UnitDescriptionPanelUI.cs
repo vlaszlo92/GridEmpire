@@ -20,7 +20,7 @@ namespace GridEmpire.UI
 
         public void RefreshPanel(UnitData baseData, Dictionary<StatType, StatUpgradeState> unitUpgrades, int currentPlayerGold)
         {
-            // 1. Statikus adatok kiírása, amik nem szintezhetők
+            // 1. Statikus adatok kiirasa, amik nem szintezhetok
             if (unitNameText != null) unitNameText.text = baseData.unitName;
 
             if (staticStatsText != null)
@@ -29,10 +29,10 @@ namespace GridEmpire.UI
                                       $"Upkeep: {baseData.costPerTurn} Gold/turn | Counter: {baseData.strongAgainst}";
             }
 
-            // 2. Szintezhető statok összegyűjtése egy listába
+            // 2. Szintezheto statok osszegyujtese egy listaba
             var statList = GetStatDisplayData(baseData, unitUpgrades);
 
-            // 3. UI sorok újrahasznosítása / generálása
+            // 3. UI sorok ujrahasznositasa / generalasa
             EnsureRowPoolSize(statList.Count);
 
             for (int i = 0; i < statList.Count; i++)
@@ -50,7 +50,7 @@ namespace GridEmpire.UI
                     (type) => OnUpgradeButtonClicked(baseData.index, type)
                 );
 
-                // Gomb letiltása, ha nincs elég aranya a játékosnak
+                // Gomb letiltasa, ha nincs eleg aranya a jatekosnak
                 rowUI.SetButtonInteractable(currentPlayerGold >= item.state.GetCurrentCost());
             }
         }
@@ -71,11 +71,11 @@ namespace GridEmpire.UI
 
         private void OnUpgradeButtonClicked(int unitIndex, StatType statType)
         {
-            // Továbbítjuk a kérést a GameManager-nek, ami levonja az aranyat és emeli a szintet
+            // Tovabbitjuk a kerest a GameManager-nek, ami levonja az aranyat es emeli a szintet
             // GameManager.Instance.UpgradeUnitStat(unitIndex, statType);
         }
 
-        // Segédstruktúra a megjelenítés megkönnyítésére
+        // Segedstruktura a megjelenites megkonnyitesere
         private struct StatDisplayItem
         {
             public string displayName;

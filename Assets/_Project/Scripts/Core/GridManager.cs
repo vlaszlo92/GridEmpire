@@ -10,7 +10,7 @@ namespace GridEmpire.Core
         public static GridManager Instance { get; private set; }
         public bool IsReady { get; private set; } = false;
 
-        /// <summary>A Networking réteg állítja be, mielőtt GenerateGrid-et hív.</summary>
+        /// <summary>A Networking reteg allitja be, mielott GenerateGrid-et hiv.</summary>
         public bool FogOfWarEnabled { get; set; } = true;
 
         public static event System.Action OnVisibilityUpdated;
@@ -43,10 +43,10 @@ namespace GridEmpire.Core
 
         public override void OnNetworkSpawn()
         {
-            // Szerveren a grid már kész (GameController.ServerInitChain hívta GenerateGrid-et
-            // a Spawn() előtt, ami IsReady=true-t is beállított).
-            // Klienseken a Networking réteg (GameNetworkBridge) hívja meg a GenerateGrid-et,
-            // amint megkapta a szükséges beállításokat.
+            // Szerveren a grid mar kesz (GameController.ServerInitChain hivta GenerateGrid-et
+            // a Spawn() elott, ami IsReady=true-t is beallitott).
+            // Klienseken a Networking reteg (GameNetworkBridge) hivja meg a GenerateGrid-et,
+            // amint megkapta a szukseges beallitasokat.
             Debug.Log($"[GridManager] OnNetworkSpawn. IsServer={IsServer}, IsReady={IsReady}");
         }
 
@@ -55,7 +55,7 @@ namespace GridEmpire.Core
             this.radius = radius;
             GenerateHexGrid();
             IsReady = true;
-            Debug.Log($"[GridManager] Grid generálva: radius={radius}, cellák={_presenterMap.Count}");
+            Debug.Log($"[GridManager] Grid generalva: radius={radius}, cellak={_presenterMap.Count}");
         }
 
         private void GenerateHexGrid()
@@ -92,13 +92,13 @@ namespace GridEmpire.Core
             }
         }
 
-        /// <summary>GameController.AssignBaseCells hívja – vizuál frissítése egy cellán.</summary>
+        /// <summary>GameController.AssignBaseCells hivja – vizual frissitese egy cellan.</summary>
         public void RefreshCell(CellData cell)
         {
             if (_presenterMap.TryGetValue(cell, out var presenter))
                 presenter.UpdateVisual();
             else
-                Debug.LogWarning($"[GridManager] RefreshCell: presenter nem található, cell={cell.Id}");
+                Debug.LogWarning($"[GridManager] RefreshCell: presenter nem talalhato, cell={cell.Id}");
         }
 
         public void UpdateFogOfWar(int forPlayerId)
@@ -111,11 +111,11 @@ namespace GridEmpire.Core
                     cell.CurrentVisibility = VisibilityState.Visible;
                     presenter.UpdateVisual();
                 }
-                GameController.Instance.UpdateUnitVisibility(null, forPlayerId); // null = mindenki látszik
+                GameController.Instance.UpdateUnitVisibility(null, forPlayerId); // null = mindenki latszik
                 return;
             }
 
-            // 1. Látható cellák összegyűjtése
+            // 1. Lathato cellak osszegyujtese
             var visibleCells = new HashSet<CellData>();
             var player = GameController.Instance.GetPlayerById(forPlayerId);
 
@@ -135,7 +135,7 @@ namespace GridEmpire.Core
                 }
             }
 
-            // 2. Cellák láthatósága + presenter frissítés – egy loopban
+            // 2. Cellak lathatosaga + presenter frissites – egy loopban
             foreach (var (cell, presenter) in _presenterMap)
             {
                 cell.CurrentVisibility = visibleCells.Contains(cell)
@@ -145,7 +145,7 @@ namespace GridEmpire.Core
                 presenter.UpdateVisual();
             }
 
-            // 3. Unit-ok láthatósága
+            // 3. Unit-ok lathatosaga
             GameController.Instance.UpdateUnitVisibility(visibleCells, forPlayerId);
 
             OnVisibilityUpdated?.Invoke();

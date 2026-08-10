@@ -215,7 +215,7 @@ namespace GridEmpire.Gameplay
             {
                 if (_currentTargetCell.OwnerId != _ownerId)
                 {
-                    // Foglalható: akkor is ha már mások is foglalják (capture conflict)
+                    // Foglalhato: akkor is ha mar masok is foglaljak (capture conflict)
                     _nextAction.Type = ActionType.Capture;
                     _nextAction.TargetCellId = _currentTargetCell.Id;
                     _previousCell = _currentCell;
@@ -291,7 +291,7 @@ namespace GridEmpire.Gameplay
                 if (_gridManager.GetDistance(n, player.BaseCell) > currentDist)
                 {
                     preferredCount++;
-                    // Reservoir sampling: véletlenszerű választás allokáció nélkül
+                    // Reservoir sampling: veletlenszeru valasztas allokacio nelkul
                     if (Random.Range(0, preferredCount) == 0) preferred = n;
                 }
                 else if (!n.IsBase)
@@ -342,8 +342,8 @@ namespace GridEmpire.Gameplay
             }
         }
 
-        // Capture konfliktus: ha ugyanazt a cellát foglalja ellenséges egység is, sebzik egymást.
-        // Csak a magasabb ID-jú egység számol, hogy minden pár pontosan egyszer legyen feldolgozva.
+        // Capture konfliktus: ha ugyanazt a cellat foglalja ellenseges egyseg is, sebzik egymast.
+        // Csak a magasabb ID-ju egyseg szamol, hogy minden par pontosan egyszer legyen feldolgozva.
         public void CalculateCaptureConflict()
         {
             if (_isDead || _nextAction == null || _nextAction.Type != ActionType.Capture) return;
@@ -413,7 +413,7 @@ namespace GridEmpire.Gameplay
             if (isDead && !_isDead)
             {
                 _isDead = true;
-                // TODO: halál animáció
+                // TODO: halal animacio
             }
         }
 
@@ -543,7 +543,7 @@ namespace GridEmpire.Gameplay
         {
             _isDead = true;
 
-            // Ha foglalt egy cellát, töröljük a hódítók listájából
+            // Ha foglalt egy cellat, toroljuk a hoditok listajabol
             _currentTargetCell?.CapturingUnitIds.Remove(_id);
 
             _resolver?.UnregisterUnit(this);
@@ -698,7 +698,7 @@ namespace GridEmpire.Gameplay
 
         public override void OnDestroy()
         {
-            // Biztonsági takarítás halálkor vagy jelenetváltáskor
+            // Biztonsagi takaritas halalkor vagy jelenetvaltaskor
             _currentTargetCell?.CapturingUnitIds.Remove(_id);
 
             _resolver?.UnregisterUnit(this);

@@ -51,7 +51,7 @@ namespace GridEmpire.Networking
             TurnSpeed.Value = settings.turnSpeedMultiplier;
             FogOfWarEnabled.Value = settings.fogOfWarEnabled;
 
-            Debug.Log($"[GlobalNetworkSettings] Beállítások frissítve a Szerveren: MapRadius={NetworkMapRadius.Value}, TotalPlayers={TotalPlayers.Value}, AIBots={TotalAIBots.Value}");
+            Debug.Log($"[GlobalNetworkSettings] Beallitasok frissitve a Szerveren: MapRadius={NetworkMapRadius.Value}, TotalPlayers={TotalPlayers.Value}, AIBots={TotalAIBots.Value}");
 
             RequestReRegisterClientRpc();
         }

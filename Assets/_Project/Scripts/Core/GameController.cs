@@ -14,8 +14,8 @@ namespace GridEmpire.Core
         public static GameController Instance { get; private set; }
         public static event System.Action OnLocalPlayerReady;
 
-        /// <summary>Akkor tüzel, amikor a szerver vagy a kliens saját init lánca lezárult.
-        /// A Networking réteg ebből küldi el a ReadySystem RPC-t.</summary>
+        /// <summary>Akkor tuzel, amikor a szerver vagy a kliens sajat init lanca lezarult.
+        /// A Networking reteg ebbol kuldi el a ReadySystem RPC-t.</summary>
         public static event System.Action OnLocalInitializationComplete;
 
         [Header("Manager Prefabs")]
@@ -65,12 +65,12 @@ namespace GridEmpire.Core
         {
             if (IsServer)
             {
-                Debug.Log($"[HOST Side] Saját clientId: {NetworkManager.Singleton.LocalClientId}");
+                Debug.Log($"[HOST Side] Sajat clientId: {NetworkManager.Singleton.LocalClientId}");
                 StartCoroutine(ServerInitChain());
             }
             else
             {
-                Debug.Log($"[CLIENT Side] Saját clientId: {NetworkManager.Singleton.LocalClientId}");
+                Debug.Log($"[CLIENT Side] Sajat clientId: {NetworkManager.Singleton.LocalClientId}");
                 _networkPlayers.OnListChanged += HandleNetworkListChanged;
             }
         }
@@ -93,33 +93,33 @@ namespace GridEmpire.Core
             CellData.OnCellOwnerChanged -= HandleCellOwnershipChange;
         }
 
-        // --- SESSION CONFIG / LOCAL PLAYER ID (Networking rétegtől kapott adat) -------
+        // --- SESSION CONFIG / LOCAL PLAYER ID (Networking retegtol kapott adat) -------
 
-        /// <summary>A Networking réteg hívja, amint a szerver oldali beállítások ismertek.</summary>
+        /// <summary>A Networking reteg hivja, amint a szerver oldali beallitasok ismertek.</summary>
         public void SetSessionConfig(GameSessionConfig config) => _config = config;
 
-        /// <summary>A Networking réteg hívja, amint feloldotta a helyi clientId → playerId mappinget.</summary>
+        /// <summary>A Networking reteg hivja, amint feloldotta a helyi clientId → playerId mappinget.</summary>
         public void TrySetLocalPlayerId(int playerId)
         {
             if (playerId < 0 || _clientInitStarted) return;
             _localPlayerId = playerId;
             _clientInitStarted = true;
-            Debug.Log($"[Client] Local playerId beállítva: {playerId}");
+            Debug.Log($"[Client] Local playerId beallitva: {playerId}");
             SyncLocalPlayersFromNetwork();
             StartCoroutine(ClientInitChain());
         }
 
-        // --- SZERVER INIT LÁNC -------------------------------------------------------
+        // --- SZERVER INIT LaNC -------------------------------------------------------
 
         private IEnumerator ServerInitChain()
         {
-            // 1. Várunk amíg megkapjuk a session configot a Networking rétegtől
+            // 1. Varunk amig megkapjuk a session configot a Networking retegtol
             yield return new WaitUntil(() => _config != null);
 
-            // 2. Játékosok inicializálása
+            // 2. Jatekosok inicializalasa
             InitializePlayers();
 
-            // 3. GridManager spawn és várunk amíg kész
+            // 3. GridManager spawn es varunk amig kesz
             GameObject gmObj = Instantiate(gridManagerPrefab);
             var gridManager = gmObj.GetComponent<GridManager>();
             gridManager.FogOfWarEnabled = _config.FogOfWarEnabled;
@@ -127,11 +127,11 @@ namespace GridEmpire.Core
             gmObj.GetComponent<NetworkObject>().Spawn();
 
             yield return new WaitUntil(() => GridManager.Instance != null && GridManager.Instance.IsReady);
-            Debug.Log("[GameController] GridManager kész.");
+            Debug.Log("[GameController] GridManager kesz.");
 
-            // 4. BaseCell beállítás minden játékosnak
+            // 4. BaseCell beallitas minden jatekosnak
             AssignBaseCells(GridManager.Instance);
-            Debug.Log("[GameController] BaseCells beállítva.");
+            Debug.Log("[GameController] BaseCells beallitva.");
 
             // 5. FogOfWar a host playernek
             IsDebugMode = !_config.FogOfWarEnabled;
@@ -139,17 +139,17 @@ namespace GridEmpire.Core
             if (hostPlayer != null)
                 GridManager.Instance.UpdateFogOfWar(hostPlayer.Id);
 
-            // 6. Spawnerek létrehozása
+            // 6. Spawnerek letrehozasa
             SetupSpawners();
-            Debug.Log("[GameController] Spawnerek kész.");
+            Debug.Log("[GameController] Spawnerek kesz.");
 
             // 7. TurnManager spawn
             GameObject tmObj = Instantiate(turnManagerPrefab);
             tmObj.GetComponent<NetworkObject>().Spawn();
-            Debug.Log("[GameController] TurnManager kész.");
+            Debug.Log("[GameController] TurnManager kesz.");
 
-            // 8. Szerver oldali init kész – a Networking réteg dönt, mi legyen ebből
-            Debug.Log("[GameController] Szerver init kész.");
+            // 8. Szerver oldali init kesz – a Networking reteg dont, mi legyen ebbol
+            Debug.Log("[GameController] Szerver init kesz.");
             OnLocalInitializationComplete?.Invoke();
         }
 
@@ -172,7 +172,7 @@ namespace GridEmpire.Core
                 _players.Add(new PlayerProfile(i, pName, pColor, isAi, isLocal, null));
             }
 
-            Debug.Log($"[GameController] InitializePlayers: {_players.Count} játékos.");
+            Debug.Log($"[GameController] InitializePlayers: {_players.Count} jatekos.");
         }
 
         private void AssignBaseCells(GridManager gridManager)
@@ -218,7 +218,7 @@ namespace GridEmpire.Core
                 Debug.Log($"[GameController] BaseCell: player={player.Id}, cell={cell.Id}");
             }
         }
-        // --- GRID STATE SYNC (első csatlakozás + reconnect egységesen) ---------------
+        // --- GRID STATE SYNC (elso csatlakozas + reconnect egysegesen) ---------------
 
         [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)]
         public void RequestGridStateServerRpc(ulong clientId)
@@ -272,7 +272,7 @@ namespace GridEmpire.Core
             if (localPlayer != null)
                 GridManager.Instance.UpdateFogOfWar(localPlayer.Id);
 
-            Debug.Log("[Client] Grid state szinkronizálva.");
+            Debug.Log("[Client] Grid state szinkronizalva.");
         }
 
 
@@ -311,27 +311,27 @@ namespace GridEmpire.Core
             }
         }
 
-        // --- KLIENS INIT LÁNC --------------------------------------------------------
+        // --- KLIENS INIT LaNC --------------------------------------------------------
 
         private IEnumerator ClientInitChain()
         {
             yield return new WaitUntil(() =>
                 GridManager.Instance != null && GridManager.Instance.IsReady);
-            Debug.Log("[Client] GridManager kész.");
+            Debug.Log("[Client] GridManager kesz.");
 
             RequestGridStateServerRpc(NetworkManager.Singleton.LocalClientId);
 
             yield return new WaitUntil(() => GetLocalPlayer()?.BaseCell != null);
-            Debug.Log($"[Client] BaseCell kész: {GetLocalPlayer().BaseCell.Id}");
+            Debug.Log($"[Client] BaseCell kesz: {GetLocalPlayer().BaseCell.Id}");
 
             ResyncAllUnitsLocal();
 
             OnLocalPlayerReady?.Invoke();
-            Debug.Log("[Client] OnLocalPlayerReady elküldve.");
+            Debug.Log("[Client] OnLocalPlayerReady elkuldve.");
 
             yield return null;
 
-            Debug.Log("[Client] Kliens init kész.");
+            Debug.Log("[Client] Kliens init kesz.");
             OnLocalInitializationComplete?.Invoke();
         }
 
@@ -346,7 +346,7 @@ namespace GridEmpire.Core
                     unitController.SyncToAuthoritativeState();
                 }
             }
-            Debug.Log("[GameController] Összes unit újra lett szinkronizálva a helyi állapothoz.");
+            Debug.Log("[GameController] osszes unit ujra lett szinkronizalva a helyi allapothoz.");
         }
 
         private void HandleNetworkListChanged(NetworkListEvent<PlayerData> changeEvent)
@@ -377,11 +377,11 @@ namespace GridEmpire.Core
             _players.Clear();
             _players.AddRange(newList);
 
-            Debug.Log($"[GameController] SyncLocalPlayers: {_players.Count} játékos, localId={_localPlayerId}");
+            Debug.Log($"[GameController] SyncLocalPlayers: {_players.Count} jatekos, localId={_localPlayerId}");
         }
 
 
-        // --- GAZDASÁG ----------------------------------------------------------------
+        // --- GAZDASaG ----------------------------------------------------------------
         private void ProcessEconomy()
         {
             if (!IsServer) return;
@@ -444,7 +444,7 @@ namespace GridEmpire.Core
         public UnitData GetUnitDataByIndex(int index)
         {
             if (_unitDataRegistry.TryGetValue(index, out var data)) return data;
-            Debug.LogError($"[GameController] UnitData nem található: {index}");
+            Debug.LogError($"[GameController] UnitData nem talalhato: {index}");
             return null;
         }
 

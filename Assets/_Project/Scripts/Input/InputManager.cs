@@ -240,7 +240,7 @@ namespace GridEmpire.Input
             if (targetCell != null)
                 UnitSpawner.OnRequestUnitSpawn?.Invoke(localPlayer.Id, slot, targetCell);
             else
-                Debug.LogWarning("[InputManager] Nem sikerült: Nincs cella!");
+                Debug.LogWarning("[InputManager] Nem sikerult: Nincs cella!");
         }
 
         public void SetSelectionType(bool isField)

@@ -1,8 +1,8 @@
 namespace GridEmpire.Core
 {
     /// <summary>
-    /// Sima, netcode-mentes adatátadó. A Networking réteg tölti fel
-    /// (GlobalNetworkSettings alapján), a Core csak ezt ismeri.
+    /// Sima, netcode-mentes adatatado. A Networking reteg tolti fel
+    /// (GlobalNetworkSettings alapjan), a Core csak ezt ismeri.
     /// </summary>
     public class GameSessionConfig
     {

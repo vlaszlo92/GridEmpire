@@ -8,19 +8,19 @@ public class NetworkPlayer : NetworkBehaviour
     {
         if (IsOwner)
         {
-            //Debug.Log($"Én vagyok a helyi játékos! ID: {OwnerClientId}");
-            // Itt majd össze kell kötnünk a helyi GameControllerrel
+            //Debug.Log($"en vagyok a helyi jatekos! ID: {OwnerClientId}");
+            // Itt majd ossze kell kotnunk a helyi GameControllerrel
         }
     }
 
-    // Ezt fogja hívni a CommandHub a kliensnél
+    // Ezt fogja hivni a CommandHub a kliensnel
     [ServerRpc]
     public void SendCommandServerRpc(int unitId, int targetCellId, ActionType type)
     {
         // A SZERVER oldalon fut le:
         //Debug.Log($"Szerver megkapta: Unit {unitId} -> Cell {targetCellId}");
 
-        // Itt adjuk hozzá a TurnResolver listájához a parancsot
+        // Itt adjuk hozza a TurnResolver listajahoz a parancsot
         // TurnResolver.Instance.EnqueueAction(...);
     }
 }

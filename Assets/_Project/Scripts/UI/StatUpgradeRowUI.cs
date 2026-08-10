@@ -11,7 +11,7 @@ namespace GridEmpire.UI
         [SerializeField] private TextMeshProUGUI statNameText;
         [SerializeField] private TextMeshProUGUI valueAndLevelText;
         [SerializeField] private Button upgradeButton;
-        [SerializeField] private TextMeshProUGUI buttonText; // A gomb belső felirata
+        [SerializeField] private TextMeshProUGUI buttonText; // A gomb belso felirata
 
         private StatType _statType;
         private Action<StatType> _onUpgradeClicked;

@@ -12,9 +12,9 @@ using System.Threading.Tasks;
 namespace GridEmpire.Networking
 {
     /// <summary>
-    /// A lobby hálózati rétege: UGS session kezelés, NetworkManager Host/Client indítás,
-    /// connection approval, disconnect figyelés, GlobalNetworkSettings szinkronizálás.
-    /// A MainMenuController kizárólag ezen keresztül nyúl hálózati funkciókhoz.
+    /// A lobby halozati retege: UGS session kezeles, NetworkManager Host/Client inditas,
+    /// connection approval, disconnect figyeles, GlobalNetworkSettings szinkronizalas.
+    /// A MainMenuController kizarolag ezen keresztul nyul halozati funkciokhoz.
     /// </summary>
     public class NetworkLobbyController : MonoBehaviour
     {
@@ -22,10 +22,10 @@ namespace GridEmpire.Networking
 
         public event Action OnServicesInitialized;
         public event Action<string> OnHostSessionReady;      // join code
-        public event Action<string> OnHostSessionFailed;     // hibaüzenet
-        public event Action OnSessionPlayersChanged;         // host: játékos csatlakozott/kilépett
-        public event Action<string, bool> OnClientConnectResult; // (üzenet, siker)
-        public event Action OnHostConnectionLost;             // kliens leszakadt a hosttól
+        public event Action<string> OnHostSessionFailed;     // hibauzenet
+        public event Action OnSessionPlayersChanged;         // host: jatekos csatlakozott/kilepett
+        public event Action<string, bool> OnClientConnectResult; // (uzenet, siker)
+        public event Action OnHostConnectionLost;             // kliens leszakadt a hosttol
 
         public bool ServicesReady { get; private set; }
         public bool IsHostSessionActive { get; private set; }
@@ -59,12 +59,12 @@ namespace GridEmpire.Networking
                 if (!AuthenticationService.Instance.IsSignedIn)
                     await AuthenticationService.Instance.SignInAnonymouslyAsync();
                 ServicesReady = true;
-                Debug.Log("[NetworkLobbyController] UGS inicializálva és bejelentkezve.");
+                Debug.Log("[NetworkLobbyController] UGS inicializalva es bejelentkezve.");
                 OnServicesInitialized?.Invoke();
             }
             catch (Exception e)
             {
-                Debug.LogError($"[NetworkLobbyController] UGS inicializálás sikertelen: {e.Message}");
+                Debug.LogError($"[NetworkLobbyController] UGS inicializalas sikertelen: {e.Message}");
             }
 
             StartCoroutine(WatchClientDisconnect());
@@ -162,7 +162,7 @@ namespace GridEmpire.Networking
             if (GlobalNetworkSettings.Instance != null)
                 GlobalNetworkSettings.Instance.InitializeFromSettings(settings);
             else
-                Debug.LogError("[NetworkLobbyController] GlobalNetworkSettings nem található a jelenetben!");
+                Debug.LogError("[NetworkLobbyController] GlobalNetworkSettings nem talalhato a jelenetben!");
 
             NetworkDebugDump.DumpServerState(settings, sceneName, expectedHumans);
             GlobalNetworkSettings.Instance?.TriggerDebugDumpClientRpc();
@@ -217,14 +217,14 @@ namespace GridEmpire.Networking
                 }
                 catch (Exception joinEx) when (joinEx.Message.Contains("already a member"))
                 {
-                    Debug.LogWarning($"[NetworkLobbyController] Már tagja egy session-nek. joinCode={joinCode}");
+                    Debug.LogWarning($"[NetworkLobbyController] Mar tagja egy session-nek. joinCode={joinCode}");
                     throw;
                 }
 
                 await ShutdownNetworkManagerIfNeeded();
                 NetworkManager.Singleton.StartClient();
 
-                OnClientConnectResult?.Invoke("Csatlakozva! Várakozás a hostra...", true);
+                OnClientConnectResult?.Invoke("Csatlakozva! Varakozas a hostra...", true);
             }
             catch (Exception e)
             {
@@ -260,7 +260,7 @@ namespace GridEmpire.Networking
             if (_currentSession != null)
             {
                 try { await _currentSession.LeaveAsync(); }
-                catch (Exception e) { Debug.LogWarning($"[NetworkLobbyController] Session elhagyás: {e.Message}"); }
+                catch (Exception e) { Debug.LogWarning($"[NetworkLobbyController] Session elhagyas: {e.Message}"); }
                 _currentSession = null;
             }
             IsHostSessionActive = false;

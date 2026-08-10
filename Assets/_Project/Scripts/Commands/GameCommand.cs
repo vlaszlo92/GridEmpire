@@ -3,34 +3,34 @@ using UnityEngine;
 
 namespace GridEmpire.Commands
 {
-    // Minden parancs õse
+    // Minden parancs ose
     [Serializable]
     public abstract class GameCommand
     {
-        public int PlayerId; // Ki küldte?
+        public int PlayerId; // Ki kuldte?
         public abstract void Execute(GridEmpire.Core.GameController context);
     }
 
     [Serializable]
     public class MoveUnitCommand : GameCommand
     {
-        public int UnitId;      // Melyik egység?
-        public int TargetQ;     // Hova? (Q koordináta)
-        public int TargetR;     // Hova? (R koordináta)
+        public int UnitId;      // Melyik egyseg?
+        public int TargetQ;     // Hova? (Q koordinata)
+        public int TargetR;     // Hova? (R koordinata)
 
         public override void Execute(GridEmpire.Core.GameController context)
         {
-            // 1. Megkeressük az egységet ID alapján
+            // 1. Megkeressuk az egyseget ID alapjan
             var unit = context.GetUnitById(UnitId);
 
-            // 2. Biztonsági ellenõrzés (Server Authority)
+            // 2. Biztonsagi ellenorzes (Server Authority)
             if (unit == null || unit.OwnerId != PlayerId)
             {
                 return;
             }
 
-            // 3. Végrehajtás
-            // Itt hívjuk meg a logikát, ami eddig az InputManagerben volt
+            // 3. Vegrehajtas
+            // Itt hivjuk meg a logikat, ami eddig az InputManagerben volt
             unit.RequestMove(new Vector2Int(TargetQ, TargetR));
         }
     }
@@ -38,13 +38,13 @@ namespace GridEmpire.Commands
     [Serializable]
     public class SpawnUnitCommand : GameCommand
     {
-        public int UnitTypeId; // Melyik egységtípus? (Index az UnitData listában)
+        public int UnitTypeId; // Melyik egysegtipus? (Index az UnitData listaban)
         public int TargetQ;
         public int TargetR;
 
         public override void Execute(GridEmpire.Core.GameController context)
         {
-            // Validáció: Van elég pénze? Szabad a hely?
+            // Validacio: Van eleg penze? Szabad a hely?
             // Ha igen -> Spawn
         }
     }

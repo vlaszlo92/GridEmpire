@@ -39,7 +39,7 @@ public class FadeTest : MonoBehaviour
 
         _currentAlpha = Mathf.MoveTowards(_currentAlpha, _targetAlpha, Time.deltaTime / fadeDuration);
 
-        // Megjelenítéskor azonnal enabled = true
+        // Megjeleniteskor azonnal enabled = true
         if (_targetAlpha > 0f)
             foreach (var r in _renderers) r.enabled = true;
 
@@ -50,7 +50,7 @@ public class FadeTest : MonoBehaviour
             mat.SetColor("_BaseColor", c);
         }
 
-        // Elrejtéskor csak akkor kapcsoljuk ki ha teljesen átlátszó
+        // Elrejteskor csak akkor kapcsoljuk ki ha teljesen atlatszo
         if (Mathf.Approximately(_currentAlpha, 0f))
             foreach (var r in _renderers) r.enabled = false;
     }

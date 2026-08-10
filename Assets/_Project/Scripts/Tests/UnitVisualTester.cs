@@ -15,13 +15,13 @@ public class UnitVisualTester : MonoBehaviour
 
     private void Awake()
     {
-        // 1. Megkeressük az ÖSSZES gyerek Animátort, AudioSource-t és Particle-t (a Mount-ot is beleértve)
+        // 1. Megkeressuk az oSSZES gyerek Animatort, AudioSource-t es Particle-t (a Mount-ot is beleertve)
         _unitAnimator = GetComponent<UnitAnimator>();
         _animators = GetComponentsInChildren<Animator>(true);
         _audioSources = GetComponentsInChildren<AudioSource>(true);
         _particleSystems = GetComponentsInChildren<ParticleSystem>(true);
 
-        // 2. Automatikusan bekapcsoljuk az összes kikapcsolt SkinnedMeshRenderer-t és MeshRenderer-t
+        // 2. Automatikusan bekapcsoljuk az osszes kikapcsolt SkinnedMeshRenderer-t es MeshRenderer-t
         if (enableAllRenderersOnStart)
         {
             var renderers = GetComponentsInChildren<Renderer>(true);

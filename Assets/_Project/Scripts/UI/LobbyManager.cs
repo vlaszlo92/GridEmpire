@@ -11,16 +11,16 @@ public class LobbyManager : MonoBehaviour
 
     private void Start()
     {
-        // HOST: Ő a szerver és egy kliens is
+        // HOST: o a szerver es egy kliens is
         hostBtn.onClick.AddListener(() => {
             if (NetworkManager.Singleton.StartHost())
             {
-                // A NetworkSceneManager váltja át mindenkinél a scenét!
+                // A NetworkSceneManager valtja at mindenkinel a scenet!
                 NetworkManager.Singleton.SceneManager.LoadScene(gameSceneName, LoadSceneMode.Single);
             }
         });
 
-        // CLIENT: Ő csak csatlakozik
+        // CLIENT: o csak csatlakozik
         clientBtn.onClick.AddListener(() => {
             NetworkManager.Singleton.StartClient();
         });

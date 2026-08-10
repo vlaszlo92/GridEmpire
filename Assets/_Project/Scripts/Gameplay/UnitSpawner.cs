@@ -169,13 +169,13 @@ namespace GridEmpire.Gameplay
             var profile = GetProfile();
             if (profile == null || !profile.IsAlive)
             {
-                Debug.LogWarning($"[UnitSpawner] RequestUnit meghiúsult: profile null vagy nem él! owner={_ownerId}");
+                Debug.LogWarning($"[UnitSpawner] RequestUnit meghiusult: profile null vagy nem el! owner={_ownerId}");
                 return false;
             }
             if (_myQueue.Count >= MaxQueueSize) return false;
             if (!profile.SpendGold(data.cost))
             {
-                Debug.LogWarning($"[UnitSpawner] RequestUnit meghiúsult: nincs elég arany! owner={_ownerId}, cost={data.cost}, gold={profile.Gold}");
+                Debug.LogWarning($"[UnitSpawner] RequestUnit meghiusult: nincs eleg arany! owner={_ownerId}, cost={data.cost}, gold={profile.Gold}");
                 return false;
             }
 
@@ -222,7 +222,7 @@ namespace GridEmpire.Gameplay
             int newId = GameController.Instance.GetNextAvailableId();
             GameObject go = Instantiate(item.Data.unitPrefab, spawnPos, initialRot);
             UnitController controller = go.GetComponent<UnitController>();
-            if (!go.TryGetComponent<NetworkObject>(out var netObj)) { Debug.LogError("[UnitSpawner] NetworkObject hiányzik!"); return; }            
+            if (!go.TryGetComponent<NetworkObject>(out var netObj)) { Debug.LogError("[UnitSpawner] NetworkObject hianyzik!"); return; }            
 
             controller.NetworkUnitId.Value = newId;
             controller.NetworkOwnerId.Value = _ownerId;

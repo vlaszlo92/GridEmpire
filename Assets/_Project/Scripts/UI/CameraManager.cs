@@ -96,9 +96,9 @@ namespace GridEmpire.UI
             {
                 transform.position = _introTargetPos;
                 transform.rotation = _introTargetRot;
-                //Debug.Log($"[Intro] VÉGE előtt pos={transform.position}");
+                //Debug.Log($"[Intro] VeGE elott pos={transform.position}");
                 _isIntroPlaying = false;
-                //Debug.Log($"[Intro] VÉGE után pos={transform.position}");
+                //Debug.Log($"[Intro] VeGE utan pos={transform.position}");
             }
         }
 
@@ -130,7 +130,7 @@ namespace GridEmpire.UI
             float zoomDirection = scroll > 0 ? 1f : -1f;
             Vector3 nextPos = transform.position + transform.forward * zoomDirection * zoomSpeed;
 
-            // Minimum scroll lépés biztosítása
+            // Minimum scroll lepes biztositasa
             if (Mathf.Abs(nextPos.y - transform.position.y) < minScrollStep)
                 nextPos = transform.position + transform.forward * zoomDirection * minScrollStep;
 
@@ -151,7 +151,7 @@ namespace GridEmpire.UI
             pos.y = Mathf.Clamp(pos.y, zoomLimits.x, zoomLimits.y);
             transform.position = pos;
             if (before != transform.position)
-                Debug.Log($"[Clamp] Pozíció változott: {before} → {transform.position}");
+                Debug.Log($"[Clamp] Pozicio valtozott: {before} → {transform.position}");
         }
 
         public void FocusOnBase()

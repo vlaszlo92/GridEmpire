@@ -24,8 +24,8 @@ public class UnitTester : MonoBehaviour
         CellData c1 = gridManager.GetCell(0, 0);
         CellData c2 = gridManager.GetCell(2, 0);
 
-        // Path: [0] a start, [1] ahova lépni akar. 
-        // A rendszer a start mezõt azonnal a sajátjává teszi.
+        // Path: [0] a start, [1] ahova lepni akar. 
+        // A rendszer a start mezot azonnal a sajatjava teszi.
         SpawnTestUnit(c1, 0, Color.blue, new List<CellData> { c1, gridManager.GetCell(1, 0) });
         SpawnTestUnit(c2, 1, Color.red, new List<CellData> { c2, gridManager.GetCell(1, 0) });
     }
@@ -37,16 +37,16 @@ public class UnitTester : MonoBehaviour
         CellData targetCell = gridManager.GetCell(0, 0);
         if (targetCell == null) return;
 
-        // P1: Célpont középen
+        // P1: Celpont kozepen
         SpawnTestUnit(targetCell, 1, Color.red, null);
 
         var neighbors = gridManager.GetNeighbors(targetCell);
         if (neighbors.Count < 2) return;
 
-        // P0: Már szomszéd
+        // P0: Mar szomszed
         SpawnTestUnit(neighbors[0], 0, Color.blue, null);
 
-        // P2: Távolabbról jön
+        // P2: Tavolabbrol jon
         var farNeighbors = gridManager.GetNeighbors(neighbors[1]);
         CellData startCellP2 = farNeighbors.Find(c => c != targetCell);
         if (startCellP2 != null)
@@ -87,16 +87,16 @@ public class UnitTester : MonoBehaviour
         UnitController[] units = FindObjectsByType<UnitController>(FindObjectsSortMode.None);
         foreach (var u in units) u.ExecuteDeath();
 
-        // Opcionális: a pálya színeit is visszaállíthatod alaphelyzetbe, 
-        // ha tiszta lappal akarsz indulni minden F gombnál.
+        // Opcionalis: a palya szineit is visszaallithatod alaphelyzetbe, 
+        // ha tiszta lappal akarsz indulni minden F gombnal.
     }
 
     void SpawnTestUnit(CellData startCell, int ownerId, Color color, List<CellData> path)
     {
         if (startCell == null) return;
 
-        // --- ÚJ RÉSZ: A START MEZÕ KÉNYSZERÍTETT ELFOGLALÁSA ---
-        // Az egység csak saját területen állhat stabilan a kör elején.
+        // --- uJ ReSZ: A START MEZo KeNYSZERiTETT ELFOGLALaSA ---
+        // Az egyseg csak sajat teruleten allhat stabilan a kor elejen.
         gridManager.FinalizeCapture(startCell, ownerId);
 
         Vector3 pos = gridManager.GetWorldPosition(startCell.Q, startCell.R);
@@ -108,11 +108,11 @@ public class UnitTester : MonoBehaviour
         UnitController controller = go.GetComponent<UnitController>();
         if (controller == null) controller = go.AddComponent<UnitController>();
 
-        // Inicializálás: az egység megkapja az adatait és az útvonalát
+        // Inicializalas: az egyseg megkapja az adatait es az utvonalat
         var nextId = GameController.Instance.GetNextAvailableId();
         controller.Initialize(nextId, unitData, path, gridManager, ownerId);
 
-        // Logikai regisztráció
+        // Logikai regisztracio
         controller._currentCell = startCell;
         startCell.RegisterOccupier(controller);
 

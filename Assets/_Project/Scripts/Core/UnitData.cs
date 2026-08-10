@@ -2,7 +2,7 @@ using UnityEngine;
 
 namespace GridEmpire.Core
 {
-    // Ez a sor teszi lehetõvé, hogy az Asset mappában jobb klikkel létrehozz ilyen fájlt
+    // Ez a sor teszi lehetove, hogy az Asset mappaban jobb klikkel letrehozz ilyen fajlt
     [CreateAssetMenu(fileName = "NewUnitData", menuName = "GridEmpire/Unit Data")]
     public class UnitData : ScriptableObject
     {
@@ -11,7 +11,7 @@ namespace GridEmpire.Core
         public string unitName;
         public UnitType type;
         public UnitType strongAgainst;
-        public int recruitmentTime = 2; // Hány Tick (kör) alatt készül el
+        public int recruitmentTime = 2; // Hany Tick (kor) alatt keszul el
 
         [Header("Stats")]
         public int cost;

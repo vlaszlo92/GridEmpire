@@ -382,10 +382,10 @@ namespace GridEmpire.UI
             var data = availableUnitData[unitIndex];
             _currentDisplayedUnitIndex = unitIndex;
 
-            // Frissítés delegálása az új UI komponens felé
+            // Frissites delegalasa az uj UI komponens fele
             if (descPanelUI != null)
             {
-                // Egyelőre üres szintekkel/arannyal meghívjuk, amíg meg nincs az Upgrade Manager
+                // Egyelore ures szintekkel/arannyal meghivjuk, amig meg nincs az Upgrade Manager
                 descPanelUI.RefreshPanel(data, GetDefaultUpgrades(), _localPlayer != null ? (int)_localPlayer.Gold : 0);
             }
 
@@ -418,7 +418,7 @@ namespace GridEmpire.UI
             }
         }
 
-        // Ideiglenes segédmetódus az alapértelmezett 0-s szintű statoknak
+        // Ideiglenes segedmetodus az alapertelmezett 0-s szintu statoknak
         private Dictionary<GridEmpire.Data.StatType, GridEmpire.Data.StatUpgradeState> GetDefaultUpgrades()
         {
             var dict = new Dictionary<GridEmpire.Data.StatType, GridEmpire.Data.StatUpgradeState>();

@@ -55,7 +55,7 @@ namespace GridEmpire.Networking
             var mappings = GlobalNetworkSettings.Instance.PlayerMappings;
             var authIdFixed = new FixedString64Bytes(authId);
 
-            // 1. Visszacsatlakozó játékos azonosítása
+            // 1. Visszacsatlakozo jatekos azonositasa
             for (int i = 0; i < mappings.Count; i++)
             {
                 if (mappings[i].AuthId.Equals(authIdFixed))
@@ -63,12 +63,12 @@ namespace GridEmpire.Networking
                     var updated = mappings[i];
                     updated.ClientId = clientId;
                     mappings[i] = updated;
-                    Debug.Log($"[ConnectionManager] Játékos visszacsatlakozott! AuthId={authId}, PlayerId={updated.PlayerId}, Új ClientId={clientId}");
+                    Debug.Log($"[ConnectionManager] Jatekos visszacsatlakozott! AuthId={authId}, PlayerId={updated.PlayerId}, uj ClientId={clientId}");
                     return updated.PlayerId;
                 }
             }
 
-            // 2. Új játékos: legkisebb szabad PlayerId
+            // 2. uj jatekos: legkisebb szabad PlayerId
             int humanCount = GlobalNetworkSettings.Instance.TotalPlayers.Value
                            - GlobalNetworkSettings.Instance.TotalAIBots.Value;
 
@@ -81,7 +81,7 @@ namespace GridEmpire.Networking
                 }
                 if (!taken)
                 {
-                    Debug.Log($"[ConnectionManager] Új játékos csatlakozott! Mapping feltöltve: AuthId={authId}, PlayerId={playerId}, ClientId={clientId}");
+                    Debug.Log($"[ConnectionManager] uj jatekos csatlakozott! Mapping feltoltve: AuthId={authId}, PlayerId={playerId}, ClientId={clientId}");
                     mappings.Add(new PlayerClientMapping { ClientId = clientId, PlayerId = playerId, AuthId = authIdFixed });
                     return playerId;
                 }
@@ -93,7 +93,7 @@ namespace GridEmpire.Networking
 
         private void HandleClientDisconnect(ulong clientId)
         {
-            Debug.Log($"[ConnectionManager] clientId={clientId} lecsatlakozott. Mapping megőrizve Reconnection-höz.");
+            Debug.Log($"[ConnectionManager] clientId={clientId} lecsatlakozott. Mapping megorizve Reconnection-hoz.");
         }
     }
 }

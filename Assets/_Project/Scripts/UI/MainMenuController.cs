@@ -48,7 +48,7 @@ namespace GridEmpire.UI
         [SerializeField] private TMP_InputField hostCodeDisplay;
         [SerializeField] private Button copyCodeBtn;
         [SerializeField] private TextMeshProUGUI hostPlayerCountText;
-        [SerializeField] private TextMeshProUGUI hostLoadingText;      // "Lobby generálása..."
+        [SerializeField] private TextMeshProUGUI hostLoadingText;      // "Lobby generalasa..."
         [SerializeField] private Transform hostPlayerListContainer;    // ScrollView Content
         [SerializeField] private TextMeshProUGUI hostPlayerListPrefab; // Prefab egy sorhoz
 
@@ -81,7 +81,7 @@ namespace GridEmpire.UI
         private System.Action _onUnitStatsSyncedHandler;
         private System.Action<List<(int, string)>> _onUnitStatsFieldsChangedHandler;
 
-        // Játékos lista cache – host oldalon frissítjük
+        // Jatekos lista cache – host oldalon frissitjuk
         private readonly List<TextMeshProUGUI> _hostPlayerListItems = new List<TextMeshProUGUI>();
         private readonly List<TextMeshProUGUI> _clientPlayerListItems = new List<TextMeshProUGUI>();
 
@@ -226,7 +226,7 @@ namespace GridEmpire.UI
                 copyCodeBtn.gameObject.SetActive(!loading);
         }
 
-        // --- BEÁLLÍTÁS VÁLTOZÁS -------------------------------------------------------
+        // --- BEaLLiTaS VaLTOZaS -------------------------------------------------------
 
         private void OnSettingsChanged()
         {
@@ -251,7 +251,7 @@ namespace GridEmpire.UI
             {
                 startHostFinalBtn.interactable = false;
                 if (hostPlayerCountText != null)
-                    hostPlayerCountText.text = "Lobby generálása...";
+                    hostPlayerCountText.text = "Lobby generalasa...";
                 return;
             }
 
@@ -267,12 +267,12 @@ namespace GridEmpire.UI
             int humanPlayers = totalPlayers - aiBots;
 
             if (hostPlayerCountText != null)
-                hostPlayerCountText.text = $"{connected} / {humanPlayers} human játékos csatlakozott";
+                hostPlayerCountText.text = $"{connected} / {humanPlayers} human jatekos csatlakozott";
 
             startHostFinalBtn.interactable = connected >= humanPlayers;
         }
 
-        // --- JÁTÉKOS LISTA ------------------------------------------------------------
+        // --- JaTeKOS LISTA ------------------------------------------------------------
 
         private void UpdateTotalPlayersSliderMin()
         {
@@ -382,7 +382,7 @@ namespace GridEmpire.UI
                 else if (i == 0 && !isHost && isConnected)
                     label = $"{dot} Human {i + 1} (Host)";
                 else
-                    label = isConnected ? $"{dot} Human {i + 1}" : $"{dot} Human {i + 1} (vár...)";
+                    label = isConnected ? $"{dot} Human {i + 1}" : $"{dot} Human {i + 1} (var...)";
 
                 items[i].text = label;
                 items[i].color = isConnected ? Color.white : Color.gray;
@@ -393,7 +393,7 @@ namespace GridEmpire.UI
             {
                 int slotIdx = humanPlayers + i;
                 items[slotIdx].text = $"● AI Bot {i + 1}";
-                items[slotIdx].color = new Color(0.6f, 0.8f, 1f); // világoskék
+                items[slotIdx].color = new Color(0.6f, 0.8f, 1f); // vilagoskek
             }
         }
 
@@ -435,7 +435,7 @@ namespace GridEmpire.UI
             items.Clear();
         }
 
-        // --- HOST JÁTÉK INDÍTÁSA ------------------------------------------------------
+        // --- HOST JaTeK INDiTaSA ------------------------------------------------------
 
         private void StartHostGame()
         {
@@ -451,10 +451,10 @@ namespace GridEmpire.UI
             GameSettingsStorage.Save(settings);
 
             var unitStats = UnitStatsSnapshotUtil.Collect(AllUnitData);
-            Debug.Log($"[MMC] UnitStats collect kész, units={unitStats.units.Count}");
+            Debug.Log($"[MMC] UnitStats collect kesz, units={unitStats.units.Count}");
 
             UnitStatsStorage.Save(unitStats);
-            Debug.Log("[MMC] UnitStatsStorage.Save kész.");
+            Debug.Log("[MMC] UnitStatsStorage.Save kesz.");
 
             Debug.Log($"[MMC] GNS.Instance null? {GlobalNetworkSettings.Instance == null}");
             GlobalNetworkSettings.Instance?.SyncUnitStatsToClients(AllUnitData);
@@ -473,12 +473,12 @@ namespace GridEmpire.UI
             if (NetworkLobbyController.Instance == null || NetworkLobbyController.Instance.IsSessionOperationInProgress) return;
             if (clientCodeInput == null || string.IsNullOrEmpty(clientCodeInput.text))
             {
-                SetClientStatus("Add meg a csatlakozási kódot!", Color.red);
+                SetClientStatus("Add meg a csatlakozasi kodot!", Color.red);
                 return;
             }
 
             string joinCode = clientCodeInput.text.Trim().ToUpper();
-            SetClientStatus("Csatlakozás...", Color.yellow);
+            SetClientStatus("Csatlakozas...", Color.yellow);
             SetAllNavButtonsInteractable(false);
 
             await NetworkLobbyController.Instance.JoinSession(joinCode);
@@ -534,15 +534,15 @@ namespace GridEmpire.UI
             int humanPlayers = totalPlayers - aiBots;
 
             if (clientPlayerCountText != null)
-                clientPlayerCountText.text = $"{connected} / {humanPlayers} játékos";
+                clientPlayerCountText.text = $"{connected} / {humanPlayers} jatekos";
             if (clientTotalPlayersText != null)
-                clientTotalPlayersText.text = $"Játékosok: {totalPlayers}";
+                clientTotalPlayersText.text = $"Jatekosok: {totalPlayers}";
             if (clientAiBotsText != null)
                 clientAiBotsText.text = $"AI: {aiBots}";
             if (clientMapSizeText != null)
-                clientMapSizeText.text = $"Pálya méret: {gns.NetworkMapRadius.Value}";
+                clientMapSizeText.text = $"Palya meret: {gns.NetworkMapRadius.Value}";
             if (clientTurnSpeedText != null)
-                clientTurnSpeedText.text = $"Körsebesség: {gns.TurnSpeed.Value:F1}";
+                clientTurnSpeedText.text = $"Korsebesseg: {gns.TurnSpeed.Value:F1}";
         }
 
         // --- SETTINGS UI -------------------------------------------------------------
