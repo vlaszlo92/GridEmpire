@@ -13,7 +13,7 @@ TagManager:
   - Water
   - UI
   - Unit
-  - 
+  - VFX
   - 
   - 
   - 
@@ -41,6 +41,12 @@ TagManager:
   m_SortingLayers:
   - name: Default
     uniqueID: 0
+    locked: 0
+  - name: UI_VFX
+    uniqueID: 3662160567
+    locked: 0
+  - name: UI
+    uniqueID: 701492149
     locked: 0
   m_RenderingLayers:
   - Default

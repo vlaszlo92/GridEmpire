@@ -69,6 +69,10 @@ namespace GridEmpire.Networking
                     if (mapping.PlayerId == playerId) { clientId = mapping.ClientId; break; }
                 }
                 names[playerId] = settings.GetPlayerName(playerId);
+            }
+
+            for (int playerId = 0; playerId < totalPlayers; playerId++)
+            {
                 colors[playerId] = settings.GetPlayerColor(playerId);
             }
 

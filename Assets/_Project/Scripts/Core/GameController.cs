@@ -170,10 +170,7 @@ namespace GridEmpire.Core
                 string pName = (!isAi && _config.PlayerNames != null && i < _config.PlayerNames.Length && !string.IsNullOrEmpty(_config.PlayerNames[i]))
                     ? _config.PlayerNames[i]
                     : (isAi ? $"AI {i}" : $"Player {i}");
-
-                Color pColor = (!isAi && _config.PlayerColors != null && i < _config.PlayerColors.Length)
-                    ? _config.PlayerColors[i]
-                    : (i < playerColors.Length ? playerColors[i] : Color.white);
+                Color pColor = _config.PlayerColors[i];
 
                 _networkPlayers.Add(new PlayerData { Id = i, Color = pColor, IsAi = isAi });
                 _players.Add(new PlayerProfile(i, pName, pColor, isAi, isLocal, null, _config.GoldPerTurnPerCell));
@@ -220,6 +217,7 @@ namespace GridEmpire.Core
                 cell.OwnerId = player.Id;
                 cell.IsBase = true;
                 cell.SetInfluence(player.Id, 1.0f);
+                player.ChangeOwnedCells(+1);
                 player.BaseCell = cell;
                 gridManager.RefreshCell(cell);
                 Debug.Log($"[GameController] BaseCell: player={player.Id}, cell={cell.Id}");

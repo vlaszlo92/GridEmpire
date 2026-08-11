@@ -55,6 +55,7 @@ namespace GridEmpire.Networking
             FogOfWarEnabled.Value = settings.fogOfWarEnabled; 
             GoldPerTurnPerCell.Value = settings.goldPerTurnPerCell;
 
+            PrepareLobbyColorsForGameStart();
             Debug.Log($"[GlobalNetworkSettings] Beallitasok frissitve a Szerveren: MapRadius={NetworkMapRadius.Value}, TotalPlayers={TotalPlayers.Value}, AIBots={TotalAIBots.Value}");
 
             RequestReRegisterClientRpc();
@@ -88,7 +89,22 @@ namespace GridEmpire.Networking
                     RegisterLobbyInfoIfMissing(mapping.PlayerId);
             }
         }
+        private void PrepareLobbyColorsForGameStart()
+        {
+            int totalPlayers = TotalPlayers.Value;
+            int humanCount = totalPlayers - TotalAIBots.Value;
 
+            for (int i = PlayerLobbyInfos.Count - 1; i >= 0; i--)
+            {
+                if (PlayerLobbyInfos[i].PlayerId >= humanCount)
+                    PlayerLobbyInfos.RemoveAt(i);
+            }
+
+            for (int playerId = 0; playerId < totalPlayers; playerId++)
+                RegisterLobbyInfoIfMissing(playerId);
+
+            AssignMissingRandomColors();
+        }
 
         private void RegisterLobbyInfoIfMissing(int playerId)
         {
