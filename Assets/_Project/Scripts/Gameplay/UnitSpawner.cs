@@ -207,7 +207,8 @@ namespace GridEmpire.Gameplay
             }
 
             _myQueue.Add(new QueuedUnit(data, data.recruitmentTime, targetCell));
-            SyncQueueClientRpc(SerializeQueue());
+            SyncQueueClientRpc(SerializeQueue(), profile.Gold);
+            OnUpgradeStateChanged?.Invoke();
             return true;
         }
 
@@ -229,7 +230,7 @@ namespace GridEmpire.Gameplay
                     _myQueue.Insert(0, itemToSpawn);
                 }
             }
-            SyncQueueClientRpc(SerializeQueue());
+            SyncQueueClientRpc(SerializeQueue(), GetProfile()?.Gold ?? 0f);
         }
 
         public void FinalizeSpawn(QueuedUnit item)
@@ -286,6 +287,25 @@ namespace GridEmpire.Gameplay
         {
             if (IsServer) ExecuteUpgradeLogic(unitIndex, statType, NetworkManager.Singleton.LocalClientId);
             else RequestUpgradeServerRpc(unitIndex, statType);
+        }
+
+        [ClientRpc]
+        private void SyncQueueClientRpc(int[] serialized, float currentGold)
+        {
+            if (IsServer) return;
+            _myQueue.Clear();
+            for (int i = 0; i < serialized.Length; i += 3)
+            {
+                var data = GameController.Instance.GetUnitDataByIndex(serialized[i]);
+                if (data == null) continue;
+                _myQueue.Add(new QueuedUnit(data, data.recruitmentTime, null)
+                {
+                    RemainingTicks = serialized[i + 1],
+                    IsWaitingToSpawn = serialized[i + 2] == 1
+                });
+            }
+            GetProfile()?.SyncGold(currentGold);
+            OnUpgradeStateChanged?.Invoke();
         }
 
         [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)]
@@ -394,9 +414,11 @@ namespace GridEmpire.Gameplay
         private void ExecuteRemoveFromQueue(int index)
         {
             if (index <= 0 || index >= _myQueue.Count) return;
-            GetProfile()?.AddGold(_myQueue[index].Data.cost);
+            var profile = GetProfile();
+            profile?.AddGold(_myQueue[index].Data.cost);
             _myQueue.RemoveAt(index);
-            SyncQueueClientRpc(SerializeQueue());
+            SyncQueueClientRpc(SerializeQueue(), profile?.Gold ?? 0f);
+            OnUpgradeStateChanged?.Invoke();
         }
 
         public void ClearQueue()
@@ -424,13 +446,15 @@ namespace GridEmpire.Gameplay
         {
             if (_myQueue.Count <= 1) return;
 
+            var profile = GetProfile();
             for (int i = _myQueue.Count - 1; i > 0; i--)
             {
-                GetProfile()?.AddGold(_myQueue[i].Data.cost);
+                profile?.AddGold(_myQueue[i].Data.cost);
                 _myQueue.RemoveAt(i);
             }
 
-            SyncQueueClientRpc(SerializeQueue());
+            SyncQueueClientRpc(SerializeQueue(), profile?.Gold ?? 0f);
+            OnUpgradeStateChanged?.Invoke();
         }
 
         private UnitData SlotToData(int slot) => slot switch
