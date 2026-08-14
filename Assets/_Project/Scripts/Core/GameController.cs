@@ -217,7 +217,6 @@ namespace GridEmpire.Core
                 cell.OwnerId = player.Id;
                 cell.IsBase = true;
                 cell.SetInfluence(player.Id, 1.0f);
-                player.ChangeOwnedCells(+1);
                 player.BaseCell = cell;
                 gridManager.RefreshCell(cell);
                 Debug.Log($"[GameController] BaseCell: player={player.Id}, cell={cell.Id}");

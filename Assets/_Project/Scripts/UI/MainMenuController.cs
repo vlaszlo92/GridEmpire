@@ -22,6 +22,8 @@ namespace GridEmpire.UI
         [Header("Mode Buttons")]
         [SerializeField] private Button goToHostBtn;
         [SerializeField] private Button goToClientBtn;
+        [SerializeField] private Button reconnectBtn;
+        [SerializeField] private Button throwSessionBtn;
 
         [Header("Host Action Buttons")]
         [SerializeField] private Button startHostFinalBtn;
@@ -113,7 +115,7 @@ namespace GridEmpire.UI
 
         private void Start()
         {
-            ShowPanel(modeSelectorPanel);
+            RefreshReconnectUI();
 
             GameSettings savedSettings = GameSettingsStorage.Load();
             SetupGeneralUI(savedSettings);
@@ -170,6 +172,8 @@ namespace GridEmpire.UI
 
             if (backToLobbyClientBtn != null)
                 backToLobbyClientBtn.onClick.AddListener(OnClientBackToLobby);
+            if (reconnectBtn != null) reconnectBtn.onClick.AddListener(OnReconnectClicked);
+            if (throwSessionBtn != null) throwSessionBtn.onClick.AddListener(OnThrowSessionClicked);
 
             BuildColorSwatches(hostColorSwatchContainer, _hostColorSwatchButtons);
             BuildColorSwatches(clientColorSwatchContainer, _clientColorSwatchButtons);
@@ -253,6 +257,12 @@ namespace GridEmpire.UI
         {
             SetClientStatus(message, success ? Color.green : Color.red);
             if (startClientConnectBtn != null) startClientConnectBtn.interactable = !success;
+
+            if (!success)
+            {
+                NetworkLobbyController.ClearSavedSession();
+                RefreshReconnectUI();
+            }
         }
 
         private void SetHostLoading(bool loading)
@@ -857,6 +867,35 @@ namespace GridEmpire.UI
             if (backToLobbyHostBtn != null) backToLobbyHostBtn.interactable = value;
             if (backToLobbyClientBtn != null) backToLobbyClientBtn.interactable = value;
             if (startClientConnectBtn != null) startClientConnectBtn.interactable = value;
+        }
+
+        private void RefreshReconnectUI()
+        {
+            Debug.Log($"[DIAG] HasSavedSession={NetworkLobbyController.HasSavedSession}, savedCode='{NetworkLobbyController.GetSavedJoinCode()}'");
+
+            bool hasSaved = NetworkLobbyController.HasSavedSession;
+
+            if (reconnectBtn != null) reconnectBtn.gameObject.SetActive(hasSaved);
+            if (throwSessionBtn != null) throwSessionBtn.gameObject.SetActive(hasSaved);
+            if (goToHostBtn != null) goToHostBtn.gameObject.SetActive(!hasSaved);
+            if (goToClientBtn != null) goToClientBtn.gameObject.SetActive(!hasSaved);
+
+            ShowPanel(modeSelectorPanel);
+        }
+
+        private void OnReconnectClicked()
+        {
+            if (reconnectBtn != null) reconnectBtn.interactable = false;
+            if (throwSessionBtn != null) throwSessionBtn.interactable = false;
+
+            NetworkLobbyController.Instance?.ReconnectToSession();
+            ShowPanel(clientWaitingPanel);
+        }
+
+        private void OnThrowSessionClicked()
+        {
+            NetworkLobbyController.ClearSavedSession();
+            RefreshReconnectUI();
         }
     }
 }

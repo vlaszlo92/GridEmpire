@@ -44,6 +44,15 @@ namespace GridEmpire.Networking
 
         private bool _sessionOperationInProgress;
         public bool IsSessionOperationInProgress => _sessionOperationInProgress;
+        private const string LastJoinCodeKey = "LastJoinCode";
+
+        public static bool HasSavedSession => PlayerPrefs.HasKey(LastJoinCodeKey);
+        public static string GetSavedJoinCode() => PlayerPrefs.GetString(LastJoinCodeKey, "");
+        public static void ClearSavedSession()
+        {
+            PlayerPrefs.DeleteKey(LastJoinCodeKey);
+            PlayerPrefs.Save();
+        }
 
         private void Awake()
         {
@@ -94,7 +103,8 @@ namespace GridEmpire.Networking
             if (NetworkManager.Singleton.IsHost) return;
             if (clientId != NetworkManager.Singleton.LocalClientId) return;
 
-            Debug.Log("[NetworkLobbyController] Kapcsolat megszakadt a hosttal.");
+            Debug.Log($"[NetworkLobbyController] Kapcsolat megszakadt a hosttal. Ok: '{NetworkManager.Singleton.DisconnectReason}'");
+            SceneManager.LoadScene("MainMenuScene");
             OnHostConnectionLost?.Invoke();
         }
 
@@ -114,6 +124,10 @@ namespace GridEmpire.Networking
                 var options = new SessionOptions { MaxPlayers = maxPlayers }.WithRelayNetwork();
                 _currentSession = await MultiplayerService.Instance.CreateSessionAsync(options);
                 IsHostSessionActive = true;
+                Debug.Log($"[DIAG] Host oldal - session letrehozva. NetworkManager.IsListening={NetworkManager.Singleton?.IsListening}, IsHost={NetworkManager.Singleton?.IsHost}");
+
+                if (NetworkManager.Singleton != null)
+                    NetworkManager.Singleton.ConnectionApprovalCallback = ApproveConnection;
 
                 _currentSession.PlayerJoined += _ => OnSessionPlayersChanged?.Invoke();
                 _currentSession.PlayerLeaving += _ => OnSessionPlayersChanged?.Invoke();
@@ -152,12 +166,6 @@ namespace GridEmpire.Networking
         public void StartHostGame(GameSettings settings, string sceneName, int expectedHumans)
         {
             _gameStarting = true;
-
-            if (NetworkManager.Singleton != null)
-                NetworkManager.Singleton.ConnectionApprovalCallback = ApproveConnection;
-
-            if (NetworkManager.Singleton != null && !NetworkManager.Singleton.IsListening)
-                NetworkManager.Singleton.StartHost();
 
             if (GlobalNetworkSettings.Instance != null)
                 GlobalNetworkSettings.Instance.InitializeFromSettings(settings);
@@ -201,6 +209,7 @@ namespace GridEmpire.Networking
             {
                 _sessionOperationInProgress = false;
             }
+            ClearSavedSession();
         }
 
         // --- CLIENT ---------------------------------------------------------
@@ -211,6 +220,8 @@ namespace GridEmpire.Networking
             _sessionOperationInProgress = true;
             try
             {
+                await ShutdownNetworkManagerIfNeeded();
+
                 try
                 {
                     _currentSession = await MultiplayerService.Instance.JoinSessionByCodeAsync(joinCode);
@@ -221,8 +232,8 @@ namespace GridEmpire.Networking
                     throw;
                 }
 
-                await ShutdownNetworkManagerIfNeeded();
-                NetworkManager.Singleton.StartClient();
+                PlayerPrefs.SetString(LastJoinCodeKey, joinCode);
+                PlayerPrefs.Save();
 
                 OnClientConnectResult?.Invoke("Csatlakozva! Varakozas a hostra...", true);
             }
@@ -250,8 +261,24 @@ namespace GridEmpire.Networking
             {
                 _sessionOperationInProgress = false;
             }
+            ClearSavedSession();
         }
+        public async void ReconnectToSession()
+        {
+            if (!ServicesReady || _isConnecting) return;
 
+            string joinCode = GetSavedJoinCode();
+            if (string.IsNullOrEmpty(joinCode)) return;
+
+            if (IsListening)
+            {
+                NetworkManager.Singleton.Shutdown();
+                while (NetworkManager.Singleton.ShutdownInProgress)
+                    await System.Threading.Tasks.Task.Yield();
+            }
+
+            JoinSession(joinCode);
+        }
 
         // --- COMMON ---------------------------------------------------------
 

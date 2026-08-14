@@ -202,6 +202,15 @@ namespace GridEmpire.Gameplay
             }
 
             isInCombat = false;
+            
+            if (_currentCell.OwnerId == _ownerId && _currentCell.GetCaptureProgress(_ownerId) < 1.0f)
+            {
+                _nextAction.Type = ActionType.Capture;
+                _nextAction.TargetCellId = _currentCell.Id;
+                EnqueueAction();
+                return;
+            }
+
             if (!canMove)
             {
                 _resolver?.EnqueueAction(_nextAction);
@@ -474,7 +483,7 @@ namespace GridEmpire.Gameplay
             _facingTargetId = -1;
             _unitAnimator?.Play(ActionType.Move);
 
-            Debug.Log($"[UnitController] MoveClientRpc complete - Unit ID: {Id}, CurrentCell ID: {_currentCell?.Id}, Frame: {Time.frameCount}");
+            //Debug.Log($"[UnitController] MoveClientRpc complete - Unit ID: {Id}, CurrentCell ID: {_currentCell?.Id}, Frame: {Time.frameCount}");
         }
 
         // --- CAPTURE -----------------------------------------------------------------
@@ -534,7 +543,7 @@ namespace GridEmpire.Gameplay
 
             cell.OnVisualUpdateRequired?.Invoke();
             _unitAnimator?.Play(ActionType.Capture);
-            Debug.Log($"[UnitController] CaptureClientRpc complete - Unit ID: {Id}, CurrentCell ID: {_currentCell?.Id}, Frame: {Time.frameCount}");
+            //Debug.Log($"[UnitController] CaptureClientRpc complete - Unit ID: {Id}, CurrentCell ID: {_currentCell?.Id}, Frame: {Time.frameCount}");
         }
 
         // --- DEATH -------------------------------------------------------------------

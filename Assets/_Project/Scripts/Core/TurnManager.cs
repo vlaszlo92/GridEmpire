@@ -192,7 +192,7 @@ namespace GridEmpire.Core
                     ? string.Join(", ", localPlayer.ActiveUnits.Select(u => u?.CurrentCell?.Id))
                     : string.Empty;
 
-                Debug.Log($"[TurnManager] Updating fog of war for local player {localPlayer.Id}, Unit Cell IDs: [{unitCellIds}]");
+                //Debug.Log($"[TurnManager] Updating fog of war for local player {localPlayer.Id}, Unit Cell IDs: [{unitCellIds}]");
 
                 gridManager.UpdateFogOfWar(localPlayer.Id);
             }

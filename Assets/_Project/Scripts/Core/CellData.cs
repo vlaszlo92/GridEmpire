@@ -21,7 +21,18 @@ namespace GridEmpire.Core
         public int S => -Q - R;
 
         public int Id;
-        public int OwnerId = -1;
+        private int _ownerId = -1;
+        public int OwnerId
+        {
+            get => _ownerId;
+            set
+            {
+                if (_ownerId == value) return;
+                int old = _ownerId;
+                _ownerId = value;
+                OnCellOwnerChanged?.Invoke(old, value);
+            }
+        }
         public bool IsBase = false;
         public bool IsOccupied;
         public override bool Equals(object obj) => obj is CellData other && Id == other.Id;
@@ -81,16 +92,22 @@ namespace GridEmpire.Core
 
         public void UpdateCapture(int playerId, float amount)
         {
-            if (OwnerId == playerId) return;
+            if (OwnerId == playerId)
+            {
+                if (GetCaptureProgress(playerId) < 1.0f)
+                {
+                    ModifyInfluence(playerId, amount);
+                    OnVisualUpdateRequired?.Invoke();
+                }
+                return;
+            }
 
             if (OwnerId != -1)
             {
                 ModifyInfluence(OwnerId, -amount);
                 if (GetCaptureProgress(OwnerId) <= 0)
                 {
-                    int oldOwner = OwnerId;
                     OwnerId = -1;
-                    OnCellOwnerChanged?.Invoke(oldOwner, -1);
                 }
             }
             else
@@ -100,7 +117,6 @@ namespace GridEmpire.Core
                 {
                     OwnerId = playerId;
                     SetInfluence(playerId);
-                    OnCellOwnerChanged?.Invoke(-1, playerId);
                 }
             }
             OnVisualUpdateRequired?.Invoke();

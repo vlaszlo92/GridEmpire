@@ -30,8 +30,8 @@ namespace GridEmpire.Networking
         public NetworkVariable<int> ConnectedPlayerCount = new NetworkVariable<int>(0);
         public NetworkVariable<bool> FogOfWarEnabled = new NetworkVariable<bool>(true);
         public NetworkVariable<float> GoldPerTurnPerCell = new NetworkVariable<float>(0.1f);
-        public NetworkList<PlayerLobbyInfo> PlayerLobbyInfos;
-        public NetworkList<PlayerClientMapping> PlayerMappings;
+        public NetworkList<PlayerLobbyInfo> PlayerLobbyInfos = new NetworkList<PlayerLobbyInfo>();
+        public NetworkList<PlayerClientMapping> PlayerMappings = new NetworkList<PlayerClientMapping>();
 
         public void UpdateSettings(int totalPlayers, int aiBots, int mapRadius, float turnSpeed, float goldPerTurnPerCell)
         {
@@ -66,8 +66,6 @@ namespace GridEmpire.Networking
             if (Instance != null && Instance != this) { Destroy(gameObject); return; }
             Instance = this;
             DontDestroyOnLoad(gameObject);
-            PlayerMappings = new NetworkList<PlayerClientMapping>();
-            PlayerLobbyInfos = new NetworkList<PlayerLobbyInfo>();
 
             TotalPlayers.Value = MaxPlayersLimit;
             TotalAIBots.Value = 0;
@@ -84,7 +82,6 @@ namespace GridEmpire.Networking
             if (IsServer)
             {
                 PlayerMappings.OnListChanged += HandlePlayerMappingsChangedForLobbyInfo;
-                // Ha idaig mar volt mapping (pl. a host sajat maga), azokra is pot kell.
                 foreach (var mapping in PlayerMappings)
                     RegisterLobbyInfoIfMissing(mapping.PlayerId);
             }
