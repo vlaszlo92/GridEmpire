@@ -16,7 +16,7 @@ namespace GridEmpire.UI
         private StatType _statType;
         private Action<StatType> _onUpgradeClicked;
 
-        public void Setup(string displayName, float currentValue, int level, int nextCost, StatType statType, Action<StatType> onUpgradeClicked)
+        public void Setup(string displayName, float currentValue, int level, int nextCost, StatType statType, Action<StatType> onUpgradeClicked, bool isMaxed = false)
         {
             _statType = statType;
             _onUpgradeClicked = onUpgradeClicked;
@@ -28,7 +28,7 @@ namespace GridEmpire.UI
                 valueAndLevelText.text = $"{currentValue:F1} ({level})";
 
             if (buttonText != null)
-                buttonText.text = $"[{nextCost}g] +";
+                buttonText.text = isMaxed ? "MAX" : $"[{nextCost}g] +";
 
             upgradeButton.onClick.RemoveAllListeners();
             upgradeButton.onClick.AddListener(() => _onUpgradeClicked?.Invoke(_statType));

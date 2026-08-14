@@ -1,5 +1,4 @@
-﻿// UIManager.cs - GridEmpire.UI namespace, UI mappa
-using GridEmpire.Core;
+﻿using GridEmpire.Core;
 using GridEmpire.Gameplay;
 using GridEmpire.Input;
 using System.Collections;
@@ -7,6 +6,7 @@ using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
+using GridEmpire.Data;
 
 namespace GridEmpire.UI
 {
@@ -89,8 +89,9 @@ namespace GridEmpire.UI
         private void Start()
         {
             UnitSpawnButtonTrigger.OnSpawnRequested += RequestSpawn;
-            UnitSpawnButtonTrigger.OnUnitDescriptionRequested += ShowUnitDescription;
-            
+            UnitSpawnButtonTrigger.OnUnitDescriptionRequested += ShowUnitDescription; 
+            UnitDescriptionPanelUI.OnUpgradeRequested += RequestUpgrade;
+
             if (closeDescBtn != null)
                 closeDescBtn.onClick.AddListener(HideUnitDescription);
 
@@ -123,13 +124,15 @@ namespace GridEmpire.UI
         {
             UnitSpawnButtonTrigger.OnSpawnRequested -= RequestSpawn;
             UnitSpawnButtonTrigger.OnUnitDescriptionRequested -= ShowUnitDescription;
-        }
+            UnitDescriptionPanelUI.OnUpgradeRequested -= RequestUpgrade;
 
+        }
         private void OnEnable()
         {
             TurnManager.OnTurnCompleted += ResetVisualTimer;
             TurnManager.OnTurnCompleted += RefreshGoldDisplay;
             GameController.OnUnitSelected += HandleUnitSelectionChanged;
+            UnitSpawner.OnUpgradeStateChanged += RefreshGoldDisplay;
         }
 
         private void OnDisable()
@@ -137,6 +140,7 @@ namespace GridEmpire.UI
             TurnManager.OnTurnCompleted -= ResetVisualTimer;
             TurnManager.OnTurnCompleted -= RefreshGoldDisplay;
             GameController.OnUnitSelected -= HandleUnitSelectionChanged;
+            UnitSpawner.OnUpgradeStateChanged -= RefreshGoldDisplay;
         }
 
         private void InitSlider(Slider slider, string key, UnityEngine.Events.UnityAction<float> onValueChanged)
@@ -151,6 +155,14 @@ namespace GridEmpire.UI
         {
             if (this == null || goldText == null || _localSpawner == null) return;
             goldText.text = "Gold: " + _localPlayer.Gold.ToString();
+
+            if (_descOpen && _currentDisplayedUnitIndex >= 0)
+                ShowUnitDescription(_currentDisplayedUnitIndex);
+        }
+
+        private void RequestUpgrade(int unitIndex, StatType statType)
+        {
+            _localSpawner?.RequestUpgrade(unitIndex, statType);
         }
 
         private void HandleUnitSelectionChanged(IUnit unit)
@@ -174,8 +186,8 @@ namespace GridEmpire.UI
                 if (_selectedUnit.IsDead) HideUnitInfo();
                 else
                 {
-                    unitHpText.text = $"HP: {Mathf.CeilToInt(_selectedUnit.GetCurrentHP())} / {_selectedUnit.Data.maxHp}";
-                    unitStaminaText.text = $"Stamina: {_selectedUnit.GetCurrentStamina():F1} / {_selectedUnit.Data.maxStamina}";
+                    unitHpText.text = $"HP: {Mathf.CeilToInt(_selectedUnit.GetCurrentHP())} / {_selectedUnit.Stats.MaxHp}";
+                    unitStaminaText.text = $"Stamina: {_selectedUnit.GetCurrentStamina():F1} / {_selectedUnit.Stats.MaxStamina}";
                 }
             }
 
@@ -342,7 +354,7 @@ namespace GridEmpire.UI
             if (infoPanelRoot != null) infoPanelRoot.SetActive(true);
             unitNameText.text = unit.Data.unitName;
             unitOwnerText.text = $"Player {unit.OwnerId}";
-            unitDamageText.text = $"Damage: {unit.Data.baseDamage} (+{unit.Data.bonusDamage} vs {unit.Data.strongAgainst})";
+            unitDamageText.text = $"Damage: {unit.Stats.BaseDamage} (+{unit.Stats.BonusDamage} vs {unit.Data.strongAgainst})";
         }
 
         public void HideUnitInfo()
@@ -382,22 +394,27 @@ namespace GridEmpire.UI
             var data = availableUnitData[unitIndex];
             _currentDisplayedUnitIndex = unitIndex;
 
-            // Frissites delegalasa az uj UI komponens fele
             if (descPanelUI != null)
-            {
-                // Egyelore ures szintekkel/arannyal meghivjuk, amig meg nincs az Upgrade Manager
-                descPanelUI.RefreshPanel(data, GetDefaultUpgrades(), _localPlayer != null ? (int)_localPlayer.Gold : 0);
-            }
+                descPanelUI.RefreshPanel(data, GetUpgradesForUnit(unitIndex), _localPlayer != null ? (int)_localPlayer.Gold : 0);
 
             Canvas.ForceUpdateCanvases();
             if (descPanelRect != null)
-            {
                 LayoutRebuilder.ForceRebuildLayoutImmediate(descPanelRect);
-            }
 
             _descOpen = true;
             _targetDescWidth = descPanelTargetWidth;
             if (descPanelRoot != null) descPanelRoot.SetActive(true);
+        }
+
+        private Dictionary<StatType, StatUpgradeState> GetUpgradesForUnit(int unitIndex)
+        {
+            var dict = new Dictionary<StatType, StatUpgradeState>();
+            foreach (StatType type in System.Enum.GetValues(typeof(StatType)))
+            {
+                int level = _localPlayer != null ? _localPlayer.GetUpgradeLevel(unitIndex, (int)type) : 0;
+                dict[type] = StatUpgradeConfig.CreateState(type, level);
+            }
+            return dict;
         }
 
         public void HideUnitDescription()
@@ -416,17 +433,6 @@ namespace GridEmpire.UI
             {
                 HideUnitDescription();
             }
-        }
-
-        // Ideiglenes segedmetodus az alapertelmezett 0-s szintu statoknak
-        private Dictionary<GridEmpire.Data.StatType, GridEmpire.Data.StatUpgradeState> GetDefaultUpgrades()
-        {
-            var dict = new Dictionary<GridEmpire.Data.StatType, GridEmpire.Data.StatUpgradeState>();
-            foreach (GridEmpire.Data.StatType type in System.Enum.GetValues(typeof(GridEmpire.Data.StatType)))
-            {
-                dict[type] = new GridEmpire.Data.StatUpgradeState { statType = type, level = 0 };
-            }
-            return dict;
         }
     }
 }

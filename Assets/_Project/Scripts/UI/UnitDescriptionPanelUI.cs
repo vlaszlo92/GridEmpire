@@ -11,6 +11,7 @@ namespace GridEmpire.UI
         [Header("Static Info Header")]
         [SerializeField] private TextMeshProUGUI unitNameText;
         [SerializeField] private TextMeshProUGUI staticStatsText; // Cost, Train Time, Strong Against, stb.
+        public static System.Action<int, StatType> OnUpgradeRequested;
 
         [Header("Upgrade System")]
         [SerializeField] private Transform rowsContainer; // Az UpgradeRowsContainer RectTransform-ja
@@ -29,10 +30,7 @@ namespace GridEmpire.UI
                                       $"Upkeep: {baseData.costPerTurn} Gold/turn | Counter: {baseData.strongAgainst}";
             }
 
-            // 2. Szintezheto statok osszegyujtese egy listaba
             var statList = GetStatDisplayData(baseData, unitUpgrades);
-
-            // 3. UI sorok ujrahasznositasa / generalasa
             EnsureRowPoolSize(statList.Count);
 
             for (int i = 0; i < statList.Count; i++)
@@ -41,17 +39,19 @@ namespace GridEmpire.UI
                 var rowUI = _spawnedRows[i];
                 rowUI.gameObject.SetActive(true);
 
+                bool atCap = item.state.level >= GridEmpire.Core.PlayerProfile.MaxUpgradeLevel;
+
                 rowUI.Setup(
                     item.displayName,
                     item.currentValue,
                     item.state.level,
                     item.state.GetCurrentCost(),
                     item.type,
-                    (type) => OnUpgradeButtonClicked(baseData.index, type)
+                    (type) => OnUpgradeButtonClicked(baseData.index, type),
+                    atCap
                 );
 
-                // Gomb letiltasa, ha nincs eleg aranya a jatekosnak
-                rowUI.SetButtonInteractable(currentPlayerGold >= item.state.GetCurrentCost());
+                rowUI.SetButtonInteractable(!atCap && currentPlayerGold >= item.state.GetCurrentCost());
             }
         }
 
@@ -71,11 +71,9 @@ namespace GridEmpire.UI
 
         private void OnUpgradeButtonClicked(int unitIndex, StatType statType)
         {
-            // Tovabbitjuk a kerest a GameManager-nek, ami levonja az aranyat es emeli a szintet
-            // GameManager.Instance.UpgradeUnitStat(unitIndex, statType);
+            OnUpgradeRequested?.Invoke(unitIndex, statType);
         }
 
-        // Segedstruktura a megjelenites megkonnyitesere
         private struct StatDisplayItem
         {
             public string displayName;

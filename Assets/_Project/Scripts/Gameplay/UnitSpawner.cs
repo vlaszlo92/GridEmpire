@@ -4,12 +4,14 @@ using System.Collections;
 using System.Collections.Generic;
 using Unity.Netcode;
 using UnityEngine;
+using GridEmpire.Data;
 
 namespace GridEmpire.Gameplay
 {
     public class UnitSpawner : NetworkBehaviour, ISpawner
     {
         public static System.Action<int, int, CellData> OnRequestUnitSpawn;
+        public static System.Action OnUpgradeStateChanged;
         public const int MaxQueueSize = 6;
 
         [Header("Unit Definitions")]
@@ -134,6 +136,31 @@ namespace GridEmpire.Gameplay
                 yield break;
 
             Initialize(localPlayerId);
+            RequestUpgradeStateServerRpc();
+        }
+
+        [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)]
+        private void RequestUpgradeStateServerRpc(RpcParams rpcParams = default)
+        {
+            var profile = GetProfile();
+            if (profile == null) return;
+
+            var (unitIndices, statTypeIds, levels) = profile.SerializeUpgrades();
+            var clientRpcParams = new ClientRpcParams { Send = new ClientRpcSendParams { TargetClientIds = new[] { rpcParams.Receive.SenderClientId } } };
+            SyncFullUpgradeStateClientRpc(unitIndices, statTypeIds, levels, clientRpcParams);
+        }
+
+        [ClientRpc]
+        private void SyncFullUpgradeStateClientRpc(int[] unitIndices, int[] statTypeIds, int[] levels, ClientRpcParams clientRpcParams = default)
+        {
+            if (IsServer) return;
+            var profile = GetProfile();
+            if (profile == null) return;
+
+            for (int i = 0; i < unitIndices.Length; i++)
+                profile.SetUpgradeLevel(unitIndices[i], statTypeIds[i], levels[i]);
+
+            OnUpgradeStateChanged?.Invoke();
         }
 
         public void SetGridManager(GridManager gm)
@@ -222,15 +249,79 @@ namespace GridEmpire.Gameplay
             int newId = GameController.Instance.GetNextAvailableId();
             GameObject go = Instantiate(item.Data.unitPrefab, spawnPos, initialRot);
             UnitController controller = go.GetComponent<UnitController>();
-            if (!go.TryGetComponent<NetworkObject>(out var netObj)) { Debug.LogError("[UnitSpawner] NetworkObject hianyzik!"); return; }            
+            if (!go.TryGetComponent<NetworkObject>(out var netObj)) { Debug.LogError("[UnitSpawner] NetworkObject hianyzik!"); return; }
 
             controller.NetworkUnitId.Value = newId;
             controller.NetworkOwnerId.Value = _ownerId;
             controller.NetworkUnitTypeIndex.Value = item.Data.index;
+            controller.NetworkStats.Value = ComputeEffectiveStats(item.Data, profile);
             netObj.Spawn();
 
             var path = item.TargetCell != null ? gridManager.FindPath(spawnCell, item.TargetCell) : null;
             controller.Initialize(newId, item.Data, path, gridManager, _ownerId);
+        }
+
+        private EffectiveUnitStats ComputeEffectiveStats(UnitData data, PlayerProfile profile)
+        {
+            float Upgraded(StatType type, float baseValue)
+            {
+                int level = profile != null ? profile.GetUpgradeLevel(data.index, (int)type) : 0;
+                var state = StatUpgradeConfig.CreateState(type, level);
+                return state.GetUpgradedValue(baseValue);
+            }
+
+            return new EffectiveUnitStats
+            {
+                MaxHp = Mathf.RoundToInt(Upgraded(StatType.MaxHp, data.maxHp)),
+                StaminaPerTurn = Upgraded(StatType.StaminaPerTurn, data.staminaPerTurn),
+                MaxStamina = Upgraded(StatType.MaxStamina, data.maxStamina),
+                ConquerSpeed = Upgraded(StatType.ConquerSpeed, data.conquerSpeed),
+                ExploreSpeed = Upgraded(StatType.ExploreSpeed, data.exploreSpeed),
+                BaseDamage = Mathf.RoundToInt(Upgraded(StatType.BaseDamage, data.baseDamage)),
+                BonusDamage = Mathf.RoundToInt(Upgraded(StatType.BonusDamage, data.bonusDamage))
+            };
+        }
+
+        public void RequestUpgrade(int unitIndex, StatType statType)
+        {
+            if (IsServer) ExecuteUpgradeLogic(unitIndex, statType, NetworkManager.Singleton.LocalClientId);
+            else RequestUpgradeServerRpc(unitIndex, statType);
+        }
+
+        [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)]
+        private void RequestUpgradeServerRpc(int unitIndex, StatType statType, RpcParams rpcParams = default)
+        {
+            ExecuteUpgradeLogic(unitIndex, statType, rpcParams.Receive.SenderClientId);
+        }
+
+        private void ExecuteUpgradeLogic(int unitIndex, StatType statType, ulong requesterClientId)
+        {
+            var profile = GetProfile();
+            if (profile == null) return;
+
+            int currentLevel = profile.GetUpgradeLevel(unitIndex, (int)statType);
+            if (currentLevel >= PlayerProfile.MaxUpgradeLevel) return;
+
+            var state = StatUpgradeConfig.CreateState(statType, currentLevel);
+            if (!profile.SpendGold(state.GetCurrentCost())) return;
+
+            int newLevel = currentLevel + 1;
+            profile.SetUpgradeLevel(unitIndex, (int)statType, newLevel);
+            OnUpgradeStateChanged?.Invoke();
+
+            var clientRpcParams = new ClientRpcParams { Send = new ClientRpcSendParams { TargetClientIds = new[] { requesterClientId } } };
+            SyncUpgradeClientRpc(unitIndex, statType, newLevel, profile.Gold, clientRpcParams);
+        }
+
+        [ClientRpc]
+        private void SyncUpgradeClientRpc(int unitIndex, StatType statType, int newLevel, float newGold, ClientRpcParams clientRpcParams = default)
+        {
+            if (IsServer) return;
+            var profile = GetProfile();
+            if (profile == null) return;
+            profile.SetUpgradeLevel(unitIndex, (int)statType, newLevel);
+            profile.SyncGold(newGold);
+            OnUpgradeStateChanged?.Invoke();
         }
 
         public void SendSpawnRequest(int unitSlot, int targetCellId)

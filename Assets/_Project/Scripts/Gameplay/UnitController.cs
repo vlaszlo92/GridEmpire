@@ -22,6 +22,8 @@ namespace GridEmpire.Gameplay
         public NetworkVariable<int> NetworkUnitId = new NetworkVariable<int>();
         public NetworkVariable<int> NetworkOwnerId = new NetworkVariable<int>();
         public NetworkVariable<int> NetworkUnitTypeIndex = new NetworkVariable<int>();
+        public NetworkVariable<EffectiveUnitStats> NetworkStats = new NetworkVariable<EffectiveUnitStats>();
+        public EffectiveUnitStats Stats => NetworkStats.Value;
 
         [Header("Colorization Setup")]
         [SerializeField] private List<ColorizableTarget> _colorizableTargets;
@@ -152,12 +154,26 @@ namespace GridEmpire.Gameplay
             NetworkOwnerId.Value = ownerId;
             NetworkUnitTypeIndex.Value = data.index;
 
+            if (NetworkStats.Value.MaxHp == 0)
+            {
+                NetworkStats.Value = new EffectiveUnitStats
+                {
+                    MaxHp = data.maxHp,
+                    StaminaPerTurn = data.staminaPerTurn,
+                    MaxStamina = data.maxStamina,
+                    ConquerSpeed = data.conquerSpeed,
+                    ExploreSpeed = data.exploreSpeed,
+                    BaseDamage = data.baseDamage,
+                    BonusDamage = data.bonusDamage
+                };
+            }
+
             _id = uniqueId;
             _data = data;
             _gridManager = gm;
             _ownerId = ownerId;
-            _currentHP = data.maxHp;
-            _currentStamina = data.maxStamina;
+            _currentHP = NetworkStats.Value.MaxHp;
+            _currentStamina = NetworkStats.Value.MaxStamina;
 
             _resolver = FindFirstObjectByType<TurnResolver>();
             _resolver?.RegisterUnit(this);
@@ -181,7 +197,7 @@ namespace GridEmpire.Gameplay
         {
             if (!NetworkManager.Singleton.IsServer || _isDead) return;
             _nextAction = new UnitAction { PerformerUnitId = _id, PlayerId = _ownerId, Type = ActionType.Idle, TargetCellId = -1 };
-            _currentStamina = Mathf.Min(_currentStamina + _data.staminaPerTurn, _data.maxStamina);
+            _currentStamina = Mathf.Min(_currentStamina + NetworkStats.Value.StaminaPerTurn, NetworkStats.Value.MaxStamina);
             bool canMove = _currentStamina >= 1.0f;
 
             UnitController nearbyEnemy = ScanForEnemies();
@@ -335,9 +351,9 @@ namespace GridEmpire.Gameplay
             {
                 FaceCombatTarget(target.Id, target.transform.position);
 
-                float totalDamage = _data.baseDamage;
+                float totalDamage = NetworkStats.Value.BaseDamage;
                 if (_data.strongAgainst == target.Data.type)
-                    totalDamage += _data.bonusDamage;
+                    totalDamage += NetworkStats.Value.BonusDamage;
 
                 target.RegisterPendingDamage(totalDamage);
                 target.FaceCombatTarget(_id, transform.position);
@@ -369,8 +385,8 @@ namespace GridEmpire.Gameplay
 
                 if (_id > enemy._id)
                 {
-                    enemy.RegisterPendingDamage(_data.baseDamage);
-                    RegisterPendingDamage(enemy._data.baseDamage);
+                    enemy.RegisterPendingDamage(NetworkStats.Value.BaseDamage);
+                    RegisterPendingDamage(enemy.NetworkStats.Value.BaseDamage);
                     _unitAnimator?.Play(ActionType.Attack);
 
                     int enemyCellId = enemy._currentCell?.Id ?? -1;
@@ -499,7 +515,7 @@ namespace GridEmpire.Gameplay
                 target.CapturingUnitIds.Add(_id);
 
             bool isNeutral = target.OwnerId == -1;
-            float speed = isNeutral ? _data.exploreSpeed : _data.conquerSpeed;
+            float speed = isNeutral ? NetworkStats.Value.ExploreSpeed : NetworkStats.Value.ConquerSpeed;
 
             target.UpdateCapture(_ownerId, speed);
 

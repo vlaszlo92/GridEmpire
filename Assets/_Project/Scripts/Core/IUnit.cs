@@ -19,5 +19,6 @@ namespace GridEmpire.Core
         void SetVisible(bool visible);
         void SetAudioVisible(bool visible);
         void SyncToAuthoritativeState();
+        EffectiveUnitStats Stats { get; }
     }
 }

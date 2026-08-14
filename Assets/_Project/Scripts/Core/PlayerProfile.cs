@@ -35,11 +35,13 @@ namespace GridEmpire.Core
         public int OwnedCellCount => ownedCellCount;
         public float Gold => gold;
         public float GoldIncome => goldIncome;
-        internal void SyncGold(float amount) => gold = amount;
-        internal void SyncIncome(float amount) => goldIncome = amount;
+        public void SyncGold(float amount) => gold = amount;
+        public void SyncIncome(float amount) => goldIncome = amount;
         public CellData BaseCell { get => baseCell; set => baseCell = value; }
         public CellData SelectedCell { get => selectedCell; set => selectedCell = value; }
         internal void SetLocal(bool isLocal) => isLocalPlayer = isLocal;
+        public const int MaxUpgradeLevel = 5;
+        private readonly Dictionary<int, Dictionary<int, int>> _unitUpgradeLevels = new();
 
         public PlayerProfile(int id, string name, Color color, bool isAi, bool isLocal, CellData selectedCell, float goldPerTurnPerCell = 0.1f)
         {
@@ -51,6 +53,40 @@ namespace GridEmpire.Core
             this.gold = 10000f;
             this.selectedCell = selectedCell;
             this.goldPerTurnPerCell = goldPerTurnPerCell;
+        }
+
+        public int GetUpgradeLevel(int unitIndex, int statTypeId)
+        {
+            if (_unitUpgradeLevels.TryGetValue(unitIndex, out var stats) && stats.TryGetValue(statTypeId, out int level))
+                return level;
+            return 0;
+        }
+
+        public void SetUpgradeLevel(int unitIndex, int statTypeId, int level)
+        {
+            if (!_unitUpgradeLevels.TryGetValue(unitIndex, out var stats))
+            {
+                stats = new Dictionary<int, int>();
+                _unitUpgradeLevels[unitIndex] = stats;
+            }
+            stats[statTypeId] = level;
+        }
+
+        public (int[] unitIndices, int[] statTypeIds, int[] levels) SerializeUpgrades()
+        {
+            var unitIndices = new List<int>();
+            var statTypeIds = new List<int>();
+            var levels = new List<int>();
+
+            foreach (var unitEntry in _unitUpgradeLevels)
+                foreach (var statEntry in unitEntry.Value)
+                {
+                    unitIndices.Add(unitEntry.Key);
+                    statTypeIds.Add(statEntry.Key);
+                    levels.Add(statEntry.Value);
+                }
+
+            return (unitIndices.ToArray(), statTypeIds.ToArray(), levels.ToArray());
         }
 
         public void AddUnit(IUnit unit)

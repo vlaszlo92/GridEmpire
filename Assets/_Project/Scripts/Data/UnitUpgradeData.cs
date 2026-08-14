@@ -20,9 +20,9 @@ namespace GridEmpire.Data
     {
         public StatType statType;
         public int level = 0;
-        public int baseUpgradeCost = 100;
-        public float costMultiplier = 1.5f; // Szintenkent ennyivel dragul
-        public float valuePerLevel = 10f;   // Szintenkent ennyit ad hozza
+        public int baseUpgradeCost;
+        public float costMultiplier;
+        public float valuePerLevel;
 
         public int GetCurrentCost()
         {
