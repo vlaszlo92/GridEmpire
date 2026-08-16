@@ -4,7 +4,6 @@ using System.Collections;
 using System.Collections.Generic;
 using Unity.Netcode;
 using UnityEngine;
-using GridEmpire.Data;
 
 namespace GridEmpire.Gameplay
 {
@@ -266,9 +265,12 @@ namespace GridEmpire.Gameplay
         {
             float Upgraded(StatType type, float baseValue)
             {
+                var settings = data.GetUpgradeSettings(type);
+                if (settings == null || !settings.enabled) return baseValue;
+
                 int level = profile != null ? profile.GetUpgradeLevel(data.index, (int)type) : 0;
-                var state = StatUpgradeConfig.CreateState(type, level);
-                return state.GetUpgradedValue(baseValue);
+                level = Mathf.Min(level, settings.maxLevel);
+                return settings.ToState(level).GetUpgradedValue(baseValue);
             }
 
             return new EffectiveUnitStats
@@ -319,10 +321,14 @@ namespace GridEmpire.Gameplay
             var profile = GetProfile();
             if (profile == null) return;
 
-            int currentLevel = profile.GetUpgradeLevel(unitIndex, (int)statType);
-            if (currentLevel >= PlayerProfile.MaxUpgradeLevel) return;
+            UnitData data = GameController.Instance?.GetUnitDataByIndex(unitIndex);
+            var settings = data?.GetUpgradeSettings(statType);
+            if (settings == null || !settings.enabled) return;
 
-            var state = StatUpgradeConfig.CreateState(statType, currentLevel);
+            int currentLevel = profile.GetUpgradeLevel(unitIndex, (int)statType);
+            if (currentLevel >= settings.maxLevel) return;
+
+            var state = settings.ToState(currentLevel);
             if (!profile.SpendGold(state.GetCurrentCost())) return;
 
             int newLevel = currentLevel + 1;

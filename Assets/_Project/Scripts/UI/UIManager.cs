@@ -6,7 +6,6 @@ using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
-using GridEmpire.Data;
 
 namespace GridEmpire.UI
 {
@@ -395,7 +394,7 @@ namespace GridEmpire.UI
             _currentDisplayedUnitIndex = unitIndex;
 
             if (descPanelUI != null)
-                descPanelUI.RefreshPanel(data, GetUpgradesForUnit(unitIndex), _localPlayer != null ? (int)_localPlayer.Gold : 0);
+                descPanelUI.RefreshPanel(data, GetUpgradesForUnit(data), _localPlayer != null ? (int)_localPlayer.Gold : 0);
 
             Canvas.ForceUpdateCanvases();
             if (descPanelRect != null)
@@ -406,13 +405,16 @@ namespace GridEmpire.UI
             if (descPanelRoot != null) descPanelRoot.SetActive(true);
         }
 
-        private Dictionary<StatType, StatUpgradeState> GetUpgradesForUnit(int unitIndex)
+        private Dictionary<StatType, StatUpgradeState> GetUpgradesForUnit(UnitData data)
         {
             var dict = new Dictionary<StatType, StatUpgradeState>();
-            foreach (StatType type in System.Enum.GetValues(typeof(StatType)))
+            if (data?.upgradeSettings == null) return dict;
+
+            foreach (var settings in data.upgradeSettings)
             {
-                int level = _localPlayer != null ? _localPlayer.GetUpgradeLevel(unitIndex, (int)type) : 0;
-                dict[type] = StatUpgradeConfig.CreateState(type, level);
+                if (!settings.enabled) continue;
+                int level = _localPlayer != null ? _localPlayer.GetUpgradeLevel(data.index, (int)settings.statType) : 0;
+                dict[settings.statType] = settings.ToState(level);
             }
             return dict;
         }

@@ -1,5 +1,4 @@
 using GridEmpire.Core;
-using GridEmpire.Data;
 using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
@@ -21,7 +20,6 @@ namespace GridEmpire.UI
 
         public void RefreshPanel(UnitData baseData, Dictionary<StatType, StatUpgradeState> unitUpgrades, int currentPlayerGold)
         {
-            // 1. Statikus adatok kiirasa, amik nem szintezhetok
             if (unitNameText != null) unitNameText.text = baseData.unitName;
 
             if (staticStatsText != null)
@@ -39,7 +37,7 @@ namespace GridEmpire.UI
                 var rowUI = _spawnedRows[i];
                 rowUI.gameObject.SetActive(true);
 
-                bool atCap = item.state.level >= GridEmpire.Core.PlayerProfile.MaxUpgradeLevel;
+                bool atCap = item.state.IsMaxed;
 
                 rowUI.Setup(
                     item.displayName,
@@ -82,18 +80,43 @@ namespace GridEmpire.UI
             public StatUpgradeState state;
         }
 
+        private static readonly Dictionary<StatType, string> DisplayNames = new()
+        {
+            { StatType.MaxHp, "Max HP" },
+            { StatType.StaminaPerTurn, "Stamina / Turn" },
+            { StatType.MaxStamina, "Max Stamina" },
+            { StatType.ConquerSpeed, "Conquer Speed" },
+            { StatType.ExploreSpeed, "Explore Speed" },
+            { StatType.BaseDamage, "Base Damage" },
+            { StatType.BonusDamage, "Bonus Damage" }
+        };
+
         private List<StatDisplayItem> GetStatDisplayData(UnitData baseData, Dictionary<StatType, StatUpgradeState> upgrades)
         {
-            return new List<StatDisplayItem>
+            var baseValues = new Dictionary<StatType, float>
+    {
+        { StatType.MaxHp, baseData.maxHp },
+        { StatType.StaminaPerTurn, baseData.staminaPerTurn },
+        { StatType.MaxStamina, baseData.maxStamina },
+        { StatType.ConquerSpeed, baseData.conquerSpeed },
+        { StatType.ExploreSpeed, baseData.exploreSpeed },
+        { StatType.BaseDamage, baseData.baseDamage },
+        { StatType.BonusDamage, baseData.bonusDamage }
+    };
+
+            var result = new List<StatDisplayItem>();
+            foreach (StatType type in System.Enum.GetValues(typeof(StatType)))
             {
-                new StatDisplayItem { displayName = "Max HP", currentValue = upgrades[StatType.MaxHp].GetUpgradedValue(baseData.maxHp), type = StatType.MaxHp, state = upgrades[StatType.MaxHp] },
-                new StatDisplayItem { displayName = "Stamina / Turn", currentValue = upgrades[StatType.StaminaPerTurn].GetUpgradedValue(baseData.staminaPerTurn), type = StatType.StaminaPerTurn, state = upgrades[StatType.StaminaPerTurn] },
-                new StatDisplayItem { displayName = "Max Stamina", currentValue = upgrades[StatType.MaxStamina].GetUpgradedValue(baseData.maxStamina), type = StatType.MaxStamina, state = upgrades[StatType.MaxStamina] },
-                new StatDisplayItem { displayName = "Conquer Speed", currentValue = upgrades[StatType.ConquerSpeed].GetUpgradedValue(baseData.conquerSpeed), type = StatType.ConquerSpeed, state = upgrades[StatType.ConquerSpeed] },
-                new StatDisplayItem { displayName = "Explore Speed", currentValue = upgrades[StatType.ExploreSpeed].GetUpgradedValue(baseData.exploreSpeed), type = StatType.ExploreSpeed, state = upgrades[StatType.ExploreSpeed] },
-                new StatDisplayItem { displayName = "Base Damage", currentValue = upgrades[StatType.BaseDamage].GetUpgradedValue(baseData.baseDamage), type = StatType.BaseDamage, state = upgrades[StatType.BaseDamage] },
-                new StatDisplayItem { displayName = "Bonus Damage", currentValue = upgrades[StatType.BonusDamage].GetUpgradedValue(baseData.bonusDamage), type = StatType.BonusDamage, state = upgrades[StatType.BonusDamage] }
-            };
+                if (!upgrades.TryGetValue(type, out var state)) continue;
+                result.Add(new StatDisplayItem
+                {
+                    displayName = DisplayNames[type],
+                    currentValue = state.GetUpgradedValue(baseValues[type]),
+                    type = type,
+                    state = state
+                });
+            }
+            return result;
         }
     }
 }

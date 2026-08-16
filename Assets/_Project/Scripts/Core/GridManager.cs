@@ -235,7 +235,10 @@ namespace GridEmpire.Core
             {
                 var current = frontier.Dequeue();
                 if (current == target) break;
-                foreach (var next in GetNeighbors(current))
+
+                var neighbors = GetNeighbors(current);
+                ShuffleInPlace(neighbors);
+                foreach (var next in neighbors)
                     if (!cameFrom.ContainsKey(next)) { frontier.Enqueue(next); cameFrom[next] = current; }
             }
 
@@ -246,6 +249,15 @@ namespace GridEmpire.Core
                 path.Add(curr);
             path.Reverse();
             return path;
+        }
+
+        private static void ShuffleInPlace(List<CellData> list)
+        {
+            for (int i = list.Count - 1; i > 0; i--)
+            {
+                int j = UnityEngine.Random.Range(0, i + 1);
+                (list[i], list[j]) = (list[j], list[i]);
+            }
         }
 
         public void DebugGiveAllCellsToPlayer(int playerId, int exceptPlayerId)

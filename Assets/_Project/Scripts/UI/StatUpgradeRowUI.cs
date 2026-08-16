@@ -2,7 +2,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 using System;
-using GridEmpire.Data;
+using GridEmpire.Core;
 
 namespace GridEmpire.UI
 {

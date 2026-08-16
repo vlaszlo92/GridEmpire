@@ -29,6 +29,26 @@ namespace GridEmpire.Core
         [Header("Visuals")]
         public GameObject unitPrefab; // Maga a 3D modell, amit majd le akarunk rakni
         public Sprite icon;
+
+        [Header("Upgrades")]
+        public StatUpgradeSettings[] upgradeSettings = CreateDefaultUpgradeSettings();
+
+        private static StatUpgradeSettings[] CreateDefaultUpgradeSettings()
+        {
+            var types = (StatType[])System.Enum.GetValues(typeof(StatType));
+            var result = new StatUpgradeSettings[types.Length];
+            for (int i = 0; i < types.Length; i++)
+                result[i] = new StatUpgradeSettings { statType = types[i] };
+            return result;
+        }
+
+        public StatUpgradeSettings GetUpgradeSettings(StatType type)
+        {
+            if (upgradeSettings == null) return null;
+            foreach (var s in upgradeSettings)
+                if (s.statType == type) return s;
+            return null;
+        }
     }
 
     public enum UnitType { Axeman, Spearman, Cavalry, Scout }

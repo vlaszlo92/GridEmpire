@@ -40,7 +40,6 @@ namespace GridEmpire.Core
         public CellData BaseCell { get => baseCell; set => baseCell = value; }
         public CellData SelectedCell { get => selectedCell; set => selectedCell = value; }
         internal void SetLocal(bool isLocal) => isLocalPlayer = isLocal;
-        public const int MaxUpgradeLevel = 5;
         private readonly Dictionary<int, Dictionary<int, int>> _unitUpgradeLevels = new();
 
         public PlayerProfile(int id, string name, Color color, bool isAi, bool isLocal, CellData selectedCell, float goldPerTurnPerCell = 0.1f)
