@@ -8,21 +8,23 @@ namespace GridEmpire.UI
 {
     public class StatUpgradeRowUI : MonoBehaviour
     {
-        [SerializeField] private TextMeshProUGUI statNameText;
+        [SerializeField] private Image statIconImage;
+        [SerializeField] private TextMeshProUGUI statNameText; // opcionális, tooltip/hover-hez megtartható
         [SerializeField] private TextMeshProUGUI valueAndLevelText;
         [SerializeField] private Button upgradeButton;
-        [SerializeField] private TextMeshProUGUI buttonText; // A gomb belso felirata
+        [SerializeField] private TextMeshProUGUI buttonText;
 
         private StatType _statType;
         private Action<StatType> _onUpgradeClicked;
 
-        public void Setup(string displayName, float currentValue, int level, int nextCost, StatType statType, Action<StatType> onUpgradeClicked, bool isMaxed = false)
+        public void Setup(Sprite icon, string displayName, float currentValue, int level, int nextCost,
+            StatType statType, Action<StatType> onUpgradeClicked, bool isMaxed = false)
         {
             _statType = statType;
             _onUpgradeClicked = onUpgradeClicked;
 
-            if (statNameText != null)
-                statNameText.text = displayName;
+            if (statIconImage != null) statIconImage.sprite = icon;
+            if (statNameText != null) statNameText.text = displayName;
 
             if (valueAndLevelText != null)
                 valueAndLevelText.text = $"{currentValue:F1} ({level})";
@@ -36,8 +38,7 @@ namespace GridEmpire.UI
 
         public void SetButtonInteractable(bool canAfford)
         {
-            if (upgradeButton != null)
-                upgradeButton.interactable = canAfford;
+            if (upgradeButton != null) upgradeButton.interactable = canAfford;
         }
     }
 }

@@ -9,24 +9,29 @@ namespace GridEmpire.UI
     {
         [Header("Static Info Header")]
         [SerializeField] private TextMeshProUGUI unitNameText;
-        [SerializeField] private TextMeshProUGUI staticStatsText; // Cost, Train Time, Strong Against, stb.
+
+        [Header("Stats Header Grid")]
+        [SerializeField] private TextMeshProUGUI costText;
+        [SerializeField] private TextMeshProUGUI recruitTimeText;
+        [SerializeField] private TextMeshProUGUI upkeepText;
+        [SerializeField] private TextMeshProUGUI counterText;
+
         public static System.Action<int, StatType> OnUpgradeRequested;
 
         [Header("Upgrade System")]
         [SerializeField] private Transform rowsContainer; // Az UpgradeRowsContainer RectTransform-ja
         [SerializeField] private GameObject statRowPrefab;  // A StatUpgradeRowUI Prefabja
-
+        [SerializeField] private StatIconLibrary iconLibrary;
         private List<StatUpgradeRowUI> _spawnedRows = new List<StatUpgradeRowUI>();
 
         public void RefreshPanel(UnitData baseData, Dictionary<StatType, StatUpgradeState> unitUpgrades, int currentPlayerGold)
         {
             if (unitNameText != null) unitNameText.text = baseData.unitName;
 
-            if (staticStatsText != null)
-            {
-                staticStatsText.text = $"Cost: {baseData.cost} Gold | Rec. Time: {baseData.recruitmentTime} turn(s)\n" +
-                                      $"Upkeep: {baseData.costPerTurn} Gold/turn | Counter: {baseData.strongAgainst}";
-            }
+            if (costText != null) costText.text = baseData.cost.ToString();
+            if (recruitTimeText != null) recruitTimeText.text = baseData.recruitmentTime.ToString();
+            if (upkeepText != null) upkeepText.text = baseData.costPerTurn.ToString();
+            if (counterText != null) counterText.text = baseData.strongAgainst.ToString();
 
             var statList = GetStatDisplayData(baseData, unitUpgrades);
             EnsureRowPoolSize(statList.Count);
@@ -40,6 +45,7 @@ namespace GridEmpire.UI
                 bool atCap = item.state.IsMaxed;
 
                 rowUI.Setup(
+                    item.icon,
                     item.displayName,
                     item.currentValue,
                     item.state.level,
@@ -78,6 +84,7 @@ namespace GridEmpire.UI
             public float currentValue;
             public StatType type;
             public StatUpgradeState state;
+            public Sprite icon;
         }
 
         private static readonly Dictionary<StatType, string> DisplayNames = new()
@@ -113,7 +120,8 @@ namespace GridEmpire.UI
                     displayName = DisplayNames[type],
                     currentValue = state.GetUpgradedValue(baseValues[type]),
                     type = type,
-                    state = state
+                    state = state,
+                    icon = iconLibrary != null ? iconLibrary.GetIcon(type) : null
                 });
             }
             return result;

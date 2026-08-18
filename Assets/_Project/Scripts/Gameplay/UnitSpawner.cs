@@ -14,11 +14,8 @@ namespace GridEmpire.Gameplay
         public const int MaxQueueSize = 6;
 
         [Header("Unit Definitions")]
-        [SerializeField] private UnitData axeman;
-        [SerializeField] private UnitData spearman;
-        [SerializeField] private UnitData cavalry;
-        [SerializeField] private UnitData scout;
         [SerializeField] private GridManager gridManager;
+        [SerializeField] private UnitRoster unitRoster;
 
         public NetworkVariable<int> NetworkOwnerId = new NetworkVariable<int>(-1);
         private int _pendingOwnerId = -1;
@@ -61,10 +58,8 @@ namespace GridEmpire.Gameplay
 
             NetworkOwnerId.OnValueChanged += OnNetworkOwnerIdChanged;
 
-            if (axeman != null) GameController.Instance?.RegisterUnitData(axeman);
-            if (spearman != null) GameController.Instance?.RegisterUnitData(spearman);
-            if (cavalry != null) GameController.Instance?.RegisterUnitData(cavalry);
-            if (scout != null) GameController.Instance?.RegisterUnitData(scout);
+            foreach (var unit in unitRoster.Units)
+                GameController.Instance?.RegisterUnitData(unit);
 
             if (IsServer && _pendingOwnerId != -1)
             {
@@ -106,10 +101,8 @@ namespace GridEmpire.Gameplay
             if (gridManager == null)
                 gridManager = GridManager.Instance;
 
-            if (axeman != null) GameController.Instance?.RegisterUnitData(axeman);
-            if (spearman != null) GameController.Instance?.RegisterUnitData(spearman);
-            if (cavalry != null) GameController.Instance?.RegisterUnitData(cavalry);
-            if (scout != null) GameController.Instance?.RegisterUnitData(scout);
+            foreach (var unit in unitRoster.Units)
+                GameController.Instance?.RegisterUnitData(unit);
 
             Debug.Log($"[UnitSpawner] Initialize: owner={_ownerId}, profile={GetProfile()?.Name ?? "NULL"}, grid={gridManager != null}");
         }
@@ -462,14 +455,6 @@ namespace GridEmpire.Gameplay
             SyncQueueClientRpc(SerializeQueue(), profile?.Gold ?? 0f);
             OnUpgradeStateChanged?.Invoke();
         }
-
-        private UnitData SlotToData(int slot) => slot switch
-        {
-            0 => axeman,
-            1 => spearman,
-            2 => cavalry,
-            3 => scout,
-            _ => null
-        };
+        private UnitData SlotToData(int slot) => unitRoster.GetBySlot(slot);
     }
 }

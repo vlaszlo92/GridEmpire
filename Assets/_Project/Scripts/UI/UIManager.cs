@@ -13,13 +13,13 @@ namespace GridEmpire.UI
     {
         [Header("Resources & Info")]
         [SerializeField] private TextMeshProUGUI goldText;
+        [SerializeField] private TextMeshProUGUI goldPerTurnText;
         [SerializeField] private TextMeshProUGUI turnText;
 
         [Header("Spawn Buttons")]
-        [SerializeField] private Button axemanBtn;
-        [SerializeField] private Button spearmanBtn;
-        [SerializeField] private Button cavalryBtn;
-        [SerializeField] private Button scoutBtn;
+        [SerializeField] private Transform actionPanelContainer;
+        [SerializeField] private UnitSpawnButtonTrigger spawnButtonPrefab;
+        [SerializeField] private UnitRoster unitRoster;
 
         [Header("Queue UI")]
         [SerializeField] private Transform queueContainer;
@@ -57,14 +57,12 @@ namespace GridEmpire.UI
         [SerializeField] private GameObject descPanelRoot;
         [SerializeField] private RectTransform descPanelRect;
         [SerializeField] private CanvasGroup descCanvasGroup;
-        [SerializeField] private float descPanelTargetWidth = 350f;
+        [SerializeField] private float descPanelTargetHeight = 450f;
         [SerializeField] private UnitDescriptionPanelUI descPanelUI;
         [SerializeField] private Button closeDescBtn;
 
-        [SerializeField] private List<UnitData> availableUnitData;
-
         private bool _descOpen = false;
-        private float _targetDescWidth = 0f;
+        private float _targetDescHeight = 0f;
         private int _currentDisplayedUnitIndex = -1;
 
         private PlayerProfile _localPlayer;
@@ -91,11 +89,13 @@ namespace GridEmpire.UI
             UnitSpawnButtonTrigger.OnUnitDescriptionRequested += ShowUnitDescription; 
             UnitDescriptionPanelUI.OnUpgradeRequested += RequestUpgrade;
 
+            BuildActionPanel();
+
             if (closeDescBtn != null)
                 closeDescBtn.onClick.AddListener(HideUnitDescription);
 
-            if (descPanelRect != null)
-                descPanelRect.sizeDelta = new Vector2(0f, descPanelRect.sizeDelta.y);
+            if (descPanelRect != null)                
+                descPanelRect.sizeDelta = new Vector2(descPanelRect.sizeDelta.x, 0f);
 
             if (descCanvasGroup != null)
             {
@@ -117,6 +117,24 @@ namespace GridEmpire.UI
             InitSlider(masterSlider, AudioManager.MasterKey, v => AudioManager.Instance?.SetMasterVolume(v));
             InitSlider(musicSlider, AudioManager.MusicKey, v => AudioManager.Instance?.SetMusicVolume(v));
             InitSlider(effectsSlider, AudioManager.EffectsKey, v => AudioManager.Instance?.SetEffectsVolume(v));
+        }
+
+        private void BuildActionPanel()
+        {
+            if (actionPanelContainer == null || spawnButtonPrefab == null || unitRoster == null) return;
+
+            foreach (Transform child in actionPanelContainer) Destroy(child.gameObject);
+
+            var units = unitRoster.Units;
+            for (int slot = 0; slot < units.Count; slot++)
+            {
+                var data = units[slot];
+                var trigger = Instantiate(spawnButtonPrefab, actionPanelContainer);
+                trigger.SetSlot(slot);
+
+                var icon = trigger.GetComponentInChildren<Image>();
+                if (icon != null) icon.sprite = data.icon;
+            }
         }
 
         private void OnDestroy()
@@ -153,7 +171,10 @@ namespace GridEmpire.UI
         private void RefreshGoldDisplay()
         {
             if (this == null || goldText == null || _localSpawner == null) return;
-            goldText.text = "Gold: " + _localPlayer.Gold.ToString();
+            goldText.text = _localPlayer.Gold.ToString();
+
+            if (goldPerTurnText != null)
+                goldPerTurnText.text = $"+{_localPlayer.GoldIncome:F1}";
 
             if (_descOpen && _currentDisplayedUnitIndex >= 0)
                 ShowUnitDescription(_currentDisplayedUnitIndex);
@@ -225,11 +246,11 @@ namespace GridEmpire.UI
 
             if (descPanelRect != null)
             {
-                float currentWidth = descPanelRect.sizeDelta.x;
-                float nextWidth = Mathf.Lerp(currentWidth, _targetDescWidth, Time.deltaTime * animationSpeed);
-                descPanelRect.sizeDelta = new Vector2(nextWidth, descPanelRect.sizeDelta.y);
+                float currentHeight = descPanelRect.sizeDelta.y;
+                float nextHeight = Mathf.Lerp(currentHeight, _targetDescHeight, Time.deltaTime * animationSpeed);
+                descPanelRect.sizeDelta = new Vector2(descPanelRect.sizeDelta.x, nextHeight);
 
-                float progress = Mathf.Clamp01(nextWidth / descPanelTargetWidth);
+                float progress = Mathf.Clamp01(nextHeight / descPanelTargetHeight);
 
                 if (descCanvasGroup != null)
                 {
@@ -388,9 +409,9 @@ namespace GridEmpire.UI
 
         public void ShowUnitDescription(int unitIndex)
         {
-            if (unitIndex < 0 || unitIndex >= availableUnitData.Count) return;
+            var data = unitRoster?.GetBySlot(unitIndex);
+            if (data == null) return;
 
-            var data = availableUnitData[unitIndex];
             _currentDisplayedUnitIndex = unitIndex;
 
             if (descPanelUI != null)
@@ -401,7 +422,7 @@ namespace GridEmpire.UI
                 LayoutRebuilder.ForceRebuildLayoutImmediate(descPanelRect);
 
             _descOpen = true;
-            _targetDescWidth = descPanelTargetWidth;
+            _targetDescHeight = descPanelTargetHeight;
             if (descPanelRoot != null) descPanelRoot.SetActive(true);
         }
 
@@ -422,7 +443,7 @@ namespace GridEmpire.UI
         public void HideUnitDescription()
         {
             _descOpen = false;
-            _targetDescWidth = 0f;
+            _targetDescHeight = 0f;
             _currentDisplayedUnitIndex = -1;
         }
 

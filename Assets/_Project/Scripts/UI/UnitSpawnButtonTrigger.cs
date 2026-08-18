@@ -6,15 +6,17 @@ namespace GridEmpire.UI
 {
     public class UnitSpawnButtonTrigger : MonoBehaviour, IPointerDownHandler, IPointerUpHandler, IPointerEnterHandler
     {
-        [SerializeField] private int unitIndex;
+        private int _slot = -1;
 
         private float _holdTimer = 0f;
         private bool _isPointerDown = false;
         private bool _hasTriggeredHold = false;
-        private const float HoldThreshold = 0.35f; 
+        private const float HoldThreshold = 0.35f;
 
         public static UnityAction<int> OnSpawnRequested;
         public static UnityAction<int> OnUnitDescriptionRequested;
+
+        public void SetSlot(int slot) => _slot = slot;
 
         private void Update()
         {
@@ -24,7 +26,7 @@ namespace GridEmpire.UI
                 if (_holdTimer >= HoldThreshold)
                 {
                     _hasTriggeredHold = true;
-                    OnUnitDescriptionRequested?.Invoke(unitIndex);
+                    OnUnitDescriptionRequested?.Invoke(_slot);
                 }
             }
         }
@@ -32,9 +34,7 @@ namespace GridEmpire.UI
         public void OnPointerEnter(PointerEventData eventData)
         {
             if (UnityEngine.Input.mousePresent && !UnityEngine.Input.touchSupported)
-            {
-                OnUnitDescriptionRequested?.Invoke(unitIndex);
-            }
+                OnUnitDescriptionRequested?.Invoke(_slot);
         }
 
         public void OnPointerDown(PointerEventData eventData)
@@ -44,17 +44,13 @@ namespace GridEmpire.UI
             _holdTimer = 0f;
 
             if (UnityEngine.Input.mousePresent && !UnityEngine.Input.touchSupported)
-            {
-                OnUnitDescriptionRequested?.Invoke(unitIndex);
-            }
+                OnUnitDescriptionRequested?.Invoke(_slot);
         }
 
         public void OnPointerUp(PointerEventData eventData)
         {
             if (_isPointerDown && !_hasTriggeredHold)
-            {
-                OnSpawnRequested?.Invoke(unitIndex);
-            }
+                OnSpawnRequested?.Invoke(_slot);
 
             _isPointerDown = false;
             _hasTriggeredHold = false;

@@ -1,0 +1,29 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0a0b02fc1c34b4348b0f820ef05cf16a, type: 3}
+  m_Name: StatIconLibrary
+  m_EditorClassIdentifier: GridEmpire.Core::GridEmpire.Core.StatIconLibrary
+  entries:
+  - type: 0
+    icon: {fileID: 688106449, guid: a294be6aac6c803489b7e307f04e4f75, type: 3}
+  - type: 1
+    icon: {fileID: 116818625, guid: a294be6aac6c803489b7e307f04e4f75, type: 3}
+  - type: 2
+    icon: {fileID: 994144487, guid: a294be6aac6c803489b7e307f04e4f75, type: 3}
+  - type: 3
+    icon: {fileID: -1360465598, guid: a294be6aac6c803489b7e307f04e4f75, type: 3}
+  - type: 4
+    icon: {fileID: 589874595, guid: a294be6aac6c803489b7e307f04e4f75, type: 3}
+  - type: 5
+    icon: {fileID: 1357708899, guid: a294be6aac6c803489b7e307f04e4f75, type: 3}
+  - type: 6
+    icon: {fileID: -70766548, guid: a294be6aac6c803489b7e307f04e4f75, type: 3}

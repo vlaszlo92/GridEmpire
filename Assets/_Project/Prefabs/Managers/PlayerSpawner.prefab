@@ -45,7 +45,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
-  GlobalObjectIdHash: 1797668456
+  GlobalObjectIdHash: 4166445715
   InScenePlacedSourceGlobalObjectIdHash: 0
   DeferredDespawnTick: 0
   Ownership: 1
@@ -71,8 +71,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::GridEmpire.Gameplay.UnitSpawner
   ShowTopMostFoldoutHeaderGroup: 1
-  axeman: {fileID: 11400000, guid: 89ebc9411440b9f4f996929d4849d5d2, type: 2}
-  spearman: {fileID: 11400000, guid: 2deced251b40d744fadbbbf25bec651a, type: 2}
-  cavalry: {fileID: 11400000, guid: e78bddd7e010ea5448d29ae78cfdc2df, type: 2}
-  scout: {fileID: 11400000, guid: 30c1cdef021324748aa10c50609241b0, type: 2}
   gridManager: {fileID: 0}
+  unitRoster: {fileID: 11400000, guid: 90eb5ac00ef4d004d878b8eb13fb7eec, type: 2}
+  NetworkOwnerId:
+    m_InternalValue: -1
