@@ -46,6 +46,7 @@
   <Project Path="Unity.InputSystem.csproj" />
   <Project Path="Unity.Services.Authentication.csproj" />
   <Project Path="Unity.Addressables.DocExampleCode.Editor.Tests.csproj" />
+  <Project Path="GridEmpire.Networking.csproj" />
   <Project Path="Unity.Services.Multiplayer.Editor.Shared.csproj" />
   <Project Path="Unity.VisualScripting.Flow.csproj" />
   <Project Path="Unity.PerformanceTesting.csproj" />
@@ -71,7 +72,6 @@
   <Project Path="Unity.Collections.csproj" />
   <Project Path="Unity.Burst.Editor.csproj" />
   <Project Path="glTFast.Newtonsoft.csproj" />
-  <Project Path="GridEmpire.Networking.csproj" />
   <Project Path="Unity.VisualScripting.State.csproj" />
   <Project Path="Unity.Services.Multiplayer.Editor.Matchmaker.Authoring.csproj" />
   <Project Path="Unity.AI.Generators.Redux.csproj" />
