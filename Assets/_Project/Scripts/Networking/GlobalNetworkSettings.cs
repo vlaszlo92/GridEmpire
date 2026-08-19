@@ -52,13 +52,13 @@ namespace GridEmpire.Networking
             TotalPlayers.Value = Mathf.Min(settings.totalPlayers, MaxPlayersLimit);
             TotalAIBots.Value = settings.aiBots;
             TurnSpeed.Value = settings.turnSpeedMultiplier;
-            FogOfWarEnabled.Value = settings.fogOfWarEnabled; 
+            FogOfWarEnabled.Value = settings.fogOfWarEnabled;
             GoldPerTurnPerCell.Value = settings.goldPerTurnPerCell;
 
             PrepareLobbyColorsForGameStart();
-            Debug.Log($"[GlobalNetworkSettings] Beallitasok frissitve a Szerveren: MapRadius={NetworkMapRadius.Value}, TotalPlayers={TotalPlayers.Value}, AIBots={TotalAIBots.Value}");
+            Debug.Log($"[GlobalNetworkSettings] Settings updated on the server: MapRadius={NetworkMapRadius.Value}, TotalPlayers={TotalPlayers.Value}, AIBots={TotalAIBots.Value}");
 
-            RequestReRegisterClientRpc();
+            ConnectionManager.Instance?.ReassignAllMappings();
         }
 
         private void Awake()
@@ -107,7 +107,7 @@ namespace GridEmpire.Networking
         {
             if (FindLobbyInfoIndex(playerId) != -1) return;
             PlayerLobbyInfos.Add(new PlayerLobbyInfo { PlayerId = playerId, Name = default, ColorIndex = -1 });
-            Debug.Log($"[GlobalNetworkSettings] Lobby info letrehozva playerId={playerId}");
+            Debug.Log($"[GlobalNetworkSettings] Lobby info created playerId={playerId}");
         }
 
         public override void OnNetworkDespawn()
@@ -137,12 +137,6 @@ namespace GridEmpire.Networking
         {
             if (IsServer) return;
             ApplyUnitStats(previous.ToString(), current.ToString());
-        }
-
-        [ClientRpc]
-        private void RequestReRegisterClientRpc()
-        {
-            ConnectionManager.Instance?.RegisterLocalPlayer();
         }
 
         public int GetPlayerIdForClient(ulong clientId)
@@ -191,8 +185,8 @@ namespace GridEmpire.Networking
         {
             ulong clientId = rpcParams.Receive.SenderClientId;
             int playerId = GetPlayerIdForClient(clientId);
-            Debug.Log($"[GlobalNetworkSettings] RequestNameServerRpc erkezett. clientId={clientId}, playerId={playerId}, name='{name}'");
-            if (playerId == -1) return; // meg nincs feloldva a mapping
+            Debug.Log($"[GlobalNetworkSettings] RequestNameServerRpc received. clientId={clientId}, playerId={playerId}, name='{name}'");
+            if (playerId == -1) return; // mapping not found
 
             string clean = string.IsNullOrWhiteSpace(name) ? "" : name.Trim();
             if (clean.Length > 28) clean = clean.Substring(0, 28);
@@ -214,14 +208,14 @@ namespace GridEmpire.Networking
         {
             ulong clientId = rpcParams.Receive.SenderClientId;
             int playerId = GetPlayerIdForClient(clientId);
-            Debug.Log($"[GlobalNetworkSettings] RequestColorServerRpc erkezett. clientId={clientId}, playerId={playerId}, colorIndex={colorIndex}");
+            Debug.Log($"[GlobalNetworkSettings] RequestColorServerRpc received. clientId={clientId}, playerId={playerId}, colorIndex={colorIndex}");
             if (playerId == -1) return;
 
             if (colorIndex < 0 || colorIndex >= PredefinedColors.Colors.Length) return;
 
             if (IsColorTaken(colorIndex, playerId))
             {
-                Debug.Log($"[GlobalNetworkSettings] Szin elutasitva. playerId={playerId}, colorIndex={colorIndex}");
+                Debug.Log($"[GlobalNetworkSettings] Color rejected. playerId={playerId}, colorIndex={colorIndex}");
                 ColorRejectedClientRpc(colorIndex, new ClientRpcParams
                 {
                     Send = new ClientRpcSendParams { TargetClientIds = new[] { clientId } }
@@ -260,7 +254,7 @@ namespace GridEmpire.Networking
             return false;
         }
 
-        /// <summary>Szerver hívja Start Game előtt: akinek nincs színe, random szabad (vagy ha nincs szabad, random) színt kap.</summary>
+        /// <summary>Server calls before Start Game: those who don't have a color get a random available (or if none available, a random) color.</summary>
         public void AssignMissingRandomColors()
         {
             if (!IsServer) return;
@@ -300,7 +294,7 @@ namespace GridEmpire.Networking
             int idx = FindLobbyInfoIndex(playerId);
             if (idx != -1 && PlayerLobbyInfos[idx].ColorIndex >= 0 && PlayerLobbyInfos[idx].ColorIndex < PredefinedColors.Colors.Length)
                 return PredefinedColors.Colors[PlayerLobbyInfos[idx].ColorIndex];
-            return Color.white; //TODO: first available color or default color
+            return Color.white;
         }
     }
 }

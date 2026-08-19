@@ -1,13 +1,15 @@
+using System.Collections.Generic;
 using Unity.Collections;
 using Unity.Netcode;
-using Unity.Services.Authentication;
 using UnityEngine;
 
 namespace GridEmpire.Networking
 {
     public class ConnectionManager : NetworkBehaviour
     {
-        public static ConnectionManager Instance { get; private set; }        
+        public static ConnectionManager Instance { get; private set; }
+
+        private readonly Dictionary<ulong, string> _pendingAuthIds = new Dictionary<ulong, string>();
 
         private void Awake()
         {
@@ -20,8 +22,6 @@ namespace GridEmpire.Networking
         {
             if (IsServer)
                 NetworkManager.Singleton.OnClientDisconnectCallback += HandleClientDisconnect;
-
-            RegisterLocalPlayer();
         }
 
         public override void OnNetworkDespawn()
@@ -30,24 +30,17 @@ namespace GridEmpire.Networking
                 NetworkManager.Singleton.OnClientDisconnectCallback -= HandleClientDisconnect;
         }
 
-        [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)]
-        private void SubmitAuthIdServerRpc(string authId, RpcParams rpcParams = default)
+        public void RegisterConnection(ulong clientId, string authId)
         {
-            ulong clientId = rpcParams.Receive.SenderClientId;
+            _pendingAuthIds[clientId] = authId;
             int playerId = ResolvePlayerId(authId, clientId);
-            Debug.Log($"[ConnectionManager] clientId={clientId} → authId={authId} → playerId={playerId}");
+            Debug.Log($"[ConnectionManager] clientId={clientId} -> authId={authId} -> playerId={playerId}");
         }
 
-        public void RegisterLocalPlayer()
+        public void ReassignAllMappings()
         {
-            if (AuthenticationService.Instance.IsSignedIn)
-            {
-                SubmitAuthIdServerRpc(AuthenticationService.Instance.PlayerId);
-            }
-            else
-            {
-                Debug.LogError("[ConnectionManager] A kliens nincs bejelentkezve UGS-be!");
-            }
+            foreach (var kvp in _pendingAuthIds)
+                ResolvePlayerId(kvp.Value, kvp.Key);
         }
 
         private int ResolvePlayerId(string authId, ulong clientId)
@@ -63,7 +56,7 @@ namespace GridEmpire.Networking
                     var updated = mappings[i];
                     updated.ClientId = clientId;
                     mappings[i] = updated;
-                    Debug.Log($"[ConnectionManager] Jatekos visszacsatlakozott! AuthId={authId}, PlayerId={updated.PlayerId}, uj ClientId={clientId}");
+                    Debug.Log($"[ConnectionManager] Player connected! AuthId={authId}, PlayerId={updated.PlayerId}, new ClientId={clientId}");
                     return updated.PlayerId;
                 }
             }
@@ -81,19 +74,19 @@ namespace GridEmpire.Networking
                 }
                 if (!taken)
                 {
-                    Debug.Log($"[ConnectionManager] uj jatekos csatlakozott! Mapping feltoltve: AuthId={authId}, PlayerId={playerId}, ClientId={clientId}");
+                    Debug.Log($"[ConnectionManager] new player connected! Mapping added: AuthId={authId}, PlayerId={playerId}, ClientId={clientId}");
                     mappings.Add(new PlayerClientMapping { ClientId = clientId, PlayerId = playerId, AuthId = authIdFixed });
                     return playerId;
                 }
             }
 
-            Debug.LogError($"[ConnectionManager] Nincs szabad PlayerId slot! authId={authId}, clientId={clientId}");
+            Debug.LogError($"[ConnectionManager] No available PlayerId slot! authId={authId}, clientId={clientId}");
             return -1;
         }
 
         private void HandleClientDisconnect(ulong clientId)
         {
-            Debug.Log($"[ConnectionManager] clientId={clientId} lecsatlakozott. Mapping megorizve Reconnection-hoz.");
+            Debug.Log($"[ConnectionManager] clientId={clientId} disconnected. Mapping saved for reconnection.");
         }
     }
 }

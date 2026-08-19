@@ -12,9 +12,9 @@ using System.Threading.Tasks;
 namespace GridEmpire.Networking
 {
     /// <summary>
-    /// A lobby halozati retege: UGS session kezeles, NetworkManager Host/Client inditas,
-    /// connection approval, disconnect figyeles, GlobalNetworkSettings szinkronizalas.
-    /// A MainMenuController kizarolag ezen keresztul nyul halozati funkciokhoz.
+    /// A lobby network layer: UGS session management, NetworkManager Host/Client initialization,
+    /// connection approval, disconnect monitoring, GlobalNetworkSettings synchronization.
+    /// The MainMenuController accesses network functions exclusively through this controller.
     /// </summary>
     public class NetworkLobbyController : MonoBehaviour
     {
@@ -22,10 +22,10 @@ namespace GridEmpire.Networking
 
         public event Action OnServicesInitialized;
         public event Action<string> OnHostSessionReady;      // join code
-        public event Action<string> OnHostSessionFailed;     // hibauzenet
-        public event Action OnSessionPlayersChanged;         // host: jatekos csatlakozott/kilepett
-        public event Action<string, bool> OnClientConnectResult; // (uzenet, siker)
-        public event Action OnHostConnectionLost;             // kliens leszakadt a hosttol
+        public event Action<string> OnHostSessionFailed;     // error message
+        public event Action OnSessionPlayersChanged;         // host: player joined/left
+        public event Action<string, bool> OnClientConnectResult; // (message, success)
+        public event Action OnHostConnectionLost;             // client disconnected from the host
 
         public bool ServicesReady { get; private set; }
         public bool IsHostSessionActive { get; private set; }
@@ -68,12 +68,12 @@ namespace GridEmpire.Networking
                 if (!AuthenticationService.Instance.IsSignedIn)
                     await AuthenticationService.Instance.SignInAnonymouslyAsync();
                 ServicesReady = true;
-                Debug.Log("[NetworkLobbyController] UGS inicializalva es bejelentkezve.");
+                Debug.Log("[NetworkLobbyController] UGS initialized and signed in.");
                 OnServicesInitialized?.Invoke();
             }
             catch (Exception e)
             {
-                Debug.LogError($"[NetworkLobbyController] UGS inicializalas sikertelen: {e.Message}");
+                Debug.LogError($"[NetworkLobbyController] UGS initialization failed: {e.Message}");
             }
 
             StartCoroutine(WatchClientDisconnect());
@@ -103,7 +103,7 @@ namespace GridEmpire.Networking
             if (NetworkManager.Singleton.IsHost) return;
             if (clientId != NetworkManager.Singleton.LocalClientId) return;
 
-            Debug.Log($"[NetworkLobbyController] Kapcsolat megszakadt a hosttal. Ok: '{NetworkManager.Singleton.DisconnectReason}'");
+            Debug.Log($"[NetworkLobbyController] Connection lost with the host. Reason: '{NetworkManager.Singleton.DisconnectReason}'");
             SceneManager.LoadScene("MainMenuScene");
             OnHostConnectionLost?.Invoke();
         }
@@ -121,13 +121,16 @@ namespace GridEmpire.Networking
 
                 await ShutdownNetworkManagerIfNeeded();
 
+                if (NetworkManager.Singleton != null)
+                {
+                    NetworkManager.Singleton.NetworkConfig.ConnectionData =
+                        System.Text.Encoding.UTF8.GetBytes(AuthenticationService.Instance.PlayerId);
+                    NetworkManager.Singleton.ConnectionApprovalCallback = ApproveConnection;
+                }
+
                 var options = new SessionOptions { MaxPlayers = maxPlayers }.WithRelayNetwork();
                 _currentSession = await MultiplayerService.Instance.CreateSessionAsync(options);
                 IsHostSessionActive = true;
-                Debug.Log($"[DIAG] Host oldal - session letrehozva. NetworkManager.IsListening={NetworkManager.Singleton?.IsListening}, IsHost={NetworkManager.Singleton?.IsHost}");
-
-                if (NetworkManager.Singleton != null)
-                    NetworkManager.Singleton.ConnectionApprovalCallback = ApproveConnection;
 
                 _currentSession.PlayerJoined += _ => OnSessionPlayersChanged?.Invoke();
                 _currentSession.PlayerLeaving += _ => OnSessionPlayersChanged?.Invoke();
@@ -170,7 +173,7 @@ namespace GridEmpire.Networking
             if (GlobalNetworkSettings.Instance != null)
                 GlobalNetworkSettings.Instance.InitializeFromSettings(settings);
             else
-                Debug.LogError("[NetworkLobbyController] GlobalNetworkSettings nem talalhato a jelenetben!");
+                Debug.LogError("[NetworkLobbyController] GlobalNetworkSettings not found in the scene!");
 
             NetworkDebugDump.DumpServerState(settings, sceneName, expectedHumans);
             GlobalNetworkSettings.Instance?.TriggerDebugDumpClientRpc();
@@ -180,6 +183,18 @@ namespace GridEmpire.Networking
 
         private void ApproveConnection(NetworkManager.ConnectionApprovalRequest request, NetworkManager.ConnectionApprovalResponse response)
         {
+            string authId = request.Payload != null && request.Payload.Length > 0
+                ? System.Text.Encoding.UTF8.GetString(request.Payload)
+                : null;
+
+            if (string.IsNullOrEmpty(authId))
+            {
+                response.Approved = false;
+                return;
+            }
+
+            ConnectionManager.Instance?.RegisterConnection(request.ClientNetworkId, authId);
+
             response.Approved = true;
             response.CreatePlayerObject = false;
         }
@@ -192,7 +207,7 @@ namespace GridEmpire.Networking
             while (NetworkManager.Singleton.ConnectedClientsIds.Count < expectedHumans)
                 yield return new WaitForSeconds(0.5f);
 
-            Debug.Log("[NetworkLobbyController] Minden kliens csatlakozott, scene load indul.");
+            Debug.Log("[NetworkLobbyController] All clients connected, scene load starting.");
             NetworkManager.Singleton.SceneManager.LoadScene(sceneName, LoadSceneMode.Single);
         }
 
@@ -224,23 +239,26 @@ namespace GridEmpire.Networking
 
                 try
                 {
+                    if (NetworkManager.Singleton != null)
+                        NetworkManager.Singleton.NetworkConfig.ConnectionData =
+                            System.Text.Encoding.UTF8.GetBytes(AuthenticationService.Instance.PlayerId);
                     _currentSession = await MultiplayerService.Instance.JoinSessionByCodeAsync(joinCode);
                 }
                 catch (Exception joinEx) when (joinEx.Message.Contains("already a member"))
                 {
-                    Debug.LogWarning($"[NetworkLobbyController] Mar tagja egy session-nek. joinCode={joinCode}");
+                    Debug.LogWarning($"[NetworkLobbyController] Already a member of a session. joinCode={joinCode}");
                     throw;
                 }
 
                 PlayerPrefs.SetString(LastJoinCodeKey, joinCode);
                 PlayerPrefs.Save();
 
-                OnClientConnectResult?.Invoke("Csatlakozva! Varakozas a hostra...", true);
+                OnClientConnectResult?.Invoke("Connected! Waiting for the host...", true);
             }
             catch (Exception e)
             {
-                Debug.LogError($"[NetworkLobbyController] Session hiba: {e.Message}");
-                OnClientConnectResult?.Invoke($"Hiba: {e.Message}", false);
+                Debug.LogError($"[NetworkLobbyController] Session error: {e.Message}");
+                OnClientConnectResult?.Invoke($"Error: {e.Message}", false);
             }
             finally
             {
@@ -287,7 +305,7 @@ namespace GridEmpire.Networking
             if (_currentSession != null)
             {
                 try { await _currentSession.LeaveAsync(); }
-                catch (Exception e) { Debug.LogWarning($"[NetworkLobbyController] Session elhagyas: {e.Message}"); }
+                catch (Exception e) { Debug.LogWarning($"[NetworkLobbyController] Session leave error: {e.Message}"); }
                 _currentSession = null;
             }
             IsHostSessionActive = false;

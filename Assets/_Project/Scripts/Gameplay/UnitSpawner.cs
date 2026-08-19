@@ -1,4 +1,5 @@
 ﻿using GridEmpire.Core;
+using GridEmpire.Networking;
 using GridEmpire.Shared;
 using System.Collections;
 using System.Collections.Generic;
@@ -188,13 +189,13 @@ namespace GridEmpire.Gameplay
             var profile = GetProfile();
             if (profile == null || !profile.IsAlive)
             {
-                Debug.LogWarning($"[UnitSpawner] RequestUnit meghiusult: profile null vagy nem el! owner={_ownerId}");
+                Debug.LogWarning($"[UnitSpawner] RequestUnit failed: profile null or not alive! owner={_ownerId}");
                 return false;
             }
             if (_myQueue.Count >= MaxQueueSize) return false;
             if (!profile.SpendGold(data.cost))
             {
-                Debug.LogWarning($"[UnitSpawner] RequestUnit meghiusult: nincs eleg arany! owner={_ownerId}, cost={data.cost}, gold={profile.Gold}");
+                Debug.LogWarning($"[UnitSpawner] RequestUnit failed: not enough gold! owner={_ownerId}, cost={data.cost}, gold={profile.Gold}");
                 return false;
             }
 
@@ -242,7 +243,7 @@ namespace GridEmpire.Gameplay
             int newId = GameController.Instance.GetNextAvailableId();
             GameObject go = Instantiate(item.Data.unitPrefab, spawnPos, initialRot);
             UnitController controller = go.GetComponent<UnitController>();
-            if (!go.TryGetComponent<NetworkObject>(out var netObj)) { Debug.LogError("[UnitSpawner] NetworkObject hianyzik!"); return; }
+            if (!go.TryGetComponent<NetworkObject>(out var netObj)) { Debug.LogError("[UnitSpawner] NetworkObject missing!"); return; }
 
             controller.NetworkUnitId.Value = newId;
             controller.NetworkOwnerId.Value = _ownerId;
@@ -303,12 +304,7 @@ namespace GridEmpire.Gameplay
             OnUpgradeStateChanged?.Invoke();
         }
 
-        [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)]
-        private void RequestUpgradeServerRpc(int unitIndex, StatType statType, RpcParams rpcParams = default)
-        {
-            ExecuteUpgradeLogic(unitIndex, statType, rpcParams.Receive.SenderClientId);
-        }
-
+        
         private void ExecuteUpgradeLogic(int unitIndex, StatType statType, ulong requesterClientId)
         {
             var profile = GetProfile();
@@ -342,15 +338,35 @@ namespace GridEmpire.Gameplay
             profile.SyncGold(newGold);
             OnUpgradeStateChanged?.Invoke();
         }
+                
 
-        public void SendSpawnRequest(int unitSlot, int targetCellId)
+        [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)]
+        private void SpawnRequestServerRpc(int unitSlot, int targetCellId, RpcParams rpcParams = default)
         {
-            if (IsServer) ExecuteSpawnLogic(unitSlot, targetCellId);
-            else SpawnRequestServerRpc(unitSlot, targetCellId);
+            if (!NetworkAuthority.IsOwner(rpcParams.Receive.SenderClientId, _ownerId)) return;
+            ExecuteSpawnLogic(unitSlot, targetCellId);
         }
 
         [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)]
-        private void SpawnRequestServerRpc(int unitSlot, int targetCellId) => ExecuteSpawnLogic(unitSlot, targetCellId);
+        private void RequestUpgradeServerRpc(int unitIndex, StatType statType, RpcParams rpcParams = default)
+        {
+            if (!NetworkAuthority.IsOwner(rpcParams.Receive.SenderClientId, _ownerId)) return;
+            ExecuteUpgradeLogic(unitIndex, statType, rpcParams.Receive.SenderClientId);
+        }
+
+        [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)]
+        private void RemoveFromQueueServerRpc(int index, RpcParams rpcParams = default)
+        {
+            if (!NetworkAuthority.IsOwner(rpcParams.Receive.SenderClientId, _ownerId)) return;
+            ExecuteRemoveFromQueue(index);
+        }
+
+        [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)]
+        private void ClearQueueServerRpc(RpcParams rpcParams = default)
+        {
+            if (!NetworkAuthority.IsOwner(rpcParams.Receive.SenderClientId, _ownerId)) return;
+            ExecuteClearQueue();
+        }
 
         private void ExecuteSpawnLogic(int unitSlot, int targetCellId)
         {
@@ -373,21 +389,10 @@ namespace GridEmpire.Gameplay
             return result;
         }
 
-        [ClientRpc]
-        private void SyncQueueClientRpc(int[] serialized)
+        public void SendSpawnRequest(int unitSlot, int targetCellId)
         {
-            if (IsServer) return;
-            _myQueue.Clear();
-            for (int i = 0; i < serialized.Length; i += 3)
-            {
-                var data = GameController.Instance.GetUnitDataByIndex(serialized[i]);
-                if (data == null) continue;
-                _myQueue.Add(new QueuedUnit(data, data.recruitmentTime, null)
-                {
-                    RemainingTicks = serialized[i + 1],
-                    IsWaitingToSpawn = serialized[i + 2] == 1
-                });
-            }
+            if (IsServer) ExecuteSpawnLogic(unitSlot, targetCellId);
+            else SpawnRequestServerRpc(unitSlot, targetCellId);
         }
 
         public IReadOnlyList<QueuedUnit> GetQueue() => _myQueue.AsReadOnly();
@@ -406,9 +411,6 @@ namespace GridEmpire.Gameplay
                 ExecuteRemoveFromQueue(index);
             }
         }
-
-        [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)]
-        private void RemoveFromQueueServerRpc(int index) => ExecuteRemoveFromQueue(index);
 
         private void ExecuteRemoveFromQueue(int index)
         {
@@ -437,9 +439,6 @@ namespace GridEmpire.Gameplay
                 ExecuteClearQueue();
             }
         }
-
-        [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)]
-        private void ClearQueueServerRpc() => ExecuteClearQueue();
 
         private void ExecuteClearQueue()
         {

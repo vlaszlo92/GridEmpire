@@ -89,7 +89,7 @@ namespace GridEmpire.Networking
             };
 
             GameController.Instance.SetSessionConfig(config);
-            Debug.Log("[GameNetworkBridge] Session config atadva a GameController-nek.");
+            Debug.Log("[GameNetworkBridge] Session config sent to GameController.");
         }
 
         private IEnumerator SubscribeToMappingsWhenReady()
@@ -101,7 +101,6 @@ namespace GridEmpire.Networking
             GlobalNetworkSettings.Instance.PlayerMappings.OnListChanged += HandleMappingsChanged;
             _mappingSubscribed = true;
 
-            // Reconnect eseten megvarjuk, amig a halozati lista adatai tenylegesen megerkeznek
             while (GameController.Instance.LocalPlayerId == -1)
             {
                 TryResolveLocalPlayerId();
@@ -124,7 +123,7 @@ namespace GridEmpire.Networking
 
             if (playerId != -1)
             {
-                Debug.Log($"[GameNetworkBridge] Mapping megerkezett: clientId={myClientId} → playerId={playerId}");
+                Debug.Log($"[GameNetworkBridge] Mapping received: clientId={myClientId} -> playerId={playerId}");
                 GameController.Instance.TrySetLocalPlayerId(playerId);
             }
         }
@@ -151,7 +150,7 @@ namespace GridEmpire.Networking
 
         private void HandleLocalInitializationComplete()
         {
-            ReadySystem.Instance?.ClientReadyServerRpc(NetworkManager.Singleton.LocalClientId);
+            ReadySystem.Instance?.ClientReadyServerRpc();
         }
     }
 }

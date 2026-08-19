@@ -23,12 +23,13 @@ namespace GridEmpire.Networking
         }
 
         [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)]
-        public void ClientReadyServerRpc(ulong clientId)
+        public void ClientReadyServerRpc(RpcParams rpcParams = default)
         {
+            ulong clientId = rpcParams.Receive.SenderClientId;
             if (_readyClients.Contains(clientId)) return;
 
             _readyClients.Add(clientId);
-            Debug.Log($"[ReadySystem] Kliens ready: {clientId}, osszesen: {_readyClients.Count}");
+            Debug.Log($"[ReadySystem] Client ready: {clientId}, total: {_readyClients.Count}");
 
             int expectedHumans = GlobalNetworkSettings.Instance.TotalPlayers.Value
                                - GlobalNetworkSettings.Instance.TotalAIBots.Value;
@@ -37,7 +38,7 @@ namespace GridEmpire.Networking
 
             if (_readyClients.Count >= expectedHumans)
             {
-                Debug.Log("[ReadySystem] Mindenki ready, jatek indul 3mp mulva.");
+                Debug.Log("[ReadySystem] All clients ready, game starting in 3 seconds.");
                 StartCoroutine(DelayedGameStart());
             }
         }
@@ -57,7 +58,7 @@ namespace GridEmpire.Networking
         [ClientRpc]
         private void StartGameClientRpc()
         {
-            Debug.Log("[ReadySystem] Game Start jel megerkezett!");
+            Debug.Log("[ReadySystem] Game Start signal received!");
             OnGameStart?.Invoke();
         }
     }
