@@ -17,6 +17,7 @@ namespace GridEmpire.Core
         /// <summary>Fires when the local player is ready.
         /// The Networking layer will call this once the local clientId → playerId mapping is resolved.</summary>
         public static event System.Action OnLocalInitializationComplete;
+        public static event System.Action OnSessionConfigReady;
 
         /// <summary>Sets the Networking layer (GameNetworkBridge) to avoid circular assembly references between Core and Networking.
         /// Used on the server side: resolves clientId -> playerId mapping.</summary>
@@ -70,7 +71,8 @@ namespace GridEmpire.Core
             if (IsServer)
             {
                 Debug.Log($"[HOST Side] Local clientId: {NetworkManager.Singleton.LocalClientId}");
-                StartCoroutine(ServerInitChain());
+                if (_config != null) StartCoroutine(ServerInitChain());
+                else OnSessionConfigReady += StartServerInitChainOnce;
             }
             else
             {
@@ -79,8 +81,15 @@ namespace GridEmpire.Core
             }
         }
 
+        private void StartServerInitChainOnce()
+        {
+            OnSessionConfigReady -= StartServerInitChainOnce;
+            StartCoroutine(ServerInitChain());
+        }
+
         public override void OnNetworkDespawn()
         {
+            OnSessionConfigReady -= StartServerInitChainOnce;
             if (!IsServer)
                 _networkPlayers.OnListChanged -= HandleNetworkListChanged;
         }
@@ -99,8 +108,11 @@ namespace GridEmpire.Core
 
         // --- SESSION CONFIG / LOCAL PLAYER ID (Networking layer data) -------
 
-        public void SetSessionConfig(GameSessionConfig config) => _config = config;
-
+        public void SetSessionConfig(GameSessionConfig config)
+        {
+            _config = config;
+            OnSessionConfigReady?.Invoke();
+        }
         public void TrySetLocalPlayerId(int playerId)
         {
             if (playerId < 0 || _clientInitStarted) return;
@@ -115,44 +127,40 @@ namespace GridEmpire.Core
 
         private IEnumerator ServerInitChain()
         {
-            // 1. Wait until we receive the session config from the Networking layer
-            yield return new WaitUntil(() => _config != null);
-
-            // 2. Initialize players
+            // 1. Initialize players
             InitializePlayers();
 
-            // 3. GridManager spawn and wait until ready
+            // 2. GridManager spawn and wait until ready
             GameObject gmObj = Instantiate(gridManagerPrefab);
             var gridManager = gmObj.GetComponent<GridManager>();
             gridManager.FogOfWarEnabled = _config.FogOfWarEnabled;
             gridManager.GenerateGrid(_config.MapRadius);
             gmObj.GetComponent<NetworkObject>().Spawn();
-
-            yield return new WaitUntil(() => GridManager.Instance != null && GridManager.Instance.IsReady);
             Debug.Log("[GameController] GridManager ready.");
 
-            // 4. Assign base cells to each player
+            // 3. Assign base cells to each player
             AssignBaseCells(GridManager.Instance);
             Debug.Log("[GameController] BaseCells ready.");
 
-            // 5. FogOfWar for the host player
+            // 4. FogOfWar for the host player
             IsDebugMode = !_config.FogOfWarEnabled;
             var hostPlayer = GetPlayerById(0);
             if (hostPlayer != null)
                 GridManager.Instance.UpdateFogOfWar(hostPlayer.Id);
 
-            // 6. Setup spawners
+            // 5. Setup spawners
             SetupSpawners();
             Debug.Log("[GameController] Spawners ready.");
 
-            // 7. TurnManager spawn
+            // 6. TurnManager spawn
             GameObject tmObj = Instantiate(turnManagerPrefab);
             tmObj.GetComponent<NetworkObject>().Spawn();
             Debug.Log("[GameController] TurnManager ready.");
 
-            // 8. Server initialization complete – the Networking layer will handle the rest
+            // 7. Server initialization complete – the Networking layer will handle the rest
             Debug.Log("[GameController] Server initialization complete.");
             OnLocalInitializationComplete?.Invoke();
+            yield break;
         }
 
         private void InitializePlayers()
@@ -234,9 +242,7 @@ namespace GridEmpire.Core
 
         private IEnumerator SendGridStateWhenReady(ulong clientId)
         {
-            yield return new WaitUntil(() =>
-                _players.Count > 0 &&
-                _players.Where(p => !p.IsAI).All(p => p.BaseCell != null));
+            yield return WaitForAllHumanBaseCells();
 
             int playerId = ResolvePlayerIdForClient?.Invoke(clientId) ?? -1;
 
@@ -257,6 +263,12 @@ namespace GridEmpire.Core
                 Send = new ClientRpcSendParams { TargetClientIds = new[] { clientId } }
             };
             SyncGridStateClientRpc(ids, owners, bases, clientRpcParams);
+        }
+
+        private IEnumerator WaitForAllHumanBaseCells()
+        {
+            bool AllReady() => _players.Count > 0 && _players.Where(p => !p.IsAI).All(p => p.BaseCell != null);
+            if (AllReady()) yield break;
         }
 
         [ClientRpc]
@@ -330,13 +342,12 @@ namespace GridEmpire.Core
 
         private IEnumerator ClientInitChain()
         {
-            yield return new WaitUntil(() =>
-                GridManager.Instance != null && GridManager.Instance.IsReady);
+            yield return WaitForGridReady();
             Debug.Log("[Client] GridManager ready.");
 
             RequestGridStateServerRpc();
 
-            yield return new WaitUntil(() => GetLocalPlayer()?.BaseCell != null);
+            yield return WaitForLocalBaseCell();
             Debug.Log($"[Client] BaseCell ready: {GetLocalPlayer().BaseCell.Id}");
 
             ResyncAllUnitsLocal();
@@ -348,6 +359,28 @@ namespace GridEmpire.Core
 
             Debug.Log("[Client] Client initialization complete.");
             OnLocalInitializationComplete?.Invoke();
+        }
+
+        private IEnumerator WaitForLocalBaseCell()
+        {
+            if (GetLocalPlayer()?.BaseCell != null) yield break;
+
+            bool ready = false;
+            void Handler(PlayerProfile p) { if (p == GetLocalPlayer()) ready = true; }
+            PlayerProfile.OnBaseCellAssigned += Handler;
+            yield return new WaitUntil(() => ready);
+            PlayerProfile.OnBaseCellAssigned -= Handler;
+        }
+
+        private IEnumerator WaitForGridReady()
+        {
+            if (GridManager.Instance != null && GridManager.Instance.IsReady) yield break;
+
+            bool ready = false;
+            void Handler() => ready = true;
+            GridManager.OnGridReady += Handler;
+            yield return new WaitUntil(() => ready);
+            GridManager.OnGridReady -= Handler;
         }
 
         // --- CLIENT SYNC ---------------------------------------------------------

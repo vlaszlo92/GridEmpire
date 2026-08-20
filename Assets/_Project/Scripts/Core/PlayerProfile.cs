@@ -22,6 +22,8 @@ namespace GridEmpire.Core
         [SerializeField] private CellData baseCell;
         [SerializeField] private CellData selectedCell;
 
+        public static event System.Action<PlayerProfile> OnBaseCellAssigned;
+
         private readonly HashSet<IUnit> _activeUnits = new();
         public IReadOnlyCollection<IUnit> ActiveUnits => _activeUnits;
 
@@ -37,7 +39,15 @@ namespace GridEmpire.Core
         public float GoldIncome => goldIncome;
         public void SyncGold(float amount) => gold = amount;
         public void SyncIncome(float amount) => goldIncome = amount;
-        public CellData BaseCell { get => baseCell; set => baseCell = value; }
+        public CellData BaseCell
+        {
+            get => baseCell;
+            set
+            {
+                baseCell = value;
+                if (value != null) OnBaseCellAssigned?.Invoke(this);
+            }
+        }
         public CellData SelectedCell { get => selectedCell; set => selectedCell = value; }
         internal void SetLocal(bool isLocal) => isLocalPlayer = isLocal;
         private readonly Dictionary<int, Dictionary<int, int>> _unitUpgradeLevels = new();

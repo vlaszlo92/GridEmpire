@@ -14,6 +14,7 @@ namespace GridEmpire.Core
         public bool FogOfWarEnabled { get; set; } = true;
 
         public static event System.Action OnVisibilityUpdated;
+        public static event System.Action OnGridReady;
 
         [Header("Grid Settings")]
         [SerializeField] private int radius = 5;
@@ -56,6 +57,7 @@ namespace GridEmpire.Core
             GenerateHexGrid();
             IsReady = true;
             Debug.Log($"[GridManager] Grid generated: radius={radius}, cells={_presenterMap.Count}");
+            OnGridReady?.Invoke();
         }
 
         private void GenerateHexGrid()

@@ -135,6 +135,8 @@ namespace GridEmpire.Gameplay
         [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)]
         private void RequestUpgradeStateServerRpc(RpcParams rpcParams = default)
         {
+            if (!NetworkAuthority.IsOwner(rpcParams.Receive.SenderClientId, _ownerId)) return;
+
             var profile = GetProfile();
             if (profile == null) return;
 
@@ -245,11 +247,14 @@ namespace GridEmpire.Gameplay
             UnitController controller = go.GetComponent<UnitController>();
             if (!go.TryGetComponent<NetworkObject>(out var netObj)) { Debug.LogError("[UnitSpawner] NetworkObject missing!"); return; }
 
+            EffectiveUnitStats effectiveStats = ComputeEffectiveStats(item.Data, profile);
+
+            netObj.Spawn();
+
             controller.NetworkUnitId.Value = newId;
             controller.NetworkOwnerId.Value = _ownerId;
             controller.NetworkUnitTypeIndex.Value = item.Data.index;
-            controller.NetworkStats.Value = ComputeEffectiveStats(item.Data, profile);
-            netObj.Spawn();
+            controller.NetworkStats.Value = effectiveStats;
 
             var path = item.TargetCell != null ? gridManager.FindPath(spawnCell, item.TargetCell) : null;
             controller.Initialize(newId, item.Data, path, gridManager, _ownerId);
