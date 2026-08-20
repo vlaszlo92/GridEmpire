@@ -16,10 +16,10 @@ MonoBehaviour:
   unitName: Cavarly
   type: 2
   strongAgainst: 0
-  recruitmentTime: 1
-  cost: 70
+  recruitmentTime: 2
+  cost: 100
   costPerTurn: 2
-  maxHp: 300
+  maxHp: 555
   staminaPerTurn: 0.7
   maxStamina: 1.5
   conquerSpeed: 0.5
@@ -27,4 +27,47 @@ MonoBehaviour:
   baseDamage: 80
   bonusDamage: 10
   unitPrefab: {fileID: 1596593811343993370, guid: a36bacb3462577a4a968f57e30ef7ea4, type: 3}
-  icon: {fileID: 305682678, guid: 6ea51d1fc31d7784cbabe9552f0ef51f, type: 3}
+  icon: {fileID: -1469481569, guid: f340e6e7f3cc7274fa111bee89ebac46, type: 3}
+  upgradeSettings:
+  - statType: 0
+    enabled: 1
+    maxLevel: 5
+    baseUpgradeCost: 100
+    costMultiplier: 1.5
+    valuePerLevel: 10
+  - statType: 1
+    enabled: 1
+    maxLevel: 5
+    baseUpgradeCost: 100
+    costMultiplier: 1.5
+    valuePerLevel: 10
+  - statType: 2
+    enabled: 1
+    maxLevel: 5
+    baseUpgradeCost: 100
+    costMultiplier: 1.5
+    valuePerLevel: 10
+  - statType: 3
+    enabled: 1
+    maxLevel: 5
+    baseUpgradeCost: 100
+    costMultiplier: 1.5
+    valuePerLevel: 10
+  - statType: 4
+    enabled: 1
+    maxLevel: 5
+    baseUpgradeCost: 100
+    costMultiplier: 1.5
+    valuePerLevel: 10
+  - statType: 5
+    enabled: 1
+    maxLevel: 5
+    baseUpgradeCost: 100
+    costMultiplier: 1.5
+    valuePerLevel: 10
+  - statType: 6
+    enabled: 1
+    maxLevel: 5
+    baseUpgradeCost: 100
+    costMultiplier: 1.5
+    valuePerLevel: 10

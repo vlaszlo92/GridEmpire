@@ -171,7 +171,7 @@ namespace GridEmpire.UI
         private void RefreshGoldDisplay()
         {
             if (this == null || goldText == null || _localSpawner == null) return;
-            goldText.text = _localPlayer.Gold.ToString();
+            goldText.text = ((int)_localPlayer.Gold).ToString();
 
             if (goldPerTurnText != null)
                 goldPerTurnText.text = $"+{_localPlayer.GoldIncome:F1}";
