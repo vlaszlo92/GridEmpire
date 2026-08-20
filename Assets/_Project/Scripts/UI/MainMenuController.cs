@@ -18,12 +18,14 @@ namespace GridEmpire.UI
         [SerializeField] private GameObject modeSelectorPanel;
         [SerializeField] private GameObject hostSettingsPanel;
         [SerializeField] private GameObject clientWaitingPanel;
+        [SerializeField] private GameObject fogPanel;
 
         [Header("Mode Buttons")]
         [SerializeField] private Button goToHostBtn;
         [SerializeField] private Button goToClientBtn;
         [SerializeField] private Button reconnectBtn;
         [SerializeField] private Button throwSessionBtn;
+        [SerializeField] private TextMeshProUGUI reconnectText;
 
         [Header("Host Action Buttons")]
         [SerializeField] private Button startHostFinalBtn;
@@ -107,7 +109,7 @@ namespace GridEmpire.UI
         private System.Action _onUnitStatsSyncedHandler;
         private System.Action<List<(int, string)>> _onUnitStatsFieldsChangedHandler;
 
-        // Jatekos lista cache
+        // Player list cache
         private readonly List<TextMeshProUGUI> _hostPlayerListItems = new List<TextMeshProUGUI>();
         private readonly List<TextMeshProUGUI> _clientPlayerListItems = new List<TextMeshProUGUI>();
 
@@ -241,7 +243,7 @@ namespace GridEmpire.UI
 
         private void HandleHostSessionFailed(string error)
         {
-            if (hostCodeDisplay != null) hostCodeDisplay.text = "HIBA";
+            if (hostCodeDisplay != null) hostCodeDisplay.text = "ERROR";
             SetHostLoading(false);
         }
 
@@ -275,7 +277,7 @@ namespace GridEmpire.UI
                 copyCodeBtn.gameObject.SetActive(!loading);
         }
 
-        // --- BEALLITAS VALTOZAS -------------------------------------------------------
+        // --- SETTINGS CHANGE HANDLING -------------------------------------------------------
 
         private void OnSettingsChanged()
         {
@@ -301,7 +303,7 @@ namespace GridEmpire.UI
             {
                 startHostFinalBtn.interactable = false;
                 if (hostPlayerCountText != null)
-                    hostPlayerCountText.text = "Lobby generalasa...";
+                    hostPlayerCountText.text = "Initializing lobby...";
                 return;
             }
 
@@ -317,7 +319,7 @@ namespace GridEmpire.UI
             int humanPlayers = totalPlayers - aiBots;
 
             if (hostPlayerCountText != null)
-                hostPlayerCountText.text = $"{connected} / {humanPlayers} human jatekos csatlakozott";
+                hostPlayerCountText.text = $"PLAYER LIST - {connected} / {humanPlayers}";
 
             startHostFinalBtn.interactable = connected >= humanPlayers;
         }
@@ -624,11 +626,13 @@ namespace GridEmpire.UI
         private void ShowPanel(GameObject panelToShow)
         {
             modeSelectorPanel.SetActive(panelToShow == modeSelectorPanel);
+            fogPanel.SetActive(panelToShow == modeSelectorPanel);
+
             hostSettingsPanel.SetActive(panelToShow == hostSettingsPanel);
             clientWaitingPanel.SetActive(panelToShow == clientWaitingPanel);
         }
 
-        // --- IDENTITY REQUEST QUEUE (biztosítja hogy a nev/szin valasztas mindig celba er) ---
+        // --- IDENTITY REQUEST QUEUE (ensures that the name/color selection always reaches its target) ---
 
         private bool IsIdentityReady()
         {
@@ -654,12 +658,12 @@ namespace GridEmpire.UI
 
             if (IsIdentityReady())
             {
-                Debug.Log($"[MMC] Szin kuldese azonnal: {colorIndex}");
+                Debug.Log($"[MMC] Color request sent immediately: {colorIndex}");
                 GlobalNetworkSettings.Instance.RequestColorServerRpc(colorIndex);
             }
             else
             {
-                Debug.Log($"[MMC] Szin sorba allitva, halozat meg nem kesz: {colorIndex}");
+                Debug.Log($"[MMC] Color request queued, network not ready: {colorIndex}");
                 EnsureIdentityFlushQueued();
             }
         }
@@ -701,7 +705,7 @@ namespace GridEmpire.UI
             }
         }
 
-        /// <summary>A PlayerLobbyInfos NetworkList barmilyen valtozasara lefut - mindkét panelt es a jatekos listakat frissiti.</summary>
+        /// <summary>A PlayerLobbyInfos NetworkList can run on any change - updates both panels and the player lists.</summary>
         private void HandleLobbyInfoChanged()
         {
             RefreshColorSwatchInteractivity(_hostColorSwatchButtons);
@@ -766,7 +770,7 @@ namespace GridEmpire.UI
 
         private void HandleColorRejected(int colorIndex)
         {
-            const string msg = "Ezt a színt már elvitték – válassz másikat!";
+            const string msg = "This color is already taken – please choose another!";
             if (hostColorPickStatusText != null)
             {
                 hostColorPickStatusText.text = msg;
@@ -879,6 +883,12 @@ namespace GridEmpire.UI
             if (throwSessionBtn != null) throwSessionBtn.gameObject.SetActive(hasSaved);
             if (goToHostBtn != null) goToHostBtn.gameObject.SetActive(!hasSaved);
             if (goToClientBtn != null) goToClientBtn.gameObject.SetActive(!hasSaved);
+            if (reconnectText != null)
+            {
+                reconnectText.gameObject.SetActive(hasSaved);
+                if (hasSaved)
+                    reconnectText.text = "You have an active game in progress. Reconnect?";
+            }
 
             ShowPanel(modeSelectorPanel);
         }
@@ -887,6 +897,7 @@ namespace GridEmpire.UI
         {
             if (reconnectBtn != null) reconnectBtn.interactable = false;
             if (throwSessionBtn != null) throwSessionBtn.interactable = false;
+            if (reconnectText != null) reconnectText.text = "Reconnecting...";
 
             NetworkLobbyController.Instance?.ReconnectToSession();
             ShowPanel(clientWaitingPanel);

@@ -112,6 +112,7 @@ namespace GridEmpire.Networking
 
         public async Task CreateHostSession(int maxPlayers)
         {
+            Debug.Log($"[DIAG] Host side - creating session. NetworkManager.IsListening={NetworkManager.Singleton?.IsListening}, IsHost={NetworkManager.Singleton?.IsHost}, ServicesReady={ServicesReady}, IsHostSessionActive={IsHostSessionActive}, _sessionOperationInProgress={_sessionOperationInProgress}");
             if (!ServicesReady || _sessionOperationInProgress) return;
             _sessionOperationInProgress = true;
             try
@@ -121,16 +122,18 @@ namespace GridEmpire.Networking
 
                 await ShutdownNetworkManagerIfNeeded();
 
+                var options = new SessionOptions { MaxPlayers = maxPlayers }.WithRelayNetwork();
+                
                 if (NetworkManager.Singleton != null)
-                {
                     NetworkManager.Singleton.NetworkConfig.ConnectionData =
                         System.Text.Encoding.UTF8.GetBytes(AuthenticationService.Instance.PlayerId);
-                    NetworkManager.Singleton.ConnectionApprovalCallback = ApproveConnection;
-                }
 
-                var options = new SessionOptions { MaxPlayers = maxPlayers }.WithRelayNetwork();
                 _currentSession = await MultiplayerService.Instance.CreateSessionAsync(options);
                 IsHostSessionActive = true;
+                Debug.Log($"[DIAG] Host side - session created. NetworkManager.IsListening={NetworkManager.Singleton?.IsListening}, IsHost={NetworkManager.Singleton?.IsHost}");
+
+                if (NetworkManager.Singleton != null)
+                    NetworkManager.Singleton.ConnectionApprovalCallback = ApproveConnection;
 
                 _currentSession.PlayerJoined += _ => OnSessionPlayersChanged?.Invoke();
                 _currentSession.PlayerLeaving += _ => OnSessionPlayersChanged?.Invoke();
@@ -139,7 +142,7 @@ namespace GridEmpire.Networking
             }
             catch (Exception e)
             {
-                Debug.LogError($"[NetworkLobbyController] Session hiba: {e.Message}");
+                Debug.LogError($"[NetworkLobbyController] Session error: {e.Message}");
                 OnHostSessionFailed?.Invoke(e.Message);
             }
             finally
