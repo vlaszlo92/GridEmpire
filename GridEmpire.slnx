@@ -125,6 +125,7 @@
   <Project Path="Unity.AI.Navigation.csproj" />
   <Project Path="Unity.Mathematics.Editor.csproj" />
   <Project Path="Unity.Services.Core.csproj" />
+  <Project Path="Assembly-CSharp-Editor.csproj" />
   <Project Path="Unity.Netcode.Editor.CodeGen.csproj" />
   <Project Path="Unity.Services.DeploymentApi.csproj" />
   <Project Path="Unity.Services.Core.Registration.csproj" />
@@ -143,7 +144,6 @@
   <Project Path="Unity.Services.Core.Scheduler.csproj" />
   <Project Path="Unity.AI.Toolkit.Async.csproj" />
   <Project Path="glTFast.dots.csproj" />
-  <Project Path="Assembly-CSharp-Editor.csproj" />
   <Project Path="Unity.Services.Core.Networking.csproj" />
   <Project Path="Unity.AI.Generators.Contexts.csproj" />
   <Project Path="Unity.AI.Generators.IO.Srp.csproj" />

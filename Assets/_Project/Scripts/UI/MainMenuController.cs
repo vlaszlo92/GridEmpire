@@ -281,12 +281,15 @@ namespace GridEmpire.UI
 
         private void OnSettingsChanged()
         {
+            float rawGold = goldPerTurnPerCellSlider != null ? goldPerTurnPerCellSlider.value : 0.1f;
+            float roundedGold = Mathf.Round(rawGold * 10f) / 10f;
+
             NetworkLobbyController.Instance?.SyncSettingsToClients(
                 (int)totalPlayersSlider.value,
                 (int)aiBotsSlider.value,
                 (int)mapSizeSlider.value,
                 turnSpeedSlider.value,
-                goldPerTurnPerCellSlider != null ? goldPerTurnPerCellSlider.value : 0.1f
+                roundedGold
             );
             UpdateStartButtonState();
             UpdateHostPlayerList();
@@ -589,7 +592,7 @@ namespace GridEmpire.UI
             int humanPlayers = totalPlayers - aiBots;
 
             if (clientPlayerCountText != null)
-                clientPlayerCountText.text = $"{connected} / {humanPlayers} players";
+                clientPlayerCountText.text = $"PLAYER LIST - {connected} / {humanPlayers}";
             if (clientTotalPlayersText != null)
                 clientTotalPlayersText.text = $"Players: {totalPlayers}";
             if (clientAiBotsText != null)
@@ -845,21 +848,53 @@ namespace GridEmpire.UI
         private void BindElement(Slider s, TMP_InputField i, float val, float min, float max, bool isInt, System.Action<float> onUpdate)
         {
             if (s == null || i == null) return;
-            s.minValue = min; s.maxValue = max; s.value = val;
-            i.text = isInt ? ((int)val).ToString() : val.ToString("F1");
+
+            s.minValue = min;
+            s.maxValue = max;
+
+            float initialVal = isInt ? Mathf.Round(val) : Mathf.Round(val * 10f) / 10f;
+            s.value = initialVal;
+            i.text = isInt ? ((int)initialVal).ToString() : initialVal.ToString("F1");
+
+            bool isUpdating = false;
+
             s.onValueChanged.AddListener(v =>
             {
-                i.text = isInt ? ((int)v).ToString() : v.ToString("F1");
-                onUpdate(v);
+                if (isUpdating) return;
+                isUpdating = true;
+
+                float rounded = isInt ? Mathf.Round(v) : Mathf.Round(v * 10f) / 10f;
+
+                // Magat a slidert is rákényszerítjük a 0.1-es lépésközre
+                if (!Mathf.Approximately(s.value, rounded))
+                    s.value = rounded;
+
+                i.text = isInt ? ((int)rounded).ToString() : rounded.ToString("F1");
+                onUpdate(rounded);
+
+                isUpdating = false;
             });
+
             i.onEndEdit.AddListener(txt =>
             {
-                if (float.TryParse(txt, out float res))
+                if (isUpdating) return;
+
+                string normalized = txt.Replace(',', '.');
+
+                if (float.TryParse(normalized, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out float res))
                 {
                     res = Mathf.Clamp(res, min, max);
-                    s.value = res;
-                    i.text = isInt ? ((int)res).ToString() : res.ToString("F1");
-                    onUpdate(res);
+                    float rounded = isInt ? Mathf.Round(res) : Mathf.Round(res * 10f) / 10f;
+
+                    isUpdating = true;
+                    s.value = rounded;
+                    i.text = isInt ? ((int)rounded).ToString() : rounded.ToString("F1");
+                    onUpdate(rounded);
+                    isUpdating = false;
+                }
+                else
+                {
+                    i.text = isInt ? ((int)s.value).ToString() : s.value.ToString("F1");
                 }
             });
         }

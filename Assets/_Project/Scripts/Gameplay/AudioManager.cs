@@ -1,6 +1,7 @@
 using System.Collections;
 using UnityEngine;
 using UnityEngine.Audio;
+using UnityEngine.SceneManagement;
 
 namespace GridEmpire.Gameplay
 {
@@ -11,12 +12,22 @@ namespace GridEmpire.Gameplay
         [Header("Mixer Reference")]
         [SerializeField] private AudioMixer _audioMixer;
 
+        [Header("Lobby Music")]
+        [SerializeField] private AudioClip _lobbyTrack;
+        [SerializeField] private string _lobbySceneName = "MainMenuScene";
+
         [Header("Music Settings")]
         [SerializeField] private AudioClip[] _musicTracks;
         [SerializeField] private AudioSource _musicSource;
+        [SerializeField] private string _gameSceneName = "GameScene";
+
+        [Header("Button Click Sound")]
+        [SerializeField] private AudioSource _sfxSource;
+        [SerializeField] private AudioClip buttonClickSound;
 
         private int[] _shuffledIndices;
         private int _currentIndex = 0;
+        private Coroutine _playCoroutine;
 
         public const string MasterKey = "MasterVolume";
         public const string MusicKey = "MusicVolume";
@@ -29,14 +40,59 @@ namespace GridEmpire.Gameplay
             DontDestroyOnLoad(gameObject);
         }
 
-        private void Start()
+        private IEnumerator Start()
         {
-            LoadVolumeSettings();
-            if (_musicTracks.Length > 0)
+            yield return new WaitForEndOfFrame();
+
+            if (_audioMixer != null)
             {
-                Shuffle();
-                StartCoroutine(PlayMusicQueue());
+                bool masterSuccess = _audioMixer.SetFloat(MasterKey, 0f);
+                bool musicSuccess = _audioMixer.SetFloat(MusicKey, 0f);
             }
+
+            LoadVolumeSettings();
+            SceneManager.sceneLoaded += HandleSceneLoaded;
+            PlayForScene(SceneManager.GetActiveScene().name);
+        }
+
+        private void OnDestroy()
+        {
+            SceneManager.sceneLoaded -= HandleSceneLoaded;
+        }
+
+        private void HandleSceneLoaded(Scene scene, LoadSceneMode mode)
+        {
+            PlayForScene(scene.name);
+        }
+
+        private void PlayForScene(string sceneName)
+        {
+            if (sceneName == _gameSceneName)
+            {
+                if (_musicTracks.Length > 0) StartQueue();
+            }
+            else if (sceneName == _lobbySceneName)
+            {
+                StartLobbyTrack();
+            }
+        }
+
+        private void StartQueue()
+        {
+            if (_playCoroutine != null) StopCoroutine(_playCoroutine);
+            _musicSource.loop = false;
+            Shuffle();
+            _currentIndex = 0;
+            _playCoroutine = StartCoroutine(PlayMusicQueue());
+        }
+
+        private void StartLobbyTrack()
+        {
+            if (_lobbyTrack == null) return;
+            if (_playCoroutine != null) { StopCoroutine(_playCoroutine); _playCoroutine = null; }
+            _musicSource.loop = true;
+            _musicSource.clip = _lobbyTrack;
+            _musicSource.Play();
         }
 
         #region Volume Control & Save/Load
@@ -100,6 +156,13 @@ namespace GridEmpire.Gameplay
                     _currentIndex = 0;
                     Shuffle();
                 }
+            }
+        }
+        public void PlayButtonClick()
+        {
+            if (buttonClickSound != null && _sfxSource != null)
+            {
+                _sfxSource.PlayOneShot(buttonClickSound);
             }
         }
     }
