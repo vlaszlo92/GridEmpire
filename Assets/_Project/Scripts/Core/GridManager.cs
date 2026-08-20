@@ -10,7 +10,7 @@ namespace GridEmpire.Core
         public static GridManager Instance { get; private set; }
         public bool IsReady { get; private set; } = false;
 
-        /// <summary>A Networking reteg allitja be, mielott GenerateGrid-et hiv.</summary>
+        /// <summary>The Networking layer sets this before calling GenerateGrid.</summary>
         public bool FogOfWarEnabled { get; set; } = true;
 
         public static event System.Action OnVisibilityUpdated;
@@ -43,10 +43,10 @@ namespace GridEmpire.Core
 
         public override void OnNetworkSpawn()
         {
-            // Szerveren a grid mar kesz (GameController.ServerInitChain hivta GenerateGrid-et
-            // a Spawn() elott, ami IsReady=true-t is beallitott).
-            // Klienseken a Networking reteg (GameNetworkBridge) hivja meg a GenerateGrid-et,
-            // amint megkapta a szukseges beallitasokat.
+            // On the server, the grid is already generated (GameController.ServerInitChain called GenerateGrid)
+            // before Spawn(), which also sets IsReady=true).
+            // On the client, the Networking layer (GameNetworkBridge) calls GenerateGrid,
+            // once it receives the necessary settings.
             Debug.Log($"[GridManager] OnNetworkSpawn. IsServer={IsServer}, IsReady={IsReady}");
         }
 
@@ -55,7 +55,7 @@ namespace GridEmpire.Core
             this.radius = radius;
             GenerateHexGrid();
             IsReady = true;
-            Debug.Log($"[GridManager] Grid generalva: radius={radius}, cellak={_presenterMap.Count}");
+            Debug.Log($"[GridManager] Grid generated: radius={radius}, cells={_presenterMap.Count}");
         }
 
         private void GenerateHexGrid()
@@ -92,13 +92,13 @@ namespace GridEmpire.Core
             }
         }
 
-        /// <summary>GameController.AssignBaseCells hivja – vizual frissitese egy cellan.</summary>
+        /// <summary>GameController.AssignBaseCells calls this – updates the visual representation of a cell.</summary>
         public void RefreshCell(CellData cell)
         {
             if (_presenterMap.TryGetValue(cell, out var presenter))
                 presenter.UpdateVisual();
             else
-                Debug.LogWarning($"[GridManager] RefreshCell: presenter nem talalhato, cell={cell.Id}");
+                Debug.LogWarning($"[GridManager] RefreshCell: presenter not found, cell={cell.Id}");
         }
 
         public void UpdateFogOfWar(int forPlayerId)
@@ -111,31 +111,14 @@ namespace GridEmpire.Core
                     cell.CurrentVisibility = VisibilityState.Visible;
                     presenter.UpdateVisual();
                 }
-                GameController.Instance.UpdateUnitVisibility(null, forPlayerId); // null = mindenki latszik
+                GameController.Instance.UpdateUnitVisibility(null, forPlayerId);
                 return;
             }
 
-            // 1. Lathato cellak osszegyujtese
-            var visibleCells = new HashSet<CellData>();
-            var player = GameController.Instance.GetPlayerById(forPlayerId);
+            // 1. Visible cells collection
+            var visibleCells = GetVisibleCells(forPlayerId);
 
-            if (player != null)
-            {
-                if (player.BaseCell != null)
-                {
-                    visibleCells.Add(player.BaseCell);
-                    foreach (var n in GetNeighbors(player.BaseCell)) visibleCells.Add(n);
-                }
-
-                foreach (IUnit unit in player.ActiveUnits)
-                {
-                    if (unit == null || unit.IsDead || unit.CurrentCell == null) continue;
-                    visibleCells.Add(unit.CurrentCell);
-                    foreach (var n in GetNeighbors(unit.CurrentCell)) visibleCells.Add(n);
-                }
-            }
-
-            // 2. Cellak lathatosaga + presenter frissites – egy loopban
+            // 2. Cell visibility + presenter update – in a single loop
             foreach (var (cell, presenter) in _presenterMap)
             {
                 cell.CurrentVisibility = visibleCells.Contains(cell)
@@ -145,10 +128,34 @@ namespace GridEmpire.Core
                 presenter.UpdateVisual();
             }
 
-            // 3. Unit-ok lathatosaga
+            // 3. Unit visibility
             GameController.Instance.UpdateUnitVisibility(visibleCells, forPlayerId);
 
             OnVisibilityUpdated?.Invoke();
+        }
+
+        /// <summary>Gets the cells currently visible to a player (their base + unit range).
+        /// Can be used on the server for network state filtering, not just for visualization.</summary>
+        public HashSet<CellData> GetVisibleCells(int forPlayerId)
+        {
+            var visibleCells = new HashSet<CellData>();
+            var player = GameController.Instance.GetPlayerById(forPlayerId);
+            if (player == null) return visibleCells;
+
+            if (player.BaseCell != null)
+            {
+                visibleCells.Add(player.BaseCell);
+                foreach (var n in GetNeighbors(player.BaseCell)) visibleCells.Add(n);
+            }
+
+            foreach (IUnit unit in player.ActiveUnits)
+            {
+                if (unit == null || unit.IsDead || unit.CurrentCell == null) continue;
+                visibleCells.Add(unit.CurrentCell);
+                foreach (var n in GetNeighbors(unit.CurrentCell)) visibleCells.Add(n);
+            }
+
+            return visibleCells;
         }
 
         public void FinalizeCapture(CellData cell, int playerId)

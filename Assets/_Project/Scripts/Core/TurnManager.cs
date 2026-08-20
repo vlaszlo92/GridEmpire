@@ -116,29 +116,47 @@ namespace GridEmpire.Core
 
             if (IsServer && _resolver != null)
             {
-                var snapshot = _resolver.BuildSnapshot(TurnCount);
-                string json = JsonUtility.ToJson(snapshot);
-#if DEVELOPMENT_BUILD || UNITY_EDITOR
-                StartCoroutine(DelayedSnapshotSend(json));
-#else
-        ApplySnapshotClientRpc(json);
-#endif
+                _resolver.ClearChangedCells();
+                SendSnapshotsToClients();
             }
 
             CurrentPhase = TurnPhase.Idle;
             CalculationProgress = 0f;
         }
 
+        private void SendSnapshotsToClients()
+        {
+            foreach (ulong clientId in NetworkManager.Singleton.ConnectedClientsIds)
+            {
+                int playerId = GameController.ResolvePlayerIdForClient?.Invoke(clientId) ?? -1;
+                if (playerId == -1) continue;
+
+                var snapshot = _resolver.BuildSnapshotForPlayer(TurnCount, playerId);
+                string json = JsonUtility.ToJson(snapshot);
+
+                var clientRpcParams = new ClientRpcParams
+                {
+                    Send = new ClientRpcSendParams { TargetClientIds = new[] { clientId } }
+                };
+
 #if DEVELOPMENT_BUILD || UNITY_EDITOR
-        private IEnumerator DelayedSnapshotSend(string json)
+                StartCoroutine(DelayedSnapshotSend(json, clientRpcParams));
+#else
+                ApplySnapshotClientRpc(json, clientRpcParams);
+#endif
+            }
+        }
+
+#if DEVELOPMENT_BUILD || UNITY_EDITOR
+        private IEnumerator DelayedSnapshotSend(string json, ClientRpcParams clientRpcParams)
         {
             yield return new WaitForSeconds(UnityEngine.Random.Range(0.05f, 0.25f));
-            ApplySnapshotClientRpc(json);
+            ApplySnapshotClientRpc(json, clientRpcParams);
         }
 #endif
 
         [ClientRpc]
-        private void ApplySnapshotClientRpc(string json)
+        private void ApplySnapshotClientRpc(string json, ClientRpcParams clientRpcParams = default)
         {
             if (IsServer) return;
             var snapshot = JsonUtility.FromJson<TurnSnapshot>(json);
@@ -191,8 +209,6 @@ namespace GridEmpire.Core
                 string unitCellIds = localPlayer.ActiveUnits != null
                     ? string.Join(", ", localPlayer.ActiveUnits.Select(u => u?.CurrentCell?.Id))
                     : string.Empty;
-
-                //Debug.Log($"[TurnManager] Updating fog of war for local player {localPlayer.Id}, Unit Cell IDs: [{unitCellIds}]");
 
                 gridManager.UpdateFogOfWar(localPlayer.Id);
             }

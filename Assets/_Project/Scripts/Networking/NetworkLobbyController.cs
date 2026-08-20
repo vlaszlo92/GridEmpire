@@ -122,18 +122,18 @@ namespace GridEmpire.Networking
 
                 await ShutdownNetworkManagerIfNeeded();
 
-                var options = new SessionOptions { MaxPlayers = maxPlayers }.WithRelayNetwork();
-                
                 if (NetworkManager.Singleton != null)
+                {
                     NetworkManager.Singleton.NetworkConfig.ConnectionData =
                         System.Text.Encoding.UTF8.GetBytes(AuthenticationService.Instance.PlayerId);
+                    NetworkManager.Singleton.ConnectionApprovalCallback = ApproveConnection;
+                }
+
+                var options = new SessionOptions { MaxPlayers = maxPlayers }.WithRelayNetwork();
 
                 _currentSession = await MultiplayerService.Instance.CreateSessionAsync(options);
                 IsHostSessionActive = true;
                 Debug.Log($"[DIAG] Host side - session created. NetworkManager.IsListening={NetworkManager.Singleton?.IsListening}, IsHost={NetworkManager.Singleton?.IsHost}");
-
-                if (NetworkManager.Singleton != null)
-                    NetworkManager.Singleton.ConnectionApprovalCallback = ApproveConnection;
 
                 _currentSession.PlayerJoined += _ => OnSessionPlayersChanged?.Invoke();
                 _currentSession.PlayerLeaving += _ => OnSessionPlayersChanged?.Invoke();

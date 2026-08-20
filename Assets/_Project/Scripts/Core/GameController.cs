@@ -18,6 +18,10 @@ namespace GridEmpire.Core
         /// The Networking layer will call this once the local clientId → playerId mapping is resolved.</summary>
         public static event System.Action OnLocalInitializationComplete;
 
+        /// <summary>Sets the Networking layer (GameNetworkBridge) to avoid circular assembly references between Core and Networking.
+        /// Used on the server side: resolves clientId -> playerId mapping.</summary>
+        public static System.Func<ulong, int> ResolvePlayerIdForClient;
+
         [Header("Manager Prefabs")]
         [SerializeField] private GameObject gridManagerPrefab;
         [SerializeField] private GameObject turnManagerPrefab;
@@ -234,10 +238,19 @@ namespace GridEmpire.Core
                 _players.Count > 0 &&
                 _players.Where(p => !p.IsAI).All(p => p.BaseCell != null));
 
-            var cells = GridManager.Instance.GetAllCells().ToList();
-            int[] ids = cells.Select(c => c.Id).ToArray();
-            int[] owners = cells.Select(c => c.OwnerId).ToArray();
-            bool[] bases = cells.Select(c => c.IsBase).ToArray();
+            int playerId = ResolvePlayerIdForClient?.Invoke(clientId) ?? -1;
+
+            IEnumerable<CellData> cells = GridManager.Instance.GetAllCells();
+            if (!IsDebugMode && GridManager.Instance.FogOfWarEnabled && playerId != -1)
+            {
+                var known = GridManager.Instance.GetVisibleCells(playerId);
+                cells = cells.Where(c => c.OwnerId == playerId || known.Contains(c));
+            }
+
+            var cellList = cells.ToList();
+            int[] ids = cellList.Select(c => c.Id).ToArray();
+            int[] owners = cellList.Select(c => c.OwnerId).ToArray();
+            bool[] bases = cellList.Select(c => c.IsBase).ToArray();
 
             var clientRpcParams = new ClientRpcParams
             {

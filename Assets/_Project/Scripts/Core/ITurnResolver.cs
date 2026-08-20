@@ -11,12 +11,12 @@ namespace GridEmpire.Core
         void ForceComplete();
         void ApplyResults();
         float GetProgress();
-        void RegisterUnit(IUnit unit); 
-        void UnregisterUnit(IUnit unit); 
-        void RegisterSpawner(ISpawner spawner); 
+        void RegisterUnit(IUnit unit);
+        void UnregisterUnit(IUnit unit);
+        void RegisterSpawner(ISpawner spawner);
         void UnregisterSpawner(ISpawner spawner);
         void EnqueueAction(UnitAction action);
-        TurnSnapshot BuildSnapshot(int turnIndex);
+        TurnSnapshot BuildSnapshotForPlayer(int turnIndex, int playerId);
         void MarkCellChanged(int cellId);
         IReadOnlyCollection<int> GetChangedCells();
         void ClearChangedCells();

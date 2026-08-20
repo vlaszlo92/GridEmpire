@@ -1,5 +1,6 @@
 ﻿using GridEmpire.Core;
 using GridEmpire.Input;
+using GridEmpire.Networking;
 using GridEmpire.Shared;
 using System.Collections;
 using System.Collections.Generic;
@@ -69,8 +70,9 @@ namespace GridEmpire.Gameplay
         }
 
         [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)]
-        private void RequestDestroyServerRpc()
+        private void RequestDestroyServerRpc(RpcParams rpcParams = default)
         {
+            if (!NetworkAuthority.IsOwner(rpcParams.Receive.SenderClientId, _ownerId)) return;
             ExecuteDeath();
         }
 

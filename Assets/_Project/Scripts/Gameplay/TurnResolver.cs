@@ -160,7 +160,7 @@ namespace GridEmpire.Gameplay
                 }
             }
 
-            // 4. Fog of War refresh – cacheit GridManager
+            // 4. Fog of War refresh - cacheit GridManager
             var localPlayer = GameController.Instance.GetLocalPlayer();
             if (localPlayer != null)
                 _gridManager?.UpdateFogOfWar(localPlayer.Id);
@@ -255,13 +255,22 @@ namespace GridEmpire.Gameplay
             return phaseIndex / 5f + (_currentUnitIndex / (float)_processingUnits.Count / 5f);
         }
 
-        public TurnSnapshot BuildSnapshot(int turnIndex)
+        public TurnSnapshot BuildSnapshotForPlayer(int turnIndex, int playerId)
         {
             var snapshot = new TurnSnapshot { TurnIndex = turnIndex };
+
+            bool fowActive = !GameController.IsDebugMode && _gridManager != null && _gridManager.FogOfWarEnabled;
+            HashSet<CellData> visibleCells = fowActive ? _gridManager.GetVisibleCells(playerId) : null;
 
             foreach (var unit in _processingUnits)
             {
                 if (unit == null) continue;
+
+                bool isOwnUnit = unit.OwnerId == playerId;
+                bool isVisible = !fowActive || isOwnUnit ||
+                    (unit.CurrentCell != null && visibleCells.Contains(unit.CurrentCell));
+                if (!isVisible) continue;
+
                 snapshot.UnitActions.Add(new UnitActionResult
                 {
                     UnitId = unit.Id,
@@ -274,9 +283,8 @@ namespace GridEmpire.Gameplay
                 });
             }
 
-            _changedCellIds.Clear();
-
-            foreach (var player in GameController.Instance.Players)
+            var player = GameController.Instance.GetPlayerById(playerId);
+            if (player != null)
             {
                 snapshot.PlayerStats.Add(new PlayerSyncData
                 {
