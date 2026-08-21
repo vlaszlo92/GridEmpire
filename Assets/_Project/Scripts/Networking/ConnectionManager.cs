@@ -9,6 +9,8 @@ namespace GridEmpire.Networking
     {
         public static ConnectionManager Instance { get; private set; }
 
+        public static event System.Action<string> OnStatusMessage;
+
         private readonly Dictionary<ulong, string> _pendingAuthIds = new Dictionary<ulong, string>();
 
         private void Awake()
@@ -57,6 +59,7 @@ namespace GridEmpire.Networking
                     updated.ClientId = clientId;
                     mappings[i] = updated;
                     Debug.Log($"[ConnectionManager] Player connected! AuthId={authId}, PlayerId={updated.PlayerId}, new ClientId={clientId}");
+                    BroadcastStatusClientRpc($"{GetDisplayName(updated.PlayerId)} reconnected.");
                     return updated.PlayerId;
                 }
             }
@@ -76,6 +79,7 @@ namespace GridEmpire.Networking
                 {
                     Debug.Log($"[ConnectionManager] new player connected! Mapping added: AuthId={authId}, PlayerId={playerId}, ClientId={clientId}");
                     mappings.Add(new PlayerClientMapping { ClientId = clientId, PlayerId = playerId, AuthId = authIdFixed });
+                    BroadcastStatusClientRpc($"{GetDisplayName(playerId)} joined.");
                     return playerId;
                 }
             }
@@ -87,6 +91,26 @@ namespace GridEmpire.Networking
         private void HandleClientDisconnect(ulong clientId)
         {
             Debug.Log($"[ConnectionManager] clientId={clientId} disconnected. Mapping saved for reconnection.");
+
+            int playerId = GlobalNetworkSettings.Instance != null
+                ? GlobalNetworkSettings.Instance.GetPlayerIdForClient(clientId)
+                : -1;
+
+            BroadcastStatusClientRpc($"{GetDisplayName(playerId, clientId)} disconnected.");
+        }
+
+        private string GetDisplayName(int playerId, ulong fallbackClientId = ulong.MaxValue)
+        {
+            if (playerId != -1 && GlobalNetworkSettings.Instance != null)
+                return GlobalNetworkSettings.Instance.GetPlayerName(playerId);
+
+            return fallbackClientId != ulong.MaxValue ? $"Client {fallbackClientId}" : "A player";
+        }
+
+        [ClientRpc]
+        private void BroadcastStatusClientRpc(string message)
+        {
+            OnStatusMessage?.Invoke(message);
         }
     }
 }

@@ -32,6 +32,13 @@ namespace GridEmpire.Gameplay
         public const string MasterKey = "MasterVolume";
         public const string MusicKey = "MusicVolume";
         public const string EffectsKey = "EffectsVolume";
+        public const string UIKey = "UIVolume";
+        public const string MuteKey = "IsMuted";
+
+        private bool _isMuted = false;
+        public bool IsMuted => _isMuted;
+
+        public static event System.Action<bool> OnMuteStateChanged;
 
         private void Awake()
         {
@@ -100,11 +107,30 @@ namespace GridEmpire.Gameplay
         public void SetMasterVolume(float value) => SetVolume(MasterKey, value);
         public void SetMusicVolume(float value) => SetVolume(MusicKey, value);
         public void SetEffectsVolume(float value) => SetVolume(EffectsKey, value);
+        public void SetUIVolume(float value) => SetVolume(UIKey, value);
+
+        public void ToggleMute() => SetMuted(!_isMuted);
+
+        public void SetMuted(bool muted)
+        {
+            _isMuted = muted;
+            PlayerPrefs.SetInt(MuteKey, muted ? 1 : 0);
+            PlayerPrefs.Save();
+
+            // A ténylegesen elmentett master volume-ot nem írjuk felül,
+            // csak a mixert némítjuk le / állítjuk vissza rá.
+            ApplyVolumeToMixer(MasterKey, muted ? 0f : GetVolume(MasterKey));
+            OnMuteStateChanged?.Invoke(_isMuted);
+        }
 
         private void SetVolume(string key, float value)
         {
             PlayerPrefs.SetFloat(key, value);
             PlayerPrefs.Save();
+
+            // Ha épp némítva vagyunk, a master csúszka mozgatása ne törje meg
+            // a mute-ot, csak a háttérben tárolt értéket frissítse.
+            if (key == MasterKey && _isMuted) return;
 
             ApplyVolumeToMixer(key, value);
         }
@@ -119,6 +145,10 @@ namespace GridEmpire.Gameplay
             ApplyVolumeToMixer(MasterKey, GetVolume(MasterKey));
             ApplyVolumeToMixer(MusicKey, GetVolume(MusicKey));
             ApplyVolumeToMixer(EffectsKey, GetVolume(EffectsKey));
+            ApplyVolumeToMixer(UIKey, GetVolume(UIKey));
+
+            _isMuted = PlayerPrefs.GetInt(MuteKey, 0) == 1;
+            if (_isMuted) ApplyVolumeToMixer(MasterKey, 0f);
         }
 
         private void ApplyVolumeToMixer(string key, float value)
