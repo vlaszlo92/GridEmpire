@@ -1,5 +1,6 @@
 using System;
 using System.Collections;
+using System.Linq;
 using GridEmpire.Shared;
 using Unity.Netcode;
 using Unity.Services.Authentication;
@@ -45,12 +46,18 @@ namespace GridEmpire.Networking
         private bool _sessionOperationInProgress;
         public bool IsSessionOperationInProgress => _sessionOperationInProgress;
         private const string LastJoinCodeKey = "LastJoinCode";
+        private const string LastSessionIdKey = "LastSessionId";
+        private const string IdentitySecretKey = "IdentitySecret";
+        private const string IdentitySecretPropertyKey = "identity_secret";
 
         public static bool HasSavedSession => PlayerPrefs.HasKey(LastJoinCodeKey);
         public static string GetSavedJoinCode() => PlayerPrefs.GetString(LastJoinCodeKey, "");
+        public static string GetSavedSessionId() => PlayerPrefs.GetString(LastSessionIdKey, "");
         public static void ClearSavedSession()
         {
             PlayerPrefs.DeleteKey(LastJoinCodeKey);
+            PlayerPrefs.DeleteKey(LastSessionIdKey);
+            PlayerPrefs.DeleteKey(IdentitySecretKey);
             PlayerPrefs.Save();
         }
 
@@ -108,11 +115,36 @@ namespace GridEmpire.Networking
             OnHostConnectionLost?.Invoke();
         }
 
+        // --- IDENTITY ---------------------------------------------------------
+
+        private async Task EnsureIdentitySecret()
+        {
+            if (_currentSession == null)
+                throw new InvalidOperationException("No active session.");
+
+            string secret = PlayerPrefs.GetString(IdentitySecretKey, "");
+            if (string.IsNullOrEmpty(secret))
+            {
+                secret = Guid.NewGuid().ToString("N");
+                PlayerPrefs.SetString(IdentitySecretKey, secret);
+                PlayerPrefs.Save();
+            }
+
+            _currentSession.CurrentPlayer.SetProperty(IdentitySecretPropertyKey, new PlayerProperty(secret));
+            await _currentSession.SaveCurrentPlayerDataAsync();
+        }
+
+        private void SetConnectionIdentity()
+        {
+            string secret = GetOrCreateIdentitySecret();
+            string payload = $"{AuthenticationService.Instance.PlayerId}|{secret}";
+            NetworkManager.Singleton.NetworkConfig.ConnectionData = System.Text.Encoding.UTF8.GetBytes(payload);
+        }
+
         // --- HOST SESSION ---------------------------------------------------
 
         public async Task CreateHostSession(int maxPlayers)
         {
-            Debug.Log($"[DIAG] Host side - creating session. NetworkManager.IsListening={NetworkManager.Singleton?.IsListening}, IsHost={NetworkManager.Singleton?.IsHost}, ServicesReady={ServicesReady}, IsHostSessionActive={IsHostSessionActive}, _sessionOperationInProgress={_sessionOperationInProgress}");
             if (!ServicesReady || _sessionOperationInProgress) return;
             _sessionOperationInProgress = true;
             try
@@ -124,16 +156,21 @@ namespace GridEmpire.Networking
 
                 if (NetworkManager.Singleton != null)
                 {
-                    NetworkManager.Singleton.NetworkConfig.ConnectionData =
-                        System.Text.Encoding.UTF8.GetBytes(AuthenticationService.Instance.PlayerId);
+                    SetConnectionIdentity();
                     NetworkManager.Singleton.ConnectionApprovalCallback = ApproveConnection;
                 }
 
-                var options = new SessionOptions { MaxPlayers = maxPlayers }.WithRelayNetwork();
+                var options = new SessionOptions
+                {
+                    MaxPlayers = maxPlayers,
+                    PlayerProperties = new System.Collections.Generic.Dictionary<string, PlayerProperty>
+            {
+                { IdentitySecretPropertyKey, new PlayerProperty(GetOrCreateIdentitySecret()) }
+            }
+                }.WithRelayNetwork();
 
                 _currentSession = await MultiplayerService.Instance.CreateSessionAsync(options);
                 IsHostSessionActive = true;
-                Debug.Log($"[DIAG] Host side - session created. NetworkManager.IsListening={NetworkManager.Singleton?.IsListening}, IsHost={NetworkManager.Singleton?.IsHost}");
 
                 _currentSession.PlayerJoined += _ => OnSessionPlayersChanged?.Invoke();
                 _currentSession.PlayerLeaving += _ => OnSessionPlayersChanged?.Invoke();
@@ -176,7 +213,10 @@ namespace GridEmpire.Networking
             if (GlobalNetworkSettings.Instance != null)
                 GlobalNetworkSettings.Instance.InitializeFromSettings(settings);
             else
+            {
                 Debug.LogError("[NetworkLobbyController] GlobalNetworkSettings not found in the scene!");
+                return;
+            }
 
             NetworkDebugDump.DumpServerState(settings, sceneName, expectedHumans);
             GlobalNetworkSettings.Instance?.TriggerDebugDumpClientRpc();
@@ -186,20 +226,57 @@ namespace GridEmpire.Networking
 
         private void ApproveConnection(NetworkManager.ConnectionApprovalRequest request, NetworkManager.ConnectionApprovalResponse response)
         {
-            string authId = request.Payload != null && request.Payload.Length > 0
-                ? System.Text.Encoding.UTF8.GetString(request.Payload)
-                : null;
+            response.CreatePlayerObject = false;
 
-            if (string.IsNullOrEmpty(authId))
+            if (request.ClientNetworkId == NetworkManager.ServerClientId)
             {
-                response.Approved = false;
+                ConnectionManager.Instance?.RegisterConnection(request.ClientNetworkId, AuthenticationService.Instance.PlayerId);
+                response.Approved = true;
+                return;
+            }
+            response.Approved = false;
+
+            if (_currentSession == null)
+            {
+                response.Reason = "Session unavailable.";
+                return;
+            }
+
+            if (request.Payload == null || request.Payload.Length == 0)
+            {
+                response.Reason = "Missing identity payload.";
+                return;
+            }
+
+            string payload = System.Text.Encoding.UTF8.GetString(request.Payload);
+            string[] parts = payload.Split('|');
+            if (parts.Length != 2 || string.IsNullOrEmpty(parts[0]) || string.IsNullOrEmpty(parts[1]))
+            {
+                response.Reason = "Invalid identity payload.";
+                return;
+            }
+
+            string authId = parts[0];
+            string secret = parts[1];
+
+            var player = _currentSession.AsHost().Players.FirstOrDefault(p => p.Id == authId);
+            if (player == null)
+            {
+                response.Reason = "Player is not a session member.";
+                return;
+            }
+
+            if (!player.Properties.TryGetValue(IdentitySecretPropertyKey, out var property) || property.Value != secret)
+            {
+                response.Reason = "Identity validation failed.";
                 return;
             }
 
             ConnectionManager.Instance?.RegisterConnection(request.ClientNetworkId, authId);
 
             response.Approved = true;
-            response.CreatePlayerObject = false;
+
+            Debug.Log($"[NetworkLobbyController] Connection approved. AuthId={authId}, ClientId={request.ClientNetworkId}");
         }
 
         private IEnumerator LoadGameSceneRoutine(string sceneName, int expectedHumans)
@@ -240,12 +317,24 @@ namespace GridEmpire.Networking
             {
                 await ShutdownNetworkManagerIfNeeded();
 
+                if (NetworkManager.Singleton != null)
+                    SetConnectionIdentity();
+
+                var joinOptions = new JoinSessionOptions
+                {
+                    PlayerProperties = new System.Collections.Generic.Dictionary<string, PlayerProperty>
+                    {
+                        { IdentitySecretPropertyKey, new PlayerProperty(GetOrCreateIdentitySecret()) }
+                    }
+                };
+
                 try
                 {
-                    if (NetworkManager.Singleton != null)
-                        NetworkManager.Singleton.NetworkConfig.ConnectionData =
-                            System.Text.Encoding.UTF8.GetBytes(AuthenticationService.Instance.PlayerId);
-                    _currentSession = await MultiplayerService.Instance.JoinSessionByCodeAsync(joinCode);
+                    _currentSession = await MultiplayerService.Instance.JoinSessionByCodeAsync(joinCode, joinOptions);
+
+                    PlayerPrefs.SetString(LastJoinCodeKey, joinCode);
+                    PlayerPrefs.SetString(LastSessionIdKey, _currentSession.Id);
+                    PlayerPrefs.Save();
                 }
                 catch (Exception joinEx) when (joinEx.Message.Contains("already a member"))
                 {
@@ -253,14 +342,11 @@ namespace GridEmpire.Networking
                     throw;
                 }
 
-                PlayerPrefs.SetString(LastJoinCodeKey, joinCode);
-                PlayerPrefs.Save();
-
                 OnClientConnectResult?.Invoke("Connected! Waiting for the host...", true);
             }
             catch (Exception e)
             {
-                Debug.LogError($"[NetworkLobbyController] Session error: {e.Message}");
+                Debug.LogWarning($"[NetworkLobbyController] Session error: {e.Message}");
                 OnClientConnectResult?.Invoke($"Error: {e.Message}", false);
             }
             finally
@@ -284,21 +370,65 @@ namespace GridEmpire.Networking
             }
             ClearSavedSession();
         }
+
         public async void ReconnectToSession()
         {
-            if (!ServicesReady || _isConnecting) return;
+            if (!ServicesReady || _sessionOperationInProgress) return;
 
-            string joinCode = GetSavedJoinCode();
-            if (string.IsNullOrEmpty(joinCode)) return;
-
-            if (IsListening)
+            string sessionId = GetSavedSessionId();
+            if (string.IsNullOrEmpty(sessionId))
             {
-                NetworkManager.Singleton.Shutdown();
-                while (NetworkManager.Singleton.ShutdownInProgress)
-                    await System.Threading.Tasks.Task.Yield();
+                string savedJoinCode = GetSavedJoinCode();
+                if (!string.IsNullOrEmpty(savedJoinCode)) await JoinSession(savedJoinCode);
+                return;
             }
 
-            JoinSession(joinCode);
+            _sessionOperationInProgress = true;
+            try
+            {
+                await ShutdownNetworkManagerIfNeeded();
+
+                if (NetworkManager.Singleton != null)
+                    SetConnectionIdentity();
+
+                _currentSession = await MultiplayerService.Instance.ReconnectToSessionAsync(sessionId);
+
+                PlayerPrefs.SetString(LastSessionIdKey, _currentSession.Id);
+                if (!string.IsNullOrEmpty(_currentSession.Code))
+                    PlayerPrefs.SetString(LastJoinCodeKey, _currentSession.Code);
+                PlayerPrefs.Save();
+
+                _currentSession.PlayerJoined += _ => OnSessionPlayersChanged?.Invoke();
+                _currentSession.PlayerLeaving += _ => OnSessionPlayersChanged?.Invoke();
+
+                OnClientConnectResult?.Invoke("Reconnected! Waiting for the host...", true);
+            }
+            catch (Exception e)
+            {
+                Debug.LogError($"[NetworkLobbyController] Reconnect error: {e.Message}");
+
+                if (e.Message.Contains("not a member"))
+                {
+                    PlayerPrefs.DeleteKey(LastSessionIdKey);
+                    PlayerPrefs.Save();
+
+                    string joinCode = GetSavedJoinCode();
+                    _sessionOperationInProgress = false;
+
+                    if (!string.IsNullOrEmpty(joinCode))
+                    {
+                        await JoinSession(joinCode);
+                        return;
+                    }
+                }
+
+                OnClientConnectResult?.Invoke($"Error: {e.Message}", false);
+                ClearSavedSession();
+            }
+            finally
+            {
+                _sessionOperationInProgress = false;
+            }
         }
 
         // --- COMMON ---------------------------------------------------------
@@ -320,6 +450,18 @@ namespace GridEmpire.Networking
             NetworkManager.Singleton.Shutdown();
             while (NetworkManager.Singleton.ShutdownInProgress)
                 await Task.Yield();
+        }
+
+        private string GetOrCreateIdentitySecret()
+        {
+            string secret = PlayerPrefs.GetString(IdentitySecretKey, "");
+            if (string.IsNullOrEmpty(secret))
+            {
+                secret = Guid.NewGuid().ToString("N");
+                PlayerPrefs.SetString(IdentitySecretKey, secret);
+                PlayerPrefs.Save();
+            }
+            return secret;
         }
     }
 }
