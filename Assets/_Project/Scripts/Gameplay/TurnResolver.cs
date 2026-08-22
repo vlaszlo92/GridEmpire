@@ -69,14 +69,12 @@ namespace GridEmpire.Gameplay
 
         public void PrepareForNextTurn()
         {
+            GameController.Instance.RefreshFogSyncForAllPlayers();
+            GameController.Instance.RefreshNetworkVisibilityForAllUnits();
+
             _actionQueue.Clear();
 
-            _processingUnits = _registeredUnits.ToList();
             _processingSpawners = _registeredSpawners.ToList();
-
-            _unitLookup.Clear();
-            foreach (var u in _processingUnits)
-                if (u != null) _unitLookup[u.Id] = u;
 
             if (_gridManager == null)
                 _gridManager = Object.FindFirstObjectByType<GridManager>();
@@ -99,6 +97,12 @@ namespace GridEmpire.Gameplay
                         if (spawner == null) continue;
                         spawner.AdvanceQueue();
                     }
+
+                    _processingUnits = _registeredUnits.ToList();
+                    _unitLookup.Clear();
+                    foreach (var u in _processingUnits)
+                        if (u != null) _unitLookup[u.Id] = u;
+
                     _currentState = ResolveState.Combat;
                 }
                 else if (_currentState == ResolveState.Combat)

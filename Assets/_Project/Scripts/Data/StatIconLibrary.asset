@@ -14,16 +14,16 @@ MonoBehaviour:
   m_EditorClassIdentifier: GridEmpire.Core::GridEmpire.Core.StatIconLibrary
   entries:
   - type: 0
-    icon: {fileID: 688106449, guid: a294be6aac6c803489b7e307f04e4f75, type: 3}
-  - type: 1
-    icon: {fileID: 116818625, guid: a294be6aac6c803489b7e307f04e4f75, type: 3}
+    icon: {fileID: -727372616, guid: 609f8ffa6e6748f4c8947f7af22ae46f, type: 3}
   - type: 2
-    icon: {fileID: 994144487, guid: a294be6aac6c803489b7e307f04e4f75, type: 3}
+    icon: {fileID: 706795122, guid: 609f8ffa6e6748f4c8947f7af22ae46f, type: 3}
+  - type: 1
+    icon: {fileID: -1269495272, guid: 609f8ffa6e6748f4c8947f7af22ae46f, type: 3}
   - type: 3
-    icon: {fileID: -1360465598, guid: a294be6aac6c803489b7e307f04e4f75, type: 3}
+    icon: {fileID: 479868060, guid: 609f8ffa6e6748f4c8947f7af22ae46f, type: 3}
   - type: 4
-    icon: {fileID: 589874595, guid: a294be6aac6c803489b7e307f04e4f75, type: 3}
+    icon: {fileID: -1857173249, guid: 609f8ffa6e6748f4c8947f7af22ae46f, type: 3}
   - type: 5
-    icon: {fileID: 1357708899, guid: a294be6aac6c803489b7e307f04e4f75, type: 3}
+    icon: {fileID: 1381674260, guid: 609f8ffa6e6748f4c8947f7af22ae46f, type: 3}
   - type: 6
-    icon: {fileID: -70766548, guid: a294be6aac6c803489b7e307f04e4f75, type: 3}
+    icon: {fileID: 1406768288, guid: 609f8ffa6e6748f4c8947f7af22ae46f, type: 3}

@@ -160,6 +160,13 @@ namespace GridEmpire.Core
             return visibleCells;
         }
 
+        public bool IsCellVisibleToPlayer(CellData cell, int playerId)
+        {
+            if (cell == null) return false;
+            if (IsDebugMode || !FogOfWarEnabled) return true;
+            return GetVisibleCells(playerId).Contains(cell);
+        }
+
         public void FinalizeCapture(CellData cell, int playerId)
         {
             cell.OwnerId = playerId;
@@ -278,6 +285,31 @@ namespace GridEmpire.Core
                 cell.SetInfluence(playerId, 1f);
                 if (_presenterMap.TryGetValue(cell, out var p)) p.UpdateVisual();
             }
+        }
+
+        [ClientRpc]
+        public void CellCapturedClientRpc(int cellId, int currentOwnerId, float speed, bool captured, int attackerId, ClientRpcParams clientRpcParams = default)
+        {
+            if (IsServer) return;
+            if (!IsReady) return;
+
+            CellData cell = GetCellById(cellId);
+            if (cell == null) return;
+
+            if (captured)
+            {
+                cell.SetInfluence(attackerId, 1f);
+                cell.CapturingUnitIds.Clear();
+            }
+            else
+            {
+                cell.UpdateCapture(attackerId, speed);
+            }
+
+            if (captured)
+                FinalizeCapture(cell, attackerId);
+
+            cell.OnVisualUpdateRequired?.Invoke();
         }
     }
 }

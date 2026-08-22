@@ -39,6 +39,7 @@ namespace GridEmpire.Core
         public float GoldIncome => goldIncome;
         public void SyncGold(float amount) => gold = amount;
         public void SyncIncome(float amount) => goldIncome = amount;
+        public void SyncOwnedCellCount(int count) => ownedCellCount = count;
         public CellData BaseCell
         {
             get => baseCell;

@@ -22,6 +22,7 @@ namespace GridEmpire.Core
         /// <summary>Sets the Networking layer (GameNetworkBridge) to avoid circular assembly references between Core and Networking.
         /// Used on the server side: resolves clientId -> playerId mapping.</summary>
         public static System.Func<ulong, int> ResolvePlayerIdForClient;
+        public static System.Func<int, ulong> ResolveClientIdForPlayer;
 
         [Header("Manager Prefabs")]
         [SerializeField] private GameObject gridManagerPrefab;
@@ -43,6 +44,7 @@ namespace GridEmpire.Core
         [SerializeField] private List<PlayerProfile> _players = new List<PlayerProfile>();
         public IReadOnlyList<PlayerProfile> Players => _players;
 
+        private readonly Dictionary<int, HashSet<int>> _lastVisibleCellIds = new Dictionary<int, HashSet<int>>();
         private Dictionary<int, IUnit> _unitRegistry = new Dictionary<int, IUnit>();
         private Dictionary<int, ISpawner> _spawnerRegistry = new Dictionary<int, ISpawner>();
         private int _nextUnitId = 1000;
@@ -245,6 +247,7 @@ namespace GridEmpire.Core
             yield return WaitForAllHumanBaseCells();
 
             int playerId = ResolvePlayerIdForClient?.Invoke(clientId) ?? -1;
+            if (playerId != -1) _lastVisibleCellIds.Remove(playerId);
 
             IEnumerable<CellData> cells = GridManager.Instance.GetAllCells();
             if (!IsDebugMode && GridManager.Instance.FogOfWarEnabled && playerId != -1)
@@ -439,11 +442,12 @@ namespace GridEmpire.Core
             var ids = _players.Select(p => p.Id).ToArray();
             var golds = _players.Select(p => p.Gold).ToArray();
             var incomes = _players.Select(p => p.GoldIncome).ToArray();
-            SyncEconomyClientRpc(ids, golds, incomes);
+            var ownedCells = _players.Select(p => p.OwnedCellCount).ToArray();
+            SyncEconomyClientRpc(ids, golds, incomes, ownedCells);
         }
 
         [ClientRpc]
-        private void SyncEconomyClientRpc(int[] playerIds, float[] golds, float[] incomes)
+        private void SyncEconomyClientRpc(int[] playerIds, float[] golds, float[] incomes, int[] ownedCells)
         {
             if (IsServer) return;
             for (int i = 0; i < playerIds.Length; i++)
@@ -453,6 +457,7 @@ namespace GridEmpire.Core
                 {
                     player.SyncGold(golds[i]);
                     player.SyncIncome(incomes[i]);
+                    player.SyncOwnedCellCount(ownedCells[i]);
                 }
             }
         }
@@ -518,6 +523,54 @@ namespace GridEmpire.Core
 
                 unit.SetVisible(visible);
                 unit.SetAudioVisible(visible);
+            }
+        }
+
+        public void RefreshFogSyncForAllPlayers()
+        {
+            if (!IsServer) return;
+            var gm = GridManager.Instance;
+            if (gm == null) return;
+
+            bool fowActive = !IsDebugMode && gm.FogOfWarEnabled;
+            if (!fowActive) return;
+
+            foreach (var player in _players)
+            {
+                if (player.IsAI) continue;
+                ulong clientId = ResolveClientIdForPlayer?.Invoke(player.Id) ?? ulong.MaxValue;
+                if (clientId == ulong.MaxValue || clientId == NetworkManager.ServerClientId) continue;
+
+                var currentIds = new HashSet<int>(gm.GetVisibleCells(player.Id).Select(c => c.Id));
+
+                if (!_lastVisibleCellIds.TryGetValue(player.Id, out var previousIds))
+                    previousIds = new HashSet<int>();
+
+                var newlyVisible = currentIds.Where(id => !previousIds.Contains(id)).ToList();
+                _lastVisibleCellIds[player.Id] = currentIds;
+
+                if (newlyVisible.Count == 0) continue;
+
+                var cells = newlyVisible.Select(id => gm.GetCellById(id)).Where(c => c != null).ToList();
+                int[] ids = cells.Select(c => c.Id).ToArray();
+                int[] owners = cells.Select(c => c.OwnerId).ToArray();
+                bool[] bases = cells.Select(c => c.IsBase).ToArray();
+
+                var clientRpcParams = new ClientRpcParams { Send = new ClientRpcSendParams { TargetClientIds = new[] { clientId } } };
+                SyncGridStateClientRpc(ids, owners, bases, clientRpcParams);
+            }
+        }
+
+        public void RefreshNetworkVisibilityForAllUnits()
+        {
+            if (!IsServer) return;
+            var gm = GridManager.Instance;
+            if (gm == null) return;
+
+            foreach (var unit in _unitRegistry.Values)
+            {
+                if (unit is IUnit uc && !uc.IsDead)
+                    uc.RefreshNetworkVisibility(gm, _players);
             }
         }
     }

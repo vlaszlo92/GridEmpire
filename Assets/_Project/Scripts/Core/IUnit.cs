@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Numerics;
 using UnityEngine;
 
@@ -20,5 +21,6 @@ namespace GridEmpire.Core
         void SetAudioVisible(bool visible);
         void SyncToAuthoritativeState();
         EffectiveUnitStats Stats { get; }
+        void RefreshNetworkVisibility(GridManager gridManager, IReadOnlyList<PlayerProfile> players);
     }
 }

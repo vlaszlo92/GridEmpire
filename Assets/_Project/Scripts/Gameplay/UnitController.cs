@@ -10,7 +10,6 @@ using UnityEngine;
 
 namespace GridEmpire.Gameplay
 {
-
     [System.Serializable]
     public struct ColorizableTarget
     {
@@ -24,6 +23,8 @@ namespace GridEmpire.Gameplay
         public NetworkVariable<int> NetworkOwnerId = new NetworkVariable<int>();
         public NetworkVariable<int> NetworkUnitTypeIndex = new NetworkVariable<int>();
         public NetworkVariable<EffectiveUnitStats> NetworkStats = new NetworkVariable<EffectiveUnitStats>();
+        public NetworkVariable<int> NetworkCellId = new NetworkVariable<int>(default, NetworkVariableReadPermission.Everyone);
+
         public EffectiveUnitStats Stats => NetworkStats.Value;
 
         [Header("Colorization Setup")]
@@ -55,14 +56,15 @@ namespace GridEmpire.Gameplay
         [SerializeField] private float _currentStamina;
         private Coroutine _rotateCoroutine;
 
-
         private PlayerProfile _ownerProfile;
         private Renderer[] _renderers;
 
         public int OwnerId => _ownerId;
         public UnitData Data => _data;
         public CellData CurrentCell => _currentCell;
-        public bool IsDead => _isDead;         
+        public void SetInitialCell(CellData cellData) => _currentCell = cellData;
+        public bool IsDead => _isDead;
+
         public void DestroyUnit()
         {
             if (IsServer) ExecuteDeath();
@@ -81,28 +83,50 @@ namespace GridEmpire.Gameplay
             _gridManager = GridManager.Instance;
             _resolver = FindFirstObjectByType<TurnResolver>();
 
-            _renderers = GetComponentsInChildren<Renderer>();
-            foreach (var r in _renderers) r.enabled = false;
+            if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsServer)
+            {
+                _renderers = GetComponentsInChildren<Renderer>(true);
+                foreach (var r in _renderers) r.enabled = false;
+            }
 
             _unitAnimator = GetComponent<UnitAnimator>();
-            //Debug.Log($"[UC] UnitAnimator found: {_unitAnimator != null} on {gameObject.name}");
         }
 
         public override void OnNetworkSpawn()
         {
             base.OnNetworkSpawn();
             NetworkOwnerId.OnValueChanged += OnOwnerIdChanged;
+            if (!IsServer)
+            {
+                OnNetworkCellChanged(0, NetworkCellId.Value);
+            }
 
             _id = NetworkUnitId.Value;
             _ownerId = NetworkOwnerId.Value;
+
+            Debug.Log(
+                $"[FOW] OnNetworkSpawn: unit={_id}, owner={_ownerId}, " +
+                $"isServer={IsServer}, localClient={NetworkManager.Singleton.LocalClientId}, " +
+                $"networkObjectId={NetworkObject.NetworkObjectId}");
 
             if (!IsServer)
                 StartCoroutine(ClientSyncWhenReady());
         }
 
+        private void OnNetworkCellChanged(int previousId, int newCellId)
+        {
+            _currentCell = GridManager.Instance.GetCellById(newCellId);
+            if (_currentCell != null)
+            {
+                _currentCell.RegisterOccupier(this);
+                transform.position = _gridManager.GetWorldPosition(_currentCell.Q, _currentCell.R);
+            }
+        }
+
         private IEnumerator ClientSyncWhenReady()
         {
             yield return new WaitUntil(() => GridManager.Instance != null && GridManager.Instance.IsReady);
+            yield return new WaitUntil(() => NetworkUnitId.Value != 0);
 
             float t = 0f;
             while ((GameController.Instance == null || !GameController.Instance.HasUnitData(NetworkUnitTypeIndex.Value)) && t < 5f)
@@ -112,6 +136,11 @@ namespace GridEmpire.Gameplay
             }
 
             SyncToAuthoritativeState();
+
+            Debug.Log(
+                $"[FOW] ClientSyncWhenReady DONE: unit={_id}, owner={_ownerId}, " +
+                $"client={NetworkManager.Singleton.LocalClientId}, " +
+                $"hasUnitData={GameController.Instance?.HasUnitData(NetworkUnitTypeIndex.Value)}");
         }
 
         public override void OnNetworkDespawn()
@@ -136,7 +165,7 @@ namespace GridEmpire.Gameplay
 
             if (_gridManager != null && _gridManager.IsReady)
             {
-                _currentCell = _gridManager.GetCellAtPosition(transform.position);
+                _currentCell = _gridManager.GetCellById(NetworkCellId.Value);
                 if (_currentCell != null)
                 {
                     _currentCell.RegisterOccupier(this);
@@ -146,6 +175,12 @@ namespace GridEmpire.Gameplay
 
             GameController.Instance?.RegisterUnit(this);
             ApplyPlayerColor();
+
+            if (!IsServer)
+            {
+                var localPlayer = GameController.Instance?.GetLocalPlayer();
+                if (localPlayer != null) _gridManager?.UpdateFogOfWar(localPlayer.Id);
+            }
         }
 
         public void Initialize(int uniqueId, UnitData data, List<CellData> path, GridManager gm, int ownerId)
@@ -220,7 +255,7 @@ namespace GridEmpire.Gameplay
             }
 
             isInCombat = false;
-            
+
             if (_currentCell.OwnerId == _ownerId && _currentCell.GetCaptureProgress(_ownerId) < 1.0f)
             {
                 _nextAction.Type = ActionType.Capture;
@@ -242,7 +277,6 @@ namespace GridEmpire.Gameplay
             {
                 if (_currentTargetCell.OwnerId != _ownerId)
                 {
-                    // Foglalhato: akkor is ha mar masok is foglaljak (capture conflict)
                     _nextAction.Type = ActionType.Capture;
                     _nextAction.TargetCellId = _currentTargetCell.Id;
                     _previousCell = _currentCell;
@@ -259,8 +293,8 @@ namespace GridEmpire.Gameplay
                         EnqueueAction();
                         return;
                     }
-                    else 
-                    { 
+                    else
+                    {
                         _currentTargetCell = null;
                     }
                 }
@@ -318,7 +352,6 @@ namespace GridEmpire.Gameplay
                 if (_gridManager.GetDistance(n, player.BaseCell) > currentDist)
                 {
                     preferredCount++;
-                    // Reservoir sampling: veletlenszeru valasztas allokacio nelkul
                     if (Random.Range(0, preferredCount) == 0) preferred = n;
                 }
                 else if (!n.IsBase)
@@ -333,8 +366,10 @@ namespace GridEmpire.Gameplay
 
         public void SetVisible(bool visible)
         {
+            if (_renderers == null) return;
             foreach (var r in _renderers) r.enabled = visible;
         }
+
         public void SetAudioVisible(bool visible)
         {
             var audioSources = GetComponentsInChildren<AudioSource>();
@@ -364,13 +399,12 @@ namespace GridEmpire.Gameplay
                 int myCellId = _currentCell?.Id ?? -1;
 
                 _unitAnimator?.Play(ActionType.Attack);
-                AttackClientRpc(targetCellId, target.Id);
-                target.BeAttackedClientRpc(myCellId, _id);
+                var rpcParams = BuildVisibilityRpcParams(new[] { _ownerId, target._ownerId }, _currentCell, target._currentCell);
+                AttackClientRpc(targetCellId, target.Id, rpcParams);
+                target.BeAttackedClientRpc(myCellId, _id, rpcParams);
             }
         }
 
-        // Capture konfliktus: ha ugyanazt a cellat foglalja ellenseges egyseg is, sebzik egymast.
-        // Csak a magasabb ID-ju egyseg szamol, hogy minden par pontosan egyszer legyen feldolgozva.
         public void CalculateCaptureConflict()
         {
             if (_isDead || _nextAction == null || _nextAction.Type != ActionType.Capture) return;
@@ -397,14 +431,15 @@ namespace GridEmpire.Gameplay
                     FaceCombatTarget(enemy._id, enemy.transform.position);
                     enemy.FaceCombatTarget(_id, transform.position);
 
-                    AttackClientRpc(enemyCellId, enemy._id);
-                    enemy.AttackClientRpc(myCellId, _id);
+                    var rpcParams = BuildVisibilityRpcParams(new[] { _ownerId, enemy._ownerId }, _currentCell, enemy._currentCell);
+                    AttackClientRpc(enemyCellId, enemy._id, rpcParams);
+                    enemy.AttackClientRpc(myCellId, _id, rpcParams);
                 }
             }
         }
 
         [ClientRpc]
-        private void AttackClientRpc(int targetCellId, int targetUnitId)
+        private void AttackClientRpc(int targetCellId, int targetUnitId, ClientRpcParams clientRpcParams = default)
         {
             if (IsServer) return;
             var cell = _gridManager?.GetCellById(targetCellId);
@@ -414,7 +449,7 @@ namespace GridEmpire.Gameplay
         }
 
         [ClientRpc]
-        public void BeAttackedClientRpc(int attackerCellId, int attackerUnitId)
+        public void BeAttackedClientRpc(int attackerCellId, int attackerUnitId, ClientRpcParams clientRpcParams = default)
         {
             if (IsServer) return;
             if (_gridManager == null) _gridManager = GridManager.Instance;
@@ -429,18 +464,17 @@ namespace GridEmpire.Gameplay
             _currentHP -= _pendingDamage;
             _pendingDamage = 0;
             if (_currentHP <= 0) _isDead = true;
-            DamageClientRpc(_currentHP, _isDead);
+            DamageClientRpc(_currentHP, _isDead, BuildVisibilityRpcParams(new[] { _ownerId }, _currentCell));
         }
 
         [ClientRpc]
-        private void DamageClientRpc(float newHp, bool isDead)
+        private void DamageClientRpc(float newHp, bool isDead, ClientRpcParams clientRpcParams = default)
         {
             if (IsServer) return;
             _currentHP = newHp;
             if (isDead && !_isDead)
             {
                 _isDead = true;
-                // TODO: halal animacio
             }
         }
 
@@ -454,10 +488,12 @@ namespace GridEmpire.Gameplay
             _previousCell = _currentCell;
 
             if (_currentCell != null) _currentCell.UnregisterOccupier(this);
-            
+
             _currentCell = next;
             _currentCell.RegisterOccupier(this);
-            
+
+            NetworkCellId.Value = next.Id;
+
             if (_previousCell != null && _previousCell.OwnerId == OwnerId)
             {
                 _previousCell.SetInfluence(OwnerId, 1f);
@@ -476,11 +512,11 @@ namespace GridEmpire.Gameplay
             StartCoroutine(MoveToCell(next));
             _facingTargetId = -1;
             _unitAnimator?.Play(ActionType.Move);
-            MoveClientRpc(next.Id);
+            MoveClientRpc(next.Id, BuildVisibilityRpcParams(new[] { _ownerId }, _previousCell, next));
         }
 
         [ClientRpc]
-        private void MoveClientRpc(int targetCellId)
+        private void MoveClientRpc(int targetCellId, ClientRpcParams clientRpcParams = default)
         {
             if (IsServer) return;
 
@@ -500,8 +536,6 @@ namespace GridEmpire.Gameplay
             StartCoroutine(MoveToCell(next));
             _facingTargetId = -1;
             _unitAnimator?.Play(ActionType.Move);
-
-            //Debug.Log($"[UnitController] MoveClientRpc complete - Unit ID: {Id}, CurrentCell ID: {_currentCell?.Id}, Frame: {Time.frameCount}");
         }
 
         // --- CAPTURE -----------------------------------------------------------------
@@ -518,6 +552,7 @@ namespace GridEmpire.Gameplay
 
             bool isNeutral = target.OwnerId == -1;
             float speed = isNeutral ? NetworkStats.Value.ExploreSpeed : NetworkStats.Value.ConquerSpeed;
+            int previousOwnerId = target.OwnerId;
 
             target.UpdateCapture(_ownerId, speed);
 
@@ -530,10 +565,15 @@ namespace GridEmpire.Gameplay
                 _resolver?.MarkCellChanged(target.Id);
             }
             _unitAnimator?.Play(ActionType.Capture);
-            CaptureClientRpc(target.Id, target.OwnerId, speed, captured, _ownerId);
+
+            var rpcParams = BuildVisibilityRpcParams(new[] { _ownerId, previousOwnerId }, target);
+            CaptureAnimClientRpc(target.Id, rpcParams);
+            if (_gridManager == null) _gridManager = GridManager.Instance;
+            _gridManager.CellCapturedClientRpc(target.Id, target.OwnerId, speed, captured, _ownerId, rpcParams);
         }
+
         [ClientRpc]
-        private void CaptureClientRpc(int cellId, int currentOwnerId, float speed, bool captured, int attackerId)
+        private void CaptureAnimClientRpc(int cellId, ClientRpcParams clientRpcParams = default)
         {
             if (IsServer) return;
 
@@ -543,25 +583,8 @@ namespace GridEmpire.Gameplay
             CellData cell = _gridManager.GetCellById(cellId);
             if (cell == null) return;
 
-            Vector3 targetPos = _gridManager.GetWorldPosition(cell.Q, cell.R);
-            FaceTarget(targetPos);
-
-            if (captured)
-            {
-                cell.SetInfluence(attackerId, 1f);
-                cell.CapturingUnitIds.Clear();
-            }
-            else
-            {
-                cell.UpdateCapture(attackerId, speed);
-            }
-
-            if (captured)
-                _gridManager.FinalizeCapture(cell, attackerId);
-
-            cell.OnVisualUpdateRequired?.Invoke();
+            FaceTarget(_gridManager.GetWorldPosition(cell.Q, cell.R));
             _unitAnimator?.Play(ActionType.Capture);
-            //Debug.Log($"[UnitController] CaptureClientRpc complete - Unit ID: {Id}, CurrentCell ID: {_currentCell?.Id}, Frame: {Time.frameCount}");
         }
 
         // --- DEATH -------------------------------------------------------------------
@@ -569,9 +592,9 @@ namespace GridEmpire.Gameplay
         public void ExecuteDeath()
         {
             _isDead = true;
-
-            // Ha foglalt egy cellat, toroljuk a hoditok listajabol
             _currentTargetCell?.CapturingUnitIds.Remove(_id);
+
+            var rpcParams = BuildVisibilityRpcParams(new[] { _ownerId }, _currentCell);
 
             _resolver?.UnregisterUnit(this);
             if (_currentCell != null) _currentCell.UnregisterOccupier(this);
@@ -579,7 +602,7 @@ namespace GridEmpire.Gameplay
 
             if (IsServer)
             {
-                DeathClientRpc();
+                DeathClientRpc(rpcParams);
                 _unitAnimator?.PlayDeath(() =>
                 {
                     if (TryGetComponent<NetworkObject>(out var netObj) && netObj.IsSpawned)
@@ -589,7 +612,7 @@ namespace GridEmpire.Gameplay
         }
 
         [ClientRpc]
-        private void DeathClientRpc()
+        private void DeathClientRpc(ClientRpcParams clientRpcParams = default)
         {
             if (IsServer) return;
             _isDead = true;
@@ -607,6 +630,7 @@ namespace GridEmpire.Gameplay
         }
 
         // --- HELPERS -----------------------------------------------------------------
+
         private void ApplyPlayerColor()
         {
             var player = GameController.Instance?.GetPlayerById(_ownerId);
@@ -641,6 +665,7 @@ namespace GridEmpire.Gameplay
                 transform.position = Vector3.Lerp(startPos, targetPos, t);
                 yield return null;
             }
+
             transform.position = targetPos;
         }
 
@@ -651,9 +676,11 @@ namespace GridEmpire.Gameplay
                 var current = GameController.Instance?.GetUnitById(_facingTargetId) as UnitController;
                 if (current != null && !current.IsDead) return;
             }
+
             _facingTargetId = sourceUnitId;
             FaceTarget(pos);
         }
+
         public void FaceTarget(Vector3 targetPos)
         {
             Vector3 dir = (targetPos - transform.position).normalized;
@@ -683,6 +710,7 @@ namespace GridEmpire.Gameplay
                 transform.rotation = Quaternion.Slerp(start, target, elapsed / duration);
                 yield return null;
             }
+
             transform.rotation = target;
         }
 
@@ -694,6 +722,7 @@ namespace GridEmpire.Gameplay
                 if (n.IsOccupied && n.GetOccupier() is UnitController uc && uc._ownerId != _ownerId && !uc._isDead)
                     return uc;
             }
+
             return null;
         }
 
@@ -725,15 +754,150 @@ namespace GridEmpire.Gameplay
 
         public override void OnDestroy()
         {
-            // Biztonsagi takaritas halalkor vagy jelenetvaltaskor
             _currentTargetCell?.CapturingUnitIds.Remove(_id);
 
             _resolver?.UnregisterUnit(this);
             if (GameController.Instance != null)
                 GameController.Instance.UnregisterUnit(_id);
             if (!_isDead)
-                GameController.Instance?.RemoveUnit(this);            
+                GameController.Instance?.RemoveUnit(this);
+
             base.OnDestroy();
+        }
+
+        private ClientRpcParams BuildVisibilityRpcParams(int[] alwaysIncludePlayerIds, params CellData[] cells)
+        {
+            if (_gridManager == null) _gridManager = GridManager.Instance;
+            bool fowActive = !GameController.IsDebugMode && _gridManager != null && _gridManager.FogOfWarEnabled;
+
+            var targetPlayerIds = new HashSet<int>();
+            foreach (var id in alwaysIncludePlayerIds)
+            {
+                if (id == -1) continue;
+                var p = GameController.Instance.GetPlayerById(id);
+                if (p != null && !p.IsAI) targetPlayerIds.Add(id);
+            }
+
+            foreach (var player in GameController.Instance.Players)
+            {
+                if (player.IsAI || targetPlayerIds.Contains(player.Id)) continue;
+
+                if (!fowActive) { targetPlayerIds.Add(player.Id); continue; }
+
+                var visibleCells = _gridManager.GetVisibleCells(player.Id);
+                foreach (var cell in cells)
+                {
+                    if (cell != null && visibleCells.Contains(cell)) { targetPlayerIds.Add(player.Id); break; }
+                }
+            }
+
+            var targetIds = new List<ulong>();
+            foreach (var playerId in targetPlayerIds)
+            {
+                ulong clientId = GlobalNetworkSettings.Instance != null
+                    ? GlobalNetworkSettings.Instance.GetClientIdForPlayer(playerId)
+                    : ulong.MaxValue;
+                if (clientId != ulong.MaxValue) targetIds.Add(clientId);
+            }
+
+            return new ClientRpcParams { Send = new ClientRpcSendParams { TargetClientIds = targetIds } };
+        }
+
+        public static bool EvaluateNetworkVisibility(ulong clientId, int ownerId, CellData cell, GridManager gm)
+        {
+            Debug.Log(
+                $"[FOW] Evaluate START: client={clientId}, owner={ownerId}, " +
+                $"cell={cell?.Id}, server={NetworkManager.ServerClientId}");
+
+            if (clientId == NetworkManager.ServerClientId)
+            {
+                Debug.Log(
+                    $"[FOW] Evaluate RESULT: client={clientId} -> VISIBLE (server)");
+                return true;
+            }
+
+            int observerPlayerId = GlobalNetworkSettings.Instance != null
+                ? GlobalNetworkSettings.Instance.GetPlayerIdForClient(clientId)
+                : -1;
+
+            Debug.Log(
+                $"[FOW] Evaluate mapping: client={clientId}, " +
+                $"observerPlayer={observerPlayerId}, owner={ownerId}");
+
+            if (observerPlayerId == -1)
+            {
+                Debug.Log(
+                    $"[FOW] Evaluate RESULT: client={clientId} -> HIDDEN (no player mapping)");
+                return false;
+            }
+
+            if (observerPlayerId == ownerId)
+            {
+                Debug.Log(
+                    $"[FOW] Evaluate RESULT: client={clientId} -> VISIBLE (owner)");
+                return true;
+            }
+
+            bool fowActive = !GameController.IsDebugMode && gm != null && gm.FogOfWarEnabled;
+            if (!fowActive)
+            {
+                Debug.Log(
+                    $"[FOW] Evaluate RESULT: client={clientId} -> VISIBLE (FoW disabled)");
+                return true;
+            }
+
+            bool visible = gm != null && cell != null && gm.IsCellVisibleToPlayer(cell, observerPlayerId);
+
+            Debug.Log(
+                $"[FOW] Evaluate RESULT: client={clientId}, " +
+                $"observerPlayer={observerPlayerId}, cell={cell?.Id}, visible={visible}");
+
+            return visible;
+        }
+
+        public void RefreshNetworkVisibility(GridManager gm, IReadOnlyList<PlayerProfile> players)
+        {
+            if (!IsServer || !IsSpawned) return;
+
+            bool fowActive = !GameController.IsDebugMode && gm.FogOfWarEnabled;
+
+            foreach (var player in players)
+            {
+                if (player.IsAI) continue;
+
+                ulong clientId = GlobalNetworkSettings.Instance != null
+                    ? GlobalNetworkSettings.Instance.GetClientIdForPlayer(player.Id)
+                    : ulong.MaxValue;
+
+                if (clientId == ulong.MaxValue || clientId == NetworkManager.ServerClientId)
+                    continue;
+
+                bool shouldSee = player.Id == _ownerId || !fowActive ||
+                    (_currentCell != null && gm.IsCellVisibleToPlayer(_currentCell, player.Id));
+
+                bool currentlyObserving = NetworkObject.IsNetworkVisibleTo(clientId);
+
+                Debug.Log(
+                    $"[FOW] Refresh: unit={_id}, owner={_ownerId}, " +
+                    $"observerPlayer={player.Id}, client={clientId}, " +
+                    $"cell={_currentCell?.Id}, shouldSee={shouldSee}, " +
+                    $"currentlyObserving={currentlyObserving}");
+
+                if (shouldSee && !currentlyObserving)
+                {
+                    Debug.Log(
+                        $"[FOW] SHOW: unit={_id} -> client={clientId}");
+
+                    NetworkObject.NetworkShow(clientId);
+                }
+                else if (!shouldSee && currentlyObserving)
+                {
+                    Debug.Log(
+                        $"[FOW] HIDE: unit={_id} -> client={clientId}");
+
+                    NetworkObject.NetworkHide(clientId);
+                }
+            }
         }
     }
 }

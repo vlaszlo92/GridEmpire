@@ -247,14 +247,18 @@ namespace GridEmpire.Gameplay
             UnitController controller = go.GetComponent<UnitController>();
             if (!go.TryGetComponent<NetworkObject>(out var netObj)) { Debug.LogError("[UnitSpawner] NetworkObject missing!"); return; }
 
-            EffectiveUnitStats effectiveStats = ComputeEffectiveStats(item.Data, profile);
+            controller.SetInitialCell(spawnCell);
+            controller.NetworkCellId.Value = spawnCell.Id;
+            netObj.CheckObjectVisibility = clientId => UnitController.EvaluateNetworkVisibility(clientId, _ownerId, controller.CurrentCell, gridManager);
 
-            netObj.Spawn();
+            EffectiveUnitStats effectiveStats = ComputeEffectiveStats(item.Data, profile);
 
             controller.NetworkUnitId.Value = newId;
             controller.NetworkOwnerId.Value = _ownerId;
             controller.NetworkUnitTypeIndex.Value = item.Data.index;
             controller.NetworkStats.Value = effectiveStats;
+
+            netObj.Spawn();
 
             var path = item.TargetCell != null ? gridManager.FindPath(spawnCell, item.TargetCell) : null;
             controller.Initialize(newId, item.Data, path, gridManager, _ownerId);

@@ -40,7 +40,6 @@ namespace GridEmpire.Networking
         private ISession _currentSession;
         private bool _isCreatingSession;
         private bool _isConnecting;
-        private bool _gameStarting;
         private bool _disconnectCallbackSubscribed;
 
         private bool _sessionOperationInProgress;
@@ -208,8 +207,6 @@ namespace GridEmpire.Networking
 
         public void StartHostGame(GameSettings settings, string sceneName, int expectedHumans)
         {
-            _gameStarting = true;
-
             if (GlobalNetworkSettings.Instance != null)
                 GlobalNetworkSettings.Instance.InitializeFromSettings(settings);
             else

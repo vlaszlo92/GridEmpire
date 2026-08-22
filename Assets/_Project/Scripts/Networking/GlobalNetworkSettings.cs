@@ -153,6 +153,16 @@ namespace GridEmpire.Networking
             return -1;
         }
 
+        public ulong GetClientIdForPlayer(int playerId)
+        {
+            if (PlayerMappings == null) return ulong.MaxValue;
+            foreach (var mapping in PlayerMappings)
+            {
+                if (mapping.PlayerId == playerId) return mapping.ClientId;
+            }
+            return ulong.MaxValue;
+        }
+
         public void AddMapping(ulong clientId, int playerId)
         {
             if (!IsServer) return;

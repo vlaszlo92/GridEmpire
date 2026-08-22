@@ -99,6 +99,7 @@ namespace GridEmpire.Networking
                 GlobalNetworkSettings.Instance != null);
 
             GameController.ResolvePlayerIdForClient = GlobalNetworkSettings.Instance.GetPlayerIdForClient;
+            GameController.ResolveClientIdForPlayer = GlobalNetworkSettings.Instance.GetClientIdForPlayer;
 
             GlobalNetworkSettings.Instance.PlayerMappings.OnListChanged += HandleMappingsChanged;
             _mappingSubscribed = true;
